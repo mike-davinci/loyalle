@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loyalle — Plataforma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#FAFAF7;--bg2:#F4F1EB;--bg3:#EAE5DA;--dark:#0C0A06;--dark2:#1A1610;--dark3:#2E2820;
+  --text:#1A1610;--text2:#5C5545;--text3:#8A826F;--acc:#C6993B;--acc2:#D4A642;--accBg:#FDF6EA;--accBg2:#F5E8CC;
+  --green:#2A6B3E;--greenBg:#E6F2EA;--red:#C0392B;--redBg:#FBEAE8;--blue:#2C5F8A;--blueBg:#E8F0F7;
+  --white:#FFFFFF;--fh:'Bricolage Grotesque',sans-serif;--fb:'Instrument Sans',sans-serif;
+  --sidebar-w:240px;--radius:14px;--shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04)
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--fb);color:var(--text);background:var(--bg);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,select{font-family:inherit}
+a{text-decoration:none;color:inherit}
+.hidden{display:none !important}
+
+/* ============ AUTH ============ */
+.auth-wrap{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
+.auth-left{background:var(--dark);padding:48px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.auth-left::before{content:'';position:absolute;width:500px;height:500px;background:radial-gradient(circle,rgba(198,153,59,.15),transparent 70%);top:-100px;right:-100px;border-radius:50%}
+.auth-logo{font-family:var(--fh);font-size:26px;font-weight:800;color:#fff;letter-spacing:-.04em;position:relative;z-index:1}
+.auth-logo span{color:var(--acc)}
+.auth-left-content{position:relative;z-index:1}
+.auth-left-title{font-family:var(--fh);font-size:36px;font-weight:700;color:#fff;letter-spacing:-.04em;line-height:1.1;margin-bottom:20px}
+.auth-left-title em{color:var(--acc);font-style:normal}
+.auth-left-desc{font-size:15px;color:rgba(255,255,255,.5);line-height:1.7;max-width:380px}
+.auth-stats{display:flex;gap:32px;margin-top:36px;position:relative;z-index:1}
+.auth-stat-v{font-family:var(--fh);font-size:28px;font-weight:800;color:#fff;letter-spacing:-.03em}
+.auth-stat-l{font-size:12px;color:rgba(255,255,255,.4);margin-top:2px}
+.auth-foot{font-size:12px;color:rgba(255,255,255,.25);position:relative;z-index:1}
+
+/* ===== Ecrã de boas-vindas pós-registo ===== */
+.welcome{position:fixed;inset:0;background:var(--dark);z-index:300;display:none;align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+.welcome.active{display:flex}
+.welcome::before{content:'';position:fixed;width:600px;height:600px;background:radial-gradient(circle,rgba(198,153,59,.18),transparent 70%);top:-150px;right:-150px;border-radius:50%;pointer-events:none}
+.welcome-box{position:relative;z-index:1;max-width:520px;width:100%;text-align:center;animation:welcomeIn .5s ease}
+@keyframes welcomeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.welcome-logo{font-family:var(--fh);font-size:28px;font-weight:800;color:#fff;letter-spacing:-.04em;margin-bottom:28px}
+.welcome-logo span{color:var(--acc)}
+.welcome-title{font-family:var(--fh);font-size:32px;font-weight:700;color:#fff;letter-spacing:-.03em;line-height:1.15;margin-bottom:10px}
+.welcome-title em{color:var(--acc);font-style:normal}
+.welcome-sub{font-size:15px;color:rgba(255,255,255,.55);line-height:1.6;margin-bottom:32px}
+.welcome-steps{text-align:left;display:flex;flex-direction:column;gap:14px;margin-bottom:28px}
+.welcome-step{display:flex;gap:14px;align-items:flex-start;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px 18px}
+.welcome-step-num{width:26px;height:26px;border-radius:50%;background:var(--acc);color:var(--dark);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.welcome-step-body{flex:1;min-width:0}
+.welcome-step-title{font-size:14.5px;font-weight:700;color:#fff;margin-bottom:3px}
+.welcome-step-desc{font-size:13px;color:rgba(255,255,255,.5);line-height:1.55}
+.welcome-link-row{display:flex;gap:8px;margin-top:10px}
+.welcome-link-row input{flex:1;min-width:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:9px 12px;font-size:12.5px;color:rgba(255,255,255,.85);overflow:hidden;text-overflow:ellipsis}
+.welcome-copy{background:var(--acc);color:var(--dark);border:none;border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:700;cursor:pointer;flex-shrink:0}
+.welcome-copy:hover{background:var(--acc2)}
+.welcome-cta{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--dark);font-family:var(--fh);font-weight:700;font-size:15.5px;border:none;border-radius:12px;padding:15px 30px;cursor:pointer;transition:transform .15s}
+.welcome-cta:hover{transform:translateY(-1px)}
+@media(max-width:560px){.welcome-title{font-size:26px}.welcome-step{padding:13px 14px}}
+.auth-right{display:flex;align-items:center;justify-content:center;padding:48px}
+.auth-card{width:100%;max-width:380px}
+.auth-tabs{display:flex;gap:4px;background:var(--bg2);border-radius:10px;padding:4px;margin-bottom:28px}
+.auth-tab{flex:1;padding:9px;border-radius:7px;font-size:14px;font-weight:600;color:var(--text3);transition:all .2s}
+.auth-tab.active{background:#fff;color:var(--dark);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.auth-h{font-family:var(--fh);font-size:24px;font-weight:700;letter-spacing:-.03em;margin-bottom:6px}
+.auth-sub{font-size:14px;color:var(--text3);margin-bottom:24px}
+.field{margin-bottom:16px}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:44px}
+.pw-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;line-height:0;color:var(--text3);display:flex;align-items:center}
+.pw-eye:hover{color:var(--text1)}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px}
+.field input,.field select{width:100%;padding:11px 14px;border:1px solid var(--bg3);border-radius:9px;font-size:14px;background:#fff;transition:border-color .2s,box-shadow .2s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--accBg)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.plan-pick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.plan-opt{border:1.5px solid var(--bg3);border-radius:10px;padding:12px 8px;text-align:center;transition:all .2s;cursor:pointer}
+.plan-opt.sel{border-color:var(--acc);background:var(--accBg)}
+.plan-opt-n{font-family:var(--fh);font-size:13px;font-weight:700;color:var(--dark)}
+.plan-opt-p{font-size:11px;color:var(--text3);margin-top:2px}
+.btn-primary{width:100%;padding:13px;background:var(--dark);color:#fff;border-radius:10px;font-size:15px;font-weight:600;transition:all .2s;margin-top:4px}
+.btn-primary:hover{background:var(--dark2)}
+.auth-alt{text-align:center;font-size:13px;color:var(--text3);margin-top:20px}
+.auth-alt a{color:var(--acc);font-weight:600}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--text3);font-size:12px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--bg3)}
+.btn-social{width:100%;padding:11px;border:1px solid var(--bg3);border-radius:10px;font-size:14px;font-weight:600;color:var(--text2);display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;background:#fff}
+.btn-social:hover{border-color:var(--text3)}
+
+/* ============ APP SHELL ============ */
+.app{display:none;min-height:100vh}
+.app.active{display:grid;grid-template-columns:var(--sidebar-w) 1fr}
+.sidebar{background:var(--dark);padding:24px 16px;display:flex;flex-direction:column;position:fixed;width:var(--sidebar-w);height:100vh;overflow-y:auto}
+.sb-logo{font-family:var(--fh);font-size:22px;font-weight:800;color:#fff;letter-spacing:-.04em;padding:0 8px 24px}
+.sb-logo span{color:var(--acc)}
+.sb-biz{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;margin-bottom:24px;display:flex;align-items:center;gap:10px}
+.sb-biz-logo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--acc2),var(--acc));display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;font-size:16px;color:var(--dark);flex-shrink:0}
+.sb-biz-name{font-size:13px;font-weight:700;color:#fff;line-height:1.2}
+.sb-biz-plan{font-size:11px;color:var(--acc);margin-top:1px}
+.sb-nav{display:flex;flex-direction:column;gap:2px;flex:1}
+.sb-section{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);padding:16px 12px 6px}
+.sb-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;font-size:14px;font-weight:500;color:rgba(255,255,255,.55);transition:all .15s}
+.sb-item:hover{background:rgba(255,255,255,.05);color:#fff}
+.sb-item.active{background:rgba(198,153,59,.15);color:var(--acc)}
+.sb-item svg{width:18px;height:18px;flex-shrink:0}
+.sb-item-badge{margin-left:auto;background:var(--acc);color:var(--dark);font-size:11px;font-weight:700;padding:1px 7px;border-radius:100px}
+.sb-foot{border-top:1px solid rgba(255,255,255,.08);padding-top:16px;margin-top:16px}
+.sb-user{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:9px;transition:background .15s}
+.sb-user:hover{background:rgba(255,255,255,.05)}
+.sb-avatar{width:32px;height:32px;border-radius:50%;background:var(--acc);color:var(--dark);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+.sb-user-name{font-size:13px;font-weight:600;color:#fff;line-height:1.2}
+.sb-user-email{font-size:11px;color:rgba(255,255,255,.4)}
+.sb-logout{margin-left:auto;color:rgba(255,255,255,.4);padding:4px}
+.sb-logout:hover{color:#fff}
+
+/* ============ MAIN ============ */
+.main{grid-column:2;min-height:100vh;background:var(--bg)}
+.topbar{background:rgba(250,250,247,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--bg3);padding:18px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-title{font-family:var(--fh);font-size:22px;font-weight:700;letter-spacing:-.03em}
+.topbar-sub{font-size:13px;color:var(--text3);margin-top:1px}
+.topbar-actions{display:flex;align-items:center;gap:10px}
+.btn-icon{width:38px;height:38px;border-radius:9px;border:1px solid var(--bg3);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:all .2s;position:relative}
+.btn-icon:hover{border-color:var(--text3);color:var(--dark)}
+.btn-acc{padding:10px 18px;background:var(--acc);color:var(--dark);border-radius:9px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px;transition:all .2s}
+.btn-acc:hover{background:var(--acc2)}
+.btn-dark{padding:10px 18px;background:var(--dark);color:#fff;border-radius:9px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px;transition:all .2s}
+.btn-dark:hover{background:var(--dark2)}
+.notif-dot{position:absolute;top:8px;right:9px;width:7px;height:7px;background:var(--acc);border-radius:50%;border:2px solid #fff}
+.content{padding:28px 32px 48px}
+.page{display:none}.page.active{display:block;animation:fade .3s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* KPI cards */
+
+.usage-bar{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:14px;margin-bottom:20px;border:1px solid}
+.usage-bar.warn{background:rgba(198,153,59,.09);border-color:rgba(198,153,59,.4)}
+.usage-bar.over{background:rgba(216,31,38,.08);border-color:rgba(216,31,38,.35)}
+.usage-ic{font-size:20px;flex-shrink:0}
+.usage-body{flex:1;min-width:0}
+.usage-t{font-size:14px;font-weight:700;color:var(--dark);margin-bottom:3px}
+.usage-d{font-size:12.5px;color:var(--text2);line-height:1.5}
+.usage-track{height:6px;background:rgba(12,10,6,.08);border-radius:3px;overflow:hidden;margin-top:8px}
+.usage-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.usage-bar.warn .usage-fill{background:linear-gradient(90deg,#C6993B,#E0B24E)}
+.usage-bar.over .usage-fill{background:linear-gradient(90deg,#D81F26,#F7941D)}
+.usage-btn{flex-shrink:0;padding:9px 16px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;background:var(--dark);color:#fff}
+@media(max-width:700px){.usage-bar{flex-direction:column;align-items:flex-start;gap:10px}.usage-btn{width:100%}}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.kpi{background:#fff;border:1px solid var(--bg3);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden}
+.kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.kpi-ic{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.kpi-ic.gold{background:var(--accBg)}.kpi-ic.green{background:var(--greenBg)}.kpi-ic.blue{background:var(--blueBg)}.kpi-ic.dark{background:var(--bg2)}
+.kpi-trend{font-size:12px;font-weight:700;padding:3px 8px;border-radius:100px;display:flex;align-items:center;gap:3px}
+.kpi-trend.up{background:var(--greenBg);color:var(--green)}
+.kpi-trend.down{background:var(--redBg);color:var(--red)}
+.kpi-v{font-family:var(--fh);font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.kpi-l{font-size:13px;color:var(--text3);margin-top:6px}
+
+/* Cards */
+.card{background:#fff;border:1px solid var(--bg3);border-radius:var(--radius);padding:22px}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.card-title{font-family:var(--fh);font-size:16px;font-weight:700;letter-spacing:-.02em}
+.card-sub{font-size:12px;color:var(--text3);margin-top:1px}
+.grid-2{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:16px}
+.grid-2b{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* Chart */
+.chart-bars{display:flex;align-items:flex-end;gap:10px;height:180px;padding-top:10px}
+.chart-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end}
+.chart-bar{width:100%;max-width:38px;border-radius:6px 6px 0 0;background:var(--bg3);transition:height .6s cubic-bezier(.2,.8,.2,1),background .2s;position:relative;cursor:pointer}
+.chart-bar.hi{background:linear-gradient(180deg,var(--acc2),var(--acc))}
+.chart-bar:hover{background:var(--dark)}
+.chart-lbl{font-size:11px;color:var(--text3);font-weight:600}
+.chart-val{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:var(--dark);opacity:0;transition:opacity .2s;white-space:nowrap}
+.chart-bar:hover .chart-val{opacity:1}
+
+/* Donut legend */
+.donut-wrap{display:flex;align-items:center;gap:24px}
+.donut{width:140px;height:140px;flex-shrink:0;border-radius:50%;overflow:hidden;background:#fff}
+.legend{display:flex;flex-direction:column;gap:10px;flex:1}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:13px}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.legend-val{margin-left:auto;font-weight:700;font-family:var(--fh)}
+
+/* Table */
+.table-wrap{background:#fff;border:1px solid var(--bg3);border-radius:var(--radius);overflow:hidden}
+.table-toolbar{padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--bg3);flex-wrap:wrap}
+.search-box{flex:1;min-width:200px;position:relative}
+.search-box svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);width:16px;height:16px}
+.search-box input{width:100%;padding:10px 12px 10px 36px;border:1px solid var(--bg3);border-radius:9px;font-size:14px;background:var(--bg)}
+.search-box input:focus{outline:none;border-color:var(--acc);background:#fff}
+.filter-chip{padding:8px 14px;border:1px solid var(--bg3);border-radius:9px;font-size:13px;font-weight:600;color:var(--text2);background:#fff;transition:all .2s}
+.filter-chip:hover,.filter-chip.active{border-color:var(--acc);background:var(--accBg);color:var(--acc)}
+table{width:100%;border-collapse:collapse}
+th.sortable{cursor:pointer;user-select:none;transition:color .15s}
+th.sortable:hover{color:var(--acc)}
+.sort-arrow{font-size:11px;opacity:.7;margin-left:2px}
+th{text-align:left;padding:12px 20px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--bg3);background:var(--bg)}
+td{padding:14px 20px;border-bottom:1px solid var(--bg3);font-size:14px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:var(--bg)}
+.cust-cell{display:flex;align-items:center;gap:10px}
+.cust-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
+.cust-name{font-weight:600}
+.cust-email{font-size:12px;color:var(--text3)}
+.progress-mini{width:90px;height:7px;background:var(--bg3);border-radius:100px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:8px}
+.progress-mini-fill{height:100%;background:linear-gradient(90deg,var(--acc2),var(--acc));border-radius:100px}
+.tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:600}
+.tag.active{background:var(--greenBg);color:var(--green)}
+.tag.inactive{background:var(--bg2);color:var(--text3)}
+.tag.vip{background:var(--accBg);color:var(--acc)}
+.row-action{padding:6px 12px;border:1px solid var(--bg3);border-radius:7px;font-size:13px;font-weight:600;color:var(--text2);background:#fff;transition:all .2s}
+.row-action:hover{border-color:var(--acc);color:var(--acc)}
+
+/* Scan page */
+.scan-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.scan-camera{background:var(--dark);border-radius:var(--radius);padding:24px;text-align:center;color:#fff;min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#qr-reader{width:100%;max-width:320px;border-radius:12px;overflow:hidden}
+#qr-reader img{display:none !important}
+.scan-placeholder{display:flex;flex-direction:column;align-items:center;gap:16px}
+.scan-icon-big{width:80px;height:80px;border-radius:20px;background:rgba(198,153,59,.15);display:flex;align-items:center;justify-content:center;font-size:36px}
+.scan-frame{width:200px;height:200px;border-radius:16px;border:2px dashed rgba(255,255,255,.2);position:relative;margin:8px 0}
+.scan-frame::before,.scan-frame::after{content:'';position:absolute;width:32px;height:32px;border:3px solid var(--acc)}
+.scan-frame::before{top:-2px;left:-2px;border-right:none;border-bottom:none;border-radius:16px 0 0 0}
+.scan-frame::after{bottom:-2px;right:-2px;border-left:none;border-top:none;border-radius:0 0 16px 0}
+
+/* Settings/portal cards */
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:18px 0;border-bottom:1px solid var(--bg3)}
+.set-row:last-child{border-bottom:none}
+.set-label{font-weight:600;font-size:14px}
+.set-desc{font-size:13px;color:var(--text3);margin-top:2px}
+.toggle{width:46px;height:26px;background:var(--bg3);border-radius:100px;position:relative;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--acc)}
+.toggle::after{content:'';width:20px;height:20px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on::after{transform:translateX(20px)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(12,10,6,.5);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:20px;padding:28px;max-width:440px;width:100%;max-height:90vh;overflow-y:auto;animation:fade .25s ease}
+.modal-h{font-family:var(--fh);font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.modal-sub{font-size:13px;color:var(--text3);margin-bottom:20px}
+.modal-close{position:absolute;top:20px;right:20px;color:var(--text3);font-size:20px}
+.modal-btns{display:flex;gap:10px;margin-top:20px}
+.modal-btns .btn-primary{margin-top:0}
+.wallet-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;transition:transform .15s,opacity .15s;border:none}
+.wallet-btn:active{transform:scale(.98)}
+.wallet-apple{background:#000;color:#fff}
+.wallet-apple:hover{opacity:.85}
+.wallet-google{background:#fff;color:#3c4043;border:1px solid #dadce0}
+.wallet-google:hover{background:#f8f9fa}
+.btn-ghost{flex:1;padding:13px;border:1px solid var(--bg3);border-radius:10px;font-size:14px;font-weight:600;color:var(--text2);background:#fff;transition:all .2s}
+.btn-ghost:hover{border-color:var(--text3)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--dark);color:#fff;padding:14px 20px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 12px 32px rgba(0,0,0,.25);z-index:300;display:flex;align-items:center;gap:10px;transform:translateY(80px);opacity:0;transition:all .3s}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-ic{color:var(--acc)}
+
+/* Activity feed */
+.act-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bg3)}
+.act-item:last-child{border-bottom:none}
+.act-dot{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.act-dot.g{background:var(--greenBg)}.act-dot.a{background:var(--accBg)}.act-dot.b{background:var(--blueBg)}
+.act-txt{font-size:13px;flex:1}.act-txt b{font-weight:600}
+.act-time{font-size:12px;color:var(--text3)}
+
+/* Insights */
+.insight-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px}
+.insight{background:#fff;border:1px solid var(--bg3);border-radius:var(--radius);padding:20px}
+.insight-ic{width:36px;height:36px;border-radius:9px;background:var(--accBg);display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:12px}
+.insight-t{font-family:var(--fh);font-size:15px;font-weight:700;margin-bottom:4px}
+.insight-d{font-size:13px;color:var(--text2);line-height:1.5}
+.insight-stat{font-family:var(--fh);font-size:24px;font-weight:800;color:var(--acc);margin-top:8px}
+
+@media(max-width:1024px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .grid-2{grid-template-columns:1fr}
+  .scan-grid{grid-template-columns:1fr}
+  .insight-grid{grid-template-columns:1fr}
+}
+@media(max-width:768px){
+  .auth-wrap{grid-template-columns:1fr}
+  .auth-left{display:none}
+  .app.active{grid-template-columns:1fr}
+  .sidebar{transform:translateX(-100%);transition:transform .3s;z-index:100}
+  .sidebar.open{transform:translateX(0)}
+  .main{grid-column:1}
+  .kpi-grid{grid-template-columns:1fr}
+  .field-row{grid-template-columns:1fr}
+  .content{padding:20px}
+  .topbar{padding:14px 20px}
+}
+.menu-toggle{display:none}
+@media(max-width:768px){.menu-toggle{display:flex}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://tokxxrnkxyldqkhiktbm.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_J-4YCVcHvX_zoQTsxrUkLg_UNMCt46y';
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  let currentBiz = null;  // negócio do utilizador autenticado
+  let custCache = [];     // cache dos clientes carregados
+
+  // ── Endereço do backend de wallets ──
+  // Quando o backend estiver online, troca este endereço pelo real.
+  // Localmente (teste do sócio) costuma ser http://localhost:3000
+  const WALLET_BACKEND_URL = 'https://loyalle-wallet-backend-production.up.railway.app';
+
+  // ============ i18n ============
+  const LANG_KEY = 'loyalle_lang';
+  let currentLang = localStorage.getItem(LANG_KEY) || (function() {
+    var bl = (navigator.language || navigator.userLanguage || 'pt').toLowerCase().slice(0,2);
+    var supported = ['pt','en','es','fr','de'];
+    return supported.indexOf(bl) >= 0 ? bl : 'en';
+  })();
+  const i18n = {
+    pt:{exp_cust_csv:'Clientes (CSV)',exp_txn_csv:'Transações (CSV)',usage_warn_t:'Estás a chegar ao limite do plano',usage_over_t:'Passaste o limite do teu plano',usage_d:'{used} de {cap} clientes no plano {plan}. Os cartões continuam a funcionar — nada foi bloqueado.',usage_btn:'Ver planos',usage_modal_t:'Mudar de plano',usage_modal_d:'Fala connosco e tratamos da mudança. Os teus dados e cartões mantêm-se exatamente como estão.',usage_modal_btn:'Falar connosco',nav_dashboard:'Dashboard',nav_customers:'Clientes',nav_scan:'Scan / Registar',nav_analytics:'Análises',nav_rewards:'Recompensas',nav_card:'Cartão & Branding',nav_settings:'Definições',login_welcome:'Bem-vindo de volta',login_sub:'Entra na tua conta para gerir o teu programa.',login_btn:'Entrar →',login_forgot:'Esqueci a password',login_no_account:'Ainda não tens conta?',login_create:'Cria uma grátis',signup_title:'Cria a tua conta',signup_btn:'Criar conta grátis →',dash_active:'Clientes ativos',dash_retention:'Taxa de retenção',dash_rewards:'Prémios dados',dash_visits_week:'Visitas esta semana',dash_visits_chart:'Visitas por semana',dash_activity:'Atividade recente',cust_title:'Clientes',cust_sub:'Gere e acompanha os teus clientes registados',cust_search:'Procurar por nome ou email...',cust_all:'Todos',cust_active:'Ativos',cust_inactive:'Inativos',cust_add:'+ Adicionar',cust_add_short:'Adicionar',cust_stamp:'+ Carimbo',cust_view:'Ver',an_title:'Análises',an_export_cust:'Exportar clientes',an_export_txn:'Exportar transações',an_export_summary:'Exportar resumo',rw_edit:'Editar regra',rw_new:'+ Nova recompensa',set_title:'Definições',set_save:'Guardar alterações',set_lang:'Idioma',redeem_title:'Resgatar prémio',redeem_btn:'Confirmar resgate',redeem_cancel:'Cancelar',fp_title:'Recuperar password',fp_btn:'Enviar link',fp_cancel:'Cancelar',dash_visits_day:'Visitas por dia',dash_last_week:'Última semana',dash_week:'Semana',dash_segments:'Segmentos',dash_clients_count:'clientes',dash_see_more:'Ver tudo',dash_quick:'Ações rápidas',dash_scan_qr:'Ler QR de cliente',dash_add_manual:'+ Adicionar cliente manualmente',dash_stamp:'carimbo',dash_ago:'há',dash_weeks:'semana(s)',dash_visits_month:'Visitas (mês)',day_mon:'Seg',day_tue:'Ter',day_wed:'Qua',day_thu:'Qui',day_fri:'Sex',day_sat:'Sáb',day_sun:'Dom',dash_sub:'Gere e acompanha os teus clientes registados',dash_register:'+ Registar visita',an_sub:'Insights detalhados sobre o teu programa',an_avg_visits:'Visitas médias / cliente',an_freq:'Frequência média',an_completion:'Taxa conclusão cartão',an_recurring:'Clientes recorrentes',an_monthly:'Atividade mensal',an_monthly_sub:'Carimbos nos últimos 6 meses',an_insights:'Insights',an_total_stamps:'Total de carimbos',an_total_rewards:'Prémios resgatados',rw_stamps_title:'Cartão de carimbos',rw_points_title:'Sistema de pontos',set_plan:'Plano atual',scan_start:'Iniciar câmara',scan_search:'Procurar cliente por nome...',cust_register:'+ Registar visita',cm_updated:'Atualizado agora',rw_stamps_sub:'Mecânica ativa',pm_dashboard:'Visão geral do teu programa de fidelização',pm_scan:'Lê o QR do cliente ou regista uma visita manual',pm_rewards:'Configura prémios e regras de fidelização',pm_card:'Personaliza o cartão digital da tua marca',pm_settings:'Gere a tua conta e preferências',cust_none:'Nenhum cliente encontrado.',an_best_day_txt:'é o dia mais forte',an_visits_happen:'das visitas semanais acontecem a',an_inactive_txt:'clientes inativos',an_inactive_desc:'Sem visitar recentemente. Considera uma promoção de regresso.',an_almost_txt:'quase-completos',an_almost_desc:'A 1-2 carimbos de completar o cartão. Um empurrão converte-os.',an_total_stamps_desc:'Carimbos registados desde o início do programa.',an_total_rewards_desc:'Total de recompensas entregues.',rw_active:'Ativo',rw_stamps_desc:'A cada visita, o cliente recebe 1 carimbo. Ao completar <b>10 carimbos</b>, ganha automaticamente:',rw_free_coffee:'1 café grátis',rw_auto_notif:'Notificação automática enviada ao cliente',rw_points_desc:'Cada euro gasto = <b>10 pontos</b>. Os clientes trocam pontos por recompensas na loja.',rw_soon:'Em breve',cm_stamp_done:'Carimbo registado para',qa_scan:'Ler QR de cliente',qa_add:'Adicionar cliente manualmente',qa_report:'Ver relatório completo',qa_edit:'Editar cartão',act_stamp:'carimbo',act_reward:'prémio',act_signup:'registo',time_ago:'há',time_week:'semana(s)',time_day:'dia(s)',time_hour:'hora(s)',time_min:'minuto(s)',time_now:'agora',dash_card_link:'Link do teu cartão',dash_copy:'Copiar',dash_open_card:'Abrir cartão',dash_link_copied:'Link copiado!',dash_card_link_hint:'Partilha este link com os teus clientes para adicionarem o cartão à wallet.'},
+    en:{exp_cust_csv:'Customers (CSV)',exp_txn_csv:'Transactions (CSV)',usage_warn_t:'You are approaching your plan limit',usage_over_t:'You have passed your plan limit',usage_d:'{used} of {cap} customers on the {plan} plan. Cards keep working — nothing has been blocked.',usage_btn:'See plans',usage_modal_t:'Change plan',usage_modal_d:'Talk to us and we handle the switch. Your data and cards stay exactly as they are.',usage_modal_btn:'Contact us',nav_dashboard:'Dashboard',nav_customers:'Customers',nav_scan:'Scan / Register',nav_analytics:'Analytics',nav_rewards:'Rewards',nav_card:'Card & Branding',nav_settings:'Settings',login_welcome:'Welcome back',login_sub:'Sign in to manage your loyalty program.',login_btn:'Sign in →',login_forgot:'Forgot password',login_no_account:"Don't have an account?",login_create:'Create one for free',signup_title:'Create your account',signup_btn:'Create free account →',dash_active:'Active customers',dash_retention:'Retention rate',dash_rewards:'Rewards given',dash_visits_week:'Visits this week',dash_visits_chart:'Visits per week',dash_activity:'Recent activity',cust_title:'Customers',cust_sub:'Manage and track your registered customers',cust_search:'Search by name or email...',cust_all:'All',cust_active:'Active',cust_inactive:'Inactive',cust_add:'+ Add',cust_add_short:'Add',cust_stamp:'+ Stamp',cust_view:'View',an_title:'Analytics',an_export_cust:'Export customers',an_export_txn:'Export transactions',an_export_summary:'Export summary',rw_edit:'Edit rule',rw_new:'+ New reward',set_title:'Settings',set_save:'Save changes',set_lang:'Language',redeem_title:'Redeem reward',redeem_btn:'Confirm redemption',redeem_cancel:'Cancel',fp_title:'Reset password',fp_btn:'Send link',fp_cancel:'Cancel',dash_visits_day:'Visits per day',dash_last_week:'Last week',dash_week:'Week',dash_segments:'Segments',dash_clients_count:'customers',dash_see_more:'View all',dash_quick:'Quick actions',dash_scan_qr:'Scan customer QR',dash_add_manual:'+ Add customer manually',dash_stamp:'stamp',dash_ago:'',dash_weeks:'week(s) ago',dash_visits_month:'Visits (month)',day_mon:'Mon',day_tue:'Tue',day_wed:'Wed',day_thu:'Thu',day_fri:'Fri',day_sat:'Sat',day_sun:'Sun',dash_sub:'Manage and track your registered customers',dash_register:'+ Register visit',an_sub:'Detailed insights about your program',an_avg_visits:'Avg visits / customer',an_freq:'Average frequency',an_completion:'Card completion rate',an_recurring:'Recurring customers',an_monthly:'Monthly activity',an_monthly_sub:'Stamps in the last 6 months',an_insights:'Insights',an_total_stamps:'Total stamps',an_total_rewards:'Rewards redeemed',rw_stamps_title:'Stamp card',rw_points_title:'Points system',set_plan:'Current plan',scan_start:'Start camera',scan_search:'Search customer by name...',cust_register:'+ Register visit',cm_updated:'Updated now',rw_stamps_sub:'Active mechanic',pm_dashboard:'Overview of your loyalty program',pm_scan:'Scan the customer QR or register a manual visit',pm_rewards:'Set up rewards and loyalty rules',pm_card:'Customize your brand digital card',pm_settings:'Manage your account and preferences',cust_none:'No customers found.',an_best_day_txt:'is the strongest day',an_visits_happen:'of weekly visits happen on',an_inactive_txt:'inactive customers',an_inactive_desc:'Not visited recently. Consider a comeback promotion.',an_almost_txt:'almost complete',an_almost_desc:'1-2 stamps from completing the card. A nudge converts them.',an_total_stamps_desc:'Stamps registered since the program started.',an_total_rewards_desc:'Total rewards delivered.',rw_active:'Active',rw_stamps_desc:'Each visit, the customer gets 1 stamp. After completing <b>10 stamps</b>, they automatically earn:',rw_free_coffee:'1 free coffee',rw_auto_notif:'Automatic notification sent to customer',rw_points_desc:'Each euro spent = <b>10 points</b>. Customers redeem points for rewards in-store.',rw_soon:'Coming soon',cm_stamp_done:'Stamp registered for',qa_scan:'Scan customer QR',qa_add:'Add customer manually',qa_report:'View full report',qa_edit:'Edit card',act_stamp:'stamp',act_reward:'reward',act_signup:'signup',time_ago:'',time_week:'week(s) ago',time_day:'day(s) ago',time_hour:'hour(s) ago',time_min:'minute(s) ago',time_now:'now',dash_card_link:'Your card link',dash_copy:'Copy',dash_open_card:'Open card',dash_link_copied:'Link copied!',dash_card_link_hint:'Share this link with your customers so they can add the card to their wallet.'},
+    es:{exp_cust_csv:'Clientes (CSV)',exp_txn_csv:'Transacciones (CSV)',usage_warn_t:'Te acercas al límite de tu plan',usage_over_t:'Has superado el límite de tu plan',usage_d:'{used} de {cap} clientes en el plan {plan}. Las tarjetas siguen funcionando — no se ha bloqueado nada.',usage_btn:'Ver planes',usage_modal_t:'Cambiar de plan',usage_modal_d:'Habla con nosotros y nos encargamos del cambio. Tus datos y tarjetas se mantienen igual.',usage_modal_btn:'Contáctanos',nav_dashboard:'Panel',nav_customers:'Clientes',nav_scan:'Scan / Registrar',nav_analytics:'Análisis',nav_rewards:'Recompensas',nav_card:'Tarjeta & Marca',nav_settings:'Ajustes',login_welcome:'Bienvenido',login_sub:'Entra para gestionar tu programa.',login_btn:'Entrar →',login_forgot:'Olvidé mi contraseña',login_no_account:'¿No tienes cuenta?',login_create:'Crea una gratis',signup_title:'Crea tu cuenta',signup_btn:'Crear cuenta gratis →',dash_active:'Clientes activos',dash_retention:'Tasa de retención',dash_rewards:'Premios dados',dash_visits_week:'Visitas esta semana',dash_visits_chart:'Visitas por semana',dash_activity:'Actividad reciente',cust_title:'Clientes',cust_sub:'Gestiona y acompaña a tus clientes',cust_search:'Buscar por nombre o email...',cust_all:'Todos',cust_active:'Activos',cust_inactive:'Inactivos',cust_add:'+ Añadir',cust_add_short:'Añadir',cust_stamp:'+ Sello',cust_view:'Ver',an_title:'Análisis',an_export_cust:'Exportar clientes',an_export_txn:'Exportar transacciones',an_export_summary:'Exportar resumen',rw_edit:'Editar regla',rw_new:'+ Nueva recompensa',set_title:'Ajustes',set_save:'Guardar cambios',set_lang:'Idioma',redeem_title:'Canjear premio',redeem_btn:'Confirmar canje',redeem_cancel:'Cancelar',fp_title:'Recuperar contraseña',fp_btn:'Enviar enlace',fp_cancel:'Cancelar',dash_visits_day:'Visitas por día',dash_last_week:'Última semana',dash_week:'Semana',dash_segments:'Segmentos',dash_clients_count:'clientes',dash_see_more:'Ver todo',dash_quick:'Acciones rápidas',dash_scan_qr:'Leer QR de cliente',dash_add_manual:'+ Añadir cliente manualmente',dash_stamp:'sello',dash_ago:'hace',dash_weeks:'semana(s)',dash_visits_month:'Visitas (mes)',day_mon:'Lun',day_tue:'Mar',day_wed:'Mié',day_thu:'Jue',day_fri:'Vie',day_sat:'Sáb',day_sun:'Dom',dash_sub:'Gestiona y acompaña a tus clientes',dash_register:'+ Registrar visita',an_sub:'Insights detallados sobre tu programa',an_avg_visits:'Visitas medias / cliente',an_freq:'Frecuencia media',an_completion:'Tasa conclusión tarjeta',an_recurring:'Clientes recurrentes',an_monthly:'Actividad mensual',an_monthly_sub:'Sellos en los últimos 6 meses',an_insights:'Insights',an_total_stamps:'Total de sellos',an_total_rewards:'Premios canjeados',rw_stamps_title:'Tarjeta de sellos',rw_points_title:'Sistema de puntos',set_plan:'Plan actual',scan_start:'Iniciar cámara',scan_search:'Buscar cliente por nombre...',cust_register:'+ Registrar visita',cm_updated:'Actualizado ahora',rw_stamps_sub:'Mecánica activa',pm_dashboard:'Visión general de tu programa',pm_scan:'Lee el QR del cliente o registra una visita manual',pm_rewards:'Configura premios y reglas',pm_card:'Personaliza la tarjeta digital de tu marca',pm_settings:'Gestiona tu cuenta y preferencias',cust_none:'No se encontraron clientes.',an_best_day_txt:'es el día más fuerte',an_visits_happen:'de las visitas semanales ocurren el',an_inactive_txt:'clientes inactivos',an_inactive_desc:'Sin visitar recientemente. Considera una promoción de regreso.',an_almost_txt:'casi completos',an_almost_desc:'A 1-2 sellos de completar la tarjeta. Un empujón los convierte.',an_total_stamps_desc:'Sellos registrados desde el inicio del programa.',an_total_rewards_desc:'Total de recompensas entregadas.',rw_active:'Activo',rw_stamps_desc:'Cada visita, el cliente recibe 1 sello. Al completar <b>10 sellos</b>, gana automáticamente:',rw_free_coffee:'1 café gratis',rw_auto_notif:'Notificación automática enviada al cliente',rw_points_desc:'Cada euro gastado = <b>10 puntos</b>. Los clientes canjean puntos por recompensas en la tienda.',rw_soon:'Próximamente',cm_stamp_done:'Sello registrado para',qa_scan:'Leer QR de cliente',qa_add:'Añadir cliente manualmente',qa_report:'Ver informe completo',qa_edit:'Editar tarjeta',act_stamp:'sello',act_reward:'premio',act_signup:'registro',time_ago:'hace',time_week:'semana(s)',time_day:'día(s)',time_hour:'hora(s)',time_min:'minuto(s)',time_now:'ahora',dash_card_link:'Enlace de tu tarjeta',dash_copy:'Copiar',dash_open_card:'Abrir tarjeta',dash_link_copied:'¡Enlace copiado!',dash_card_link_hint:'Comparte este enlace con tus clientes para que añadan la tarjeta a su wallet.'},
+    fr:{exp_cust_csv:'Clients (CSV)',exp_txn_csv:'Transactions (CSV)',usage_warn_t:'Tu approches de la limite de ton plan',usage_over_t:'Tu as dépassé la limite de ton plan',usage_d:'{used} sur {cap} clients dans le plan {plan}. Les cartes fonctionnent toujours — rien n\'est bloqué.',usage_btn:'Voir les plans',usage_modal_t:'Changer de plan',usage_modal_d:'Parle-nous et on gère le changement. Tes données et cartes restent identiques.',usage_modal_btn:'Nous contacter',nav_dashboard:'Tableau de bord',nav_customers:'Clients',nav_scan:'Scan / Enregistrer',nav_analytics:'Analyses',nav_rewards:'Récompenses',nav_card:'Carte & Marque',nav_settings:'Paramètres',login_welcome:'Bienvenue',login_sub:'Connectez-vous pour gérer votre programme.',login_btn:'Se connecter →',login_forgot:'Mot de passe oublié',login_no_account:'Pas de compte ?',login_create:'Créez-en un',signup_title:'Créez votre compte',signup_btn:'Créer un compte →',dash_active:'Clients actifs',dash_retention:'Taux de rétention',dash_rewards:'Récompenses',dash_visits_week:'Visites cette semaine',dash_visits_chart:'Visites par semaine',dash_activity:'Activité récente',cust_title:'Clients',cust_sub:'Gérez vos clients enregistrés',cust_search:'Rechercher...',cust_all:'Tous',cust_active:'Actifs',cust_inactive:'Inactifs',cust_add:'+ Ajouter',cust_add_short:'Ajouter',cust_stamp:'+ Tampon',cust_view:'Voir',an_title:'Analyses',an_export_cust:'Exporter clients',an_export_txn:'Exporter transactions',an_export_summary:'Exporter résumé',rw_edit:'Modifier',rw_new:'+ Nouvelle récompense',set_title:'Paramètres',set_save:'Enregistrer',set_lang:'Langue',redeem_title:'Échanger',redeem_btn:'Confirmer',redeem_cancel:'Annuler',fp_title:'Réinitialiser',fp_btn:'Envoyer',fp_cancel:'Annuler',dash_visits_day:'Visites par jour',dash_last_week:'Semaine dernière',dash_week:'Semaine',dash_segments:'Segments',dash_clients_count:'clients',dash_see_more:'Voir tout',dash_quick:'Actions rapides',dash_scan_qr:'Scanner QR client',dash_add_manual:'+ Ajouter client manuellement',dash_stamp:'tampon',dash_ago:'il y a',dash_weeks:'semaine(s)',dash_visits_month:'Visites (mois)',day_mon:'Lun',day_tue:'Mar',day_wed:'Mer',day_thu:'Jeu',day_fri:'Ven',day_sat:'Sam',day_sun:'Dim',dash_sub:'Gérez vos clients enregistrés',dash_register:'+ Enregistrer visite',an_sub:'Analyses détaillées de votre programme',an_avg_visits:'Visites moy. / client',an_freq:'Fréquence moyenne',an_completion:'Taux complétion carte',an_recurring:'Clients récurrents',an_monthly:'Activité mensuelle',an_monthly_sub:'Tampons des 6 derniers mois',an_insights:'Insights',an_total_stamps:'Total tampons',an_total_rewards:'Récompenses échangées',rw_stamps_title:'Carte de tampons',rw_points_title:'Système de points',set_plan:'Plan actuel',scan_start:'Démarrer la caméra',scan_search:'Rechercher un client...',cust_register:'+ Enregistrer visite',cm_updated:'Mis à jour',rw_stamps_sub:'Mécanique active',pm_dashboard:'Vue globale de votre programme',pm_scan:'Scannez le QR du client ou enregistrez une visite',pm_rewards:'Configurez récompenses et règles',pm_card:'Personnalisez la carte numérique de votre marque',pm_settings:'Gérez votre compte et préférences',cust_none:'Aucun client trouvé.',an_best_day_txt:'est le jour le plus fort',an_visits_happen:'des visites hebdomadaires ont lieu le',an_inactive_txt:'clients inactifs',an_inactive_desc:'Pas de visite récente. Envisagez une promotion de retour.',an_almost_txt:'presque complets',an_almost_desc:'À 1-2 tampons de compléter la carte. Un coup de pouce les convertit.',an_total_stamps_desc:'Tampons enregistrés depuis le début du programme.',an_total_rewards_desc:'Total des récompenses remises.',rw_active:'Actif',rw_stamps_desc:'À chaque visite, le client reçoit 1 tampon. En complétant <b>10 tampons</b>, il gagne automatiquement :',rw_free_coffee:'1 café gratuit',rw_auto_notif:'Notification automatique envoyée au client',rw_points_desc:'Chaque euro dépensé = <b>10 points</b>. Les clients échangent des points contre des récompenses.',rw_soon:'Bientôt',cm_stamp_done:'Tampon enregistré pour',qa_scan:'Scanner QR client',qa_add:'Ajouter client manuellement',qa_report:'Voir rapport complet',qa_edit:'Modifier carte',act_stamp:'tampon',act_reward:'récompense',act_signup:'inscription',time_ago:'il y a',time_week:'semaine(s)',time_day:'jour(s)',time_hour:'heure(s)',time_min:'minute(s)',time_now:'maintenant',dash_card_link:'Lien de ta carte',dash_copy:'Copier',dash_open_card:'Ouvrir la carte',dash_link_copied:'Lien copié !',dash_card_link_hint:'Partage ce lien avec tes clients pour qu\'ils ajoutent la carte à leur wallet.'},
+    de:{exp_cust_csv:'Kunden (CSV)',exp_txn_csv:'Transaktionen (CSV)',usage_warn_t:'Du näherst dich deinem Plan-Limit',usage_over_t:'Du hast dein Plan-Limit überschritten',usage_d:'{used} von {cap} Kunden im {plan}-Plan. Die Karten funktionieren weiter — nichts wurde blockiert.',usage_btn:'Pläne ansehen',usage_modal_t:'Plan wechseln',usage_modal_d:'Sprich mit uns und wir kümmern uns um den Wechsel. Deine Daten und Karten bleiben unverändert.',usage_modal_btn:'Kontaktiere uns',nav_dashboard:'Dashboard',nav_customers:'Kunden',nav_scan:'Scan / Registrieren',nav_analytics:'Analysen',nav_rewards:'Prämien',nav_card:'Karte & Branding',nav_settings:'Einstellungen',login_welcome:'Willkommen zurück',login_sub:'Melde dich an, um dein Programm zu verwalten.',login_btn:'Anmelden →',login_forgot:'Passwort vergessen',login_no_account:'Noch kein Konto?',login_create:'Erstelle eines',signup_title:'Konto erstellen',signup_btn:'Kostenloses Konto →',dash_active:'Aktive Kunden',dash_retention:'Retentionsrate',dash_rewards:'Prämien vergeben',dash_visits_week:'Besuche diese Woche',dash_visits_chart:'Besuche pro Woche',dash_activity:'Letzte Aktivität',cust_title:'Kunden',cust_sub:'Verwalte deine Kunden',cust_search:'Nach Name suchen...',cust_all:'Alle',cust_active:'Aktiv',cust_inactive:'Inaktiv',cust_add:'+ Hinzufügen',cust_add_short:'Hinzufügen',cust_stamp:'+ Stempel',cust_view:'Ansehen',an_title:'Analysen',an_export_cust:'Kunden exportieren',an_export_txn:'Transaktionen exportieren',an_export_summary:'Zusammenfassung',rw_edit:'Bearbeiten',rw_new:'+ Neue Prämie',set_title:'Einstellungen',set_save:'Speichern',set_lang:'Sprache',redeem_title:'Prämie einlösen',redeem_btn:'Bestätigen',redeem_cancel:'Abbrechen',fp_title:'Passwort zurücksetzen',fp_btn:'Link senden',fp_cancel:'Abbrechen',dash_visits_day:'Besuche pro Tag',dash_last_week:'Letzte Woche',dash_week:'Woche',dash_segments:'Segmente',dash_clients_count:'Kunden',dash_see_more:'Alle ansehen',dash_quick:'Schnellaktionen',dash_scan_qr:'Kunden-QR scannen',dash_add_manual:'+ Kunde manuell hinzufügen',dash_stamp:'Stempel',dash_ago:'vor',dash_weeks:'Woche(n)',dash_visits_month:'Besuche (Monat)',day_mon:'Mo',day_tue:'Di',day_wed:'Mi',day_thu:'Do',day_fri:'Fr',day_sat:'Sa',day_sun:'So',dash_sub:'Verwalte deine Kunden',dash_register:'+ Besuch registrieren',an_sub:'Detaillierte Einblicke in dein Programm',an_avg_visits:'Durchschn. Besuche / Kunde',an_freq:'Durchschn. Frequenz',an_completion:'Kartenabschlussrate',an_recurring:'Wiederkehrende Kunden',an_monthly:'Monatliche Aktivität',an_monthly_sub:'Stempel der letzten 6 Monate',an_insights:'Insights',an_total_stamps:'Stempel gesamt',an_total_rewards:'Eingelöste Prämien',rw_stamps_title:'Stempelkarte',rw_points_title:'Punktesystem',set_plan:'Aktueller Plan',scan_start:'Kamera starten',scan_search:'Kunde nach Name suchen...',cust_register:'+ Besuch registrieren',cm_updated:'Gerade aktualisiert',rw_stamps_sub:'Aktive Mechanik',pm_dashboard:'Überblick über dein Treueprogramm',pm_scan:'Scanne den Kunden-QR oder registriere einen Besuch',pm_rewards:'Prämien und Regeln einrichten',pm_card:'Personalisiere die digitale Markenkarte',pm_settings:'Verwalte dein Konto und Einstellungen',cust_none:'Keine Kunden gefunden.',an_best_day_txt:'ist der stärkste Tag',an_visits_happen:'der wöchentlichen Besuche finden statt am',an_inactive_txt:'inaktive Kunden',an_inactive_desc:'Kürzlich nicht besucht. Erwäge eine Rückkehr-Aktion.',an_almost_txt:'fast vollständig',an_almost_desc:'1-2 Stempel vom Abschluss entfernt. Ein Anstoß überzeugt sie.',an_total_stamps_desc:'Stempel seit Programmbeginn registriert.',an_total_rewards_desc:'Insgesamt vergebene Prämien.',rw_active:'Aktiv',rw_stamps_desc:'Bei jedem Besuch erhält der Kunde 1 Stempel. Nach <b>10 Stempeln</b> gewinnt er automatisch:',rw_free_coffee:'1 Gratis-Kaffee',rw_auto_notif:'Automatische Benachrichtigung an Kunden gesendet',rw_points_desc:'Jeder ausgegebene Euro = <b>10 Punkte</b>. Kunden lösen Punkte gegen Prämien ein.',rw_soon:'Demnächst',cm_stamp_done:'Stempel registriert für',qa_scan:'Kunden-QR scannen',qa_add:'Kunde manuell hinzufügen',qa_report:'Vollständigen Bericht',qa_edit:'Karte bearbeiten',act_stamp:'Stempel',act_reward:'Prämie',act_signup:'Anmeldung',time_ago:'vor',time_week:'Woche(n)',time_day:'Tag(en)',time_hour:'Stunde(n)',time_min:'Minute(n)',time_now:'jetzt',dash_card_link:'Link zu deiner Karte',dash_copy:'Kopieren',dash_open_card:'Karte öffnen',dash_link_copied:'Link kopiert!',dash_card_link_hint:'Teile diesen Link mit deinen Kunden, damit sie die Karte zur Wallet hinzufügen können.'}
+  };
+  function t(k){return (i18n[currentLang]||{})[k]||i18n.pt[k]||k}
+  function setLang(lang){
+    currentLang=lang;localStorage.setItem(LANG_KEY,lang);
+    // Update static [data-i18n] elements
+    document.querySelectorAll('[data-i18n]').forEach(function(el){
+      var k=el.getAttribute('data-i18n');
+      if(el.tagName==='INPUT')el.placeholder=t(k);
+      else el.textContent=t(k);
+    });
+    // Update language button styles
+    document.querySelectorAll('.lang-flag').forEach(function(b){
+      b.style.background=b.dataset.lang===lang?'var(--accBg)':'transparent';
+      b.style.borderColor=b.dataset.lang===lang?'var(--acc)':'var(--bg3)';
+    });
+    // Update sidebar text nodes
+    var sbKeys=['nav_dashboard','nav_customers','nav_scan','nav_analytics','nav_rewards','nav_settings'];
+    document.querySelectorAll('.sb-item').forEach(function(el,i){
+      if(i<sbKeys.length){var nodes=el.childNodes;for(var n=0;n<nodes.length;n++){if(nodes[n].nodeType===3&&nodes[n].textContent.trim()){nodes[n].textContent='\n        '+t(sbKeys[i])+'\n      ';break}}}
+    });
+    // Update current page title/sub
+    var pg=window._currentPage||'dashboard';
+    var meta=getPageMeta();
+    if(meta[pg]){
+      var pt=document.getElementById('page-title');if(pt)pt.textContent=meta[pg][0];
+      var ps=document.getElementById('page-sub');if(ps)ps.textContent=meta[pg][1];
+    }
+    // Re-render all dynamic pages
+    try{renderDashboard()}catch(e){}
+    try{renderCustomers()}catch(e){}
+    try{if(document.getElementById('page-analytics').innerHTML)renderAnalytics()}catch(e){}
+    try{if(document.getElementById('page-rewards').innerHTML)renderRewards()}catch(e){}
+    try{if(document.getElementById('page-settings').innerHTML)renderSettings()}catch(e){}
+    try{if(document.getElementById('page-scan').innerHTML)renderScan()}catch(e){}
+      }
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+
+<!-- ============ AUTH SCREEN ============ -->
+<div class="auth-wrap" id="auth">
+  <div class="auth-left">
+    <a href="https://loyalle.pt" class="auth-logo" style="text-decoration:none;display:inline-block;align-self:flex-start" title="Ir para loyalle.pt">loyalle<span>.</span></a>
+    <div class="auth-left-content">
+      <div class="auth-left-title">A tua marca na <em>Wallet</em> de cada cliente.</div>
+      <div class="auth-left-desc">Gere o teu programa de fidelização, vê quem volta e quando, e faz crescer o teu negócio com dados reais.</div>
+      <div class="auth-stats">
+        <div><div class="auth-stat-v">342</div><div class="auth-stat-l">Clientes ativos</div></div>
+        <div><div class="auth-stat-v">68%</div><div class="auth-stat-l">Retenção média</div></div>
+        <div><div class="auth-stat-v">1.2k</div><div class="auth-stat-l">Prémios dados</div></div>
+      </div>
+    </div>
+    <div class="auth-foot">© 2026 Loyalle. Plataforma de fidelização digital.</div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchAuth('login')">Entrar</button>
+        <button class="auth-tab" id="tab-signup" onclick="switchAuth('signup')">Criar conta</button>
+      </div>
+
+      <!-- Login -->
+      <div id="form-login">
+        <div class="auth-h" data-i18n="login_welcome">Bem-vindo de volta</div>
+        <div class="auth-sub" data-i18n="login_sub">Entra na tua conta para gerir o teu programa.</div>
+        <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="nome@negocio.pt"></div>
+        <div class="field"><label>Palavra-passe</label><div class="pw-wrap"><input type="password" id="login-pass" placeholder="••••••••"><button type="button" class="pw-eye" onclick="togglePw(this)" aria-label="Mostrar palavra-passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+        <button class="btn-primary" onclick="doLogin()">Entrar →</button>
+        <div class="auth-divider">ou</div>
+        <button class="btn-social" onclick="doLogin()">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continuar com Google
+        </button>
+        <div class="auth-alt">Ainda não tens conta? <a onclick="switchAuth('signup')">Cria uma grátis</a></div>
+        <div style="text-align:center;margin-top:6px"><a href="#" onclick="showForgotPassword();return false" style="font-size:13px;color:#C6993B;text-decoration:none" data-i18n="login_forgot">Esqueci a password</a></div>
+      </div>
+
+      <!-- Signup -->
+      <div id="form-signup" class="hidden">
+        <div class="auth-h">Cria a tua conta</div>
+        <div class="auth-sub">14 dias grátis no plano Starter. Sem cartão.</div>
+        <div class="field-row">
+          <div class="field"><label>Nome</label><input type="text" placeholder="O teu nome"></div>
+          <div class="field"><label>Negócio</label><input type="text" placeholder="Nome da loja"></div>
+        </div>
+        <div class="field"><label>Email</label><input type="email" placeholder="nome@negocio.pt"></div>
+        <div class="field"><label>Palavra-passe</label><div class="pw-wrap"><input type="password" placeholder="Mínimo 8 caracteres"><button type="button" class="pw-eye" onclick="togglePw(this)" aria-label="Mostrar palavra-passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+        <label style="display:block;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px">Escolhe o teu plano</label>
+        <div class="plan-pick">
+          <div class="plan-opt sel" onclick="pickPlan(this,'Starter')"><div class="plan-opt-n">Starter</div><div class="plan-opt-p">€35/mês</div></div>
+          <div class="plan-opt" onclick="pickPlan(this,'Pro')"><div class="plan-opt-n">Pro</div><div class="plan-opt-p">€69/mês</div></div>
+          <div class="plan-opt" onclick="pickPlan(this,'Business')"><div class="plan-opt-n">Business</div><div class="plan-opt-p">Custom</div></div>
+        </div>
+        <label style="display:flex;align-items:flex-start;gap:9px;margin:14px 0 4px;font-size:12.5px;color:var(--text2);line-height:1.5;cursor:pointer">
+          <input type="checkbox" id="signup-terms" style="margin-top:2px;width:15px;height:15px;flex-shrink:0;accent-color:var(--gold,#C6993B);cursor:pointer">
+          <span>Li e aceito os <a href="https://loyalle.pt/termos.html" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">Termos de Utilização</a> e a <a href="https://loyalle.pt/privacidade.html" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">Política de Privacidade</a>.</span>
+        </label>
+        <button class="btn-primary" onclick="doSignup()">Criar conta grátis →</button>
+        <div class="auth-alt">Já tens conta? <a onclick="switchAuth('login')">Entra aqui</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ BOAS-VINDAS PÓS-REGISTO ============ -->
+<div class="welcome" id="welcome">
+  <div class="welcome-box">
+    <div class="welcome-logo">loyalle<span>.</span></div>
+    <div class="welcome-title">Bem-vindo à Loyalle, <em id="welcome-name"></em></div>
+    <div class="welcome-sub">O teu programa de fidelização já está no ar. Três coisas para saberes antes de entrares:</div>
+    <div class="welcome-steps">
+      <div class="welcome-step">
+        <div class="welcome-step-num">1</div>
+        <div class="welcome-step-body">
+          <div class="welcome-step-title">O teu cartão já está online</div>
+          <div class="welcome-step-desc">Qualquer cliente pode aderir e adicionar o cartão à wallet através deste link:</div>
+          <div class="welcome-link-row">
+            <input id="welcome-link" readonly value="">
+            <button class="welcome-copy" onclick="copyWelcomeLink()">Copiar</button>
+          </div>
+        </div>
+      </div>
+      <div class="welcome-step">
+        <div class="welcome-step-num">2</div>
+        <div class="welcome-step-body">
+          <div class="welcome-step-title">Partilha-o com os teus clientes</div>
+          <div class="welcome-step-desc">Envia o link por WhatsApp ou redes sociais. No dashboard tens sempre o link à mão para copiar.</div>
+        </div>
+      </div>
+      <div class="welcome-step">
+        <div class="welcome-step-num">3</div>
+        <div class="welcome-step-body">
+          <div class="welcome-step-title">Dá o primeiro carimbo</div>
+          <div class="welcome-step-desc">Quando um cliente mostrar o QR do cartão dele, usa o <strong style="color:rgba(255,255,255,.8)">Scan / Registar</strong> no menu para carimbar a visita.</div>
+        </div>
+      </div>
+    </div>
+    <button class="welcome-cta" onclick="closeWelcome()">Ir para o dashboard →</button>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div class="app" id="app">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo">loyalle<span>.</span></div>
+    <div class="sb-biz">
+      <div class="sb-biz-logo" id="sb-biz-logo">—</div>
+      <div><div class="sb-biz-name" id="sb-biz-name">—</div><div class="sb-biz-plan" id="sb-plan">—</div></div>
+    </div>
+    <nav class="sb-nav">
+      <a class="sb-item active" onclick="nav('dashboard',this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a class="sb-item" onclick="nav('customers',this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Clientes <span class="sb-item-badge" id="cust-count">—</span>
+      </a>
+      <a class="sb-item" onclick="nav('scan',this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+        Scan / Registar
+      </a>
+      <a class="sb-item" onclick="nav('analytics',this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Análises
+      </a>
+      <div class="sb-section">Negócio</div>
+      <a class="sb-item" onclick="nav('rewards',this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Recompensas
+      </a>
+      <a class="sb-item" onclick="nav('settings',this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Definições
+      </a>
+    </nav>
+    <div class="sb-foot">
+      <div class="sb-user">
+        <div class="sb-avatar" id="sb-avatar">—</div>
+        <div><div class="sb-user-name" id="sb-user-name">—</div><div class="sb-user-email" id="sb-user-email">—</div></div>
+        <button class="sb-logout" onclick="logout()" title="Sair">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:14px">
+        <button class="btn-icon menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div>
+          <div class="topbar-title" id="page-title">Dashboard</div>
+          <div class="topbar-sub" id="page-sub">Visão geral do teu programa de fidelização</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="notif-dot"></span></button>
+        <button class="btn-acc" onclick="nav('scan',document.querySelectorAll('.sb-item')[2])">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Registar visita
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- pages injected here -->
+      <div class="page active" id="page-dashboard"></div>
+      <div class="page" id="page-customers"></div>
+      <div class="page" id="page-scan"></div>
+      <div class="page" id="page-analytics"></div>
+      <div class="page" id="page-rewards"></div>
+      <div class="page" id="page-settings"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><span class="toast-ic">✓</span><span id="toast-msg">Feito!</span></div>
+
+<script>
+/* =========================================================
+   LOYALLE PLATFORM — Frontend (estrutura pronta para backend)
+   ---------------------------------------------------------
+   Todas as chamadas de dados passam por API.* — substituir
+   essas funções por fetch() reais quando o backend existir.
+   ========================================================= */
+
+// ---------- API LAYER (ligado ao Supabase) ----------
+// Converte uma data ISO em texto relativo ("há 2h", "ontem"...)
+function timeAgo(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso), now = new Date();
+  const mins = Math.floor((now - d) / 60000);
+  if (mins < 2) return 'agora';
+  if (mins < 60) return 'há ' + mins + 'm';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return 'há ' + hrs + 'h';
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return 'ontem';
+  if (days < 7) return 'há ' + days + ' dias';
+  if (days < 30) return 'há ' + Math.floor(days/7) + ' semana(s)';
+  return 'há ' + Math.floor(days/30) + ' mês(es)';
+}
+// Traduz uma linha de cliente do Supabase para o formato dos ecrãs
+function mapCustomer(r) {
+  return {
+    id: r.id, name: r.name, email: r.email || '—', phone: r.phone || '—',
+    stamps: r.stamps, goal: r.goal, points: r.points, visits: r.visits,
+    lastVisit: timeAgo(r.last_visit), lastVisitRaw: r.last_visit || '1970-01-01', status: r.status,
+    joined: timeAgo(r.created_at), color: r.color || '#C6993B'
+  };
+}
+
+const API = {
+  // GET clientes do negócio atual
+  async getCustomers() {
+    const { data, error } = await db.from('customers')
+      .select('*').eq('business_id', currentBiz.id)
+      .order('last_visit', { ascending: false });
+    if (error) { console.error(error); return []; }
+    return data.map(mapCustomer);
+  },
+  // POST carimbo: cria transação (o trigger atualiza o cliente) e devolve o cliente atualizado
+  async addStamp(id) {
+    await db.from('transactions').insert({
+      business_id: currentBiz.id, customer_id: id, type: 'stamp', amount: 1
+    });
+    const { data } = await db.from('customers').select('*').eq('id', id).single();
+    return data ? mapCustomer(data) : null;
+  },
+  // POST novo cliente
+  async createCustomer(data) {
+    const colors = ['#C6993B','#2A6B3E','#2C5F8A','#8E44AD','#E67E22','#16A085'];
+    const { data: nc, error } = await db.from('customers').insert({
+      business_id: currentBiz.id, name: data.name, email: data.email,
+      phone: data.phone || null, stamps: 0, goal: currentBiz.stamp_goal || 10,
+      points: 0, visits: 0, status: 'active',
+      color: colors[Math.floor(Math.random()*colors.length)]
+    }).select().single();
+    if (error) { console.error(error); return null; }
+    await db.from('transactions').insert({
+      business_id: currentBiz.id, customer_id: nc.id, type: 'signup', amount: 0
+    });
+    return mapCustomer(nc);
+  },
+  // GET estatísticas calculadas a partir dos dados reais
+  async getStats() {
+    const { data: custs } = await db.from('customers')
+      .select('status, visits').eq('business_id', currentBiz.id);
+    const total = custs ? custs.length : 0;
+    const active = custs ? custs.filter(c => c.status === 'active' || c.status === 'vip').length : 0;
+    const retention = total ? Math.round((active / total) * 100) : 0;
+    const { count: rewardsGiven } = await db.from('transactions')
+      .select('*', { count: 'exact', head: true })
+      .eq('business_id', currentBiz.id).eq('type', 'reward');
+    const weekAgo = new Date(Date.now() - 7*864e5).toISOString();
+    const { count: visitsWeek } = await db.from('transactions')
+      .select('*', { count: 'exact', head: true })
+      .eq('business_id', currentBiz.id).eq('type', 'stamp').gte('created_at', weekAgo);
+    return {
+      activeCustomers: total, retention: retention,
+      rewardsGiven: rewardsGiven || 0, visitsWeek: visitsWeek || 0,
+      trendCustomers: await (async () => {
+        const lastWeek = new Date(Date.now() - 14*864e5).toISOString();
+        const thisWeek = new Date(Date.now() - 7*864e5).toISOString();
+        const { count: prev } = await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', currentBiz.id).lte('created_at', thisWeek).gte('created_at', lastWeek);
+        const { count: curr } = await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', currentBiz.id).gte('created_at', thisWeek);
+        return prev > 0 ? Math.round(((curr - prev) / prev) * 100) : curr > 0 ? 100 : 0;
+      })(), trendRetention: 0, trendRewards: 0, trendVisits: 0
+    };
+  },
+  // GET dados de visitas dos últimos 7 dias (para o gráfico)
+  async getWeekData() {
+    const labels = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const counts = [0,0,0,0,0,0,0];
+    const weekAgo = new Date(Date.now() - 7*864e5).toISOString();
+    const { data } = await db.from('transactions')
+      .select('created_at').eq('business_id', currentBiz.id)
+      .eq('type','stamp').gte('created_at', weekAgo);
+    (data || []).forEach(t => { counts[new Date(t.created_at).getDay()]++; });
+    const order = [1,2,3,4,5,6,0];
+    return order.map(i => ({ d: labels[i], v: counts[i] }));
+  },
+  // GET atividade recente
+  async getActivity() {
+    const { data } = await db.from('transactions')
+      .select('type, created_at, customers(name)')
+      .eq('business_id', currentBiz.id)
+      .order('created_at', { ascending: false }).limit(8);
+    const map = { stamp:{t:'g',i:'☕',x:'carimbo'}, reward:{t:'a',i:'🎁',x:'resgatou um prémio'}, signup:{t:'b',i:'➕',x:'adicionou o cartão'}, points:{t:'g',i:'⭐',x:'ganhou pontos'} };
+    return (data || []).map(t => {
+      const m = map[t.type] || map.stamp;
+      const nm = t.customers ? t.customers.name : 'Cliente';
+      const txt = t.type === 'stamp' ? `<b>${nm}</b> — ${m.x}` : `<b>${nm}</b> ${m.x}`;
+      return { type:m.t, icon:m.i, txt, time: timeAgo(t.created_at) };
+    });
+  }
+};
+
+// ---------- SEED removido — dados agora vêm do Supabase ----------
+const SEED = { customers: [] };  // mantido vazio por compatibilidade
+
+// ---------- AUTH ----------
+function switchAuth(mode) {
+  document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
+  document.getElementById('form-login').classList.toggle('hidden', mode !== 'login');
+  document.getElementById('form-signup').classList.toggle('hidden', mode !== 'signup');
+}
+let chosenPlan = 'Starter';
+function pickPlan(el, plan) {
+  document.querySelectorAll('.plan-opt').forEach(o => o.classList.remove('sel'));
+  el.classList.add('sel');
+  chosenPlan = plan;
+}
+
+function setPlatformUser(biz) {
+  // Sidebar inferior — utilizador
+  const n = document.getElementById('sb-user-name');
+  const e = document.getElementById('sb-user-email');
+  const a = document.getElementById('sb-avatar');
+  if (n) n.textContent = biz.owner_name || biz.name || '—';
+  if (e) e.textContent = biz.email || '—';
+  if (a) a.textContent = (biz.owner_name || biz.name || '?')[0].toUpperCase();
+  // Sidebar superior — negócio
+  const bn = document.getElementById('sb-biz-name');
+  const bl = document.getElementById('sb-biz-logo');
+  if (bn) bn.textContent = biz.name || '—';
+  if (bl) bl.textContent = (biz.logo_initial || biz.name || '?')[0].toUpperCase();
+}
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const btn = event ? event.target : null;
+  if (btn) { btn.disabled = true; btn.textContent = 'A entrar...'; }
+  // 1. Autenticar no Supabase
+  const { data: auth, error } = await db.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    toast('Email ou palavra-passe incorretos.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Entrar →'; }
+    return;
+  }
+  // 2. Carregar o negócio deste utilizador
+  const { data: biz } = await db.from('businesses')
+    .select('*').eq('auth_user_id', auth.user.id).single();
+  if (!biz) {
+    toast('Conta sem negócio associado. Contacta o suporte.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Entrar →'; }
+    return;
+  }
+  currentBiz = biz;
+  chosenPlan = biz.plan;
+  document.getElementById('sb-plan').textContent = 'Plano ' + biz.plan;
+  document.getElementById('auth').style.display = 'none';
+  document.getElementById('app').classList.add('active');
+  setPlatformUser(biz);
+  await renderAll();
+  if (btn) { btn.disabled = false; btn.textContent = 'Entrar →'; }
+}
+
+var PW_EYE_OPEN = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+var PW_EYE_OFF  = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+function togglePw(btn) {
+  var inp = btn.parentElement.querySelector('input');
+  if (!inp) return;
+  var show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.innerHTML = show ? PW_EYE_OFF : PW_EYE_OPEN;
+  btn.setAttribute('aria-label', show ? 'Esconder palavra-passe' : 'Mostrar palavra-passe');
+}
+
+function showWelcome(biz) {
+  var first = (biz.owner_name || '').trim().split(' ')[0] || biz.name;
+  document.getElementById('welcome-name').textContent = first;
+  var linkEl = document.getElementById('welcome-link');
+  var step1 = linkEl.closest('.welcome-step');
+  if (biz.slug) {
+    linkEl.value = 'https://loyalle.pt/c/' + biz.slug + '/';
+    if (step1) step1.style.display = '';
+  } else if (step1) {
+    step1.style.display = 'none'; // sem slug ainda — não mostrar link vazio
+  }
+  document.getElementById('welcome').classList.add('active');
+}
+function closeWelcome() {
+  document.getElementById('welcome').classList.remove('active');
+}
+function copyWelcomeLink() {
+  var el = document.getElementById('welcome-link');
+  var done = function(){ toast('Link copiado!'); };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(el.value).then(done).catch(function(){ el.select(); document.execCommand('copy'); done(); });
+  } else { el.select(); document.execCommand('copy'); done(); }
+}
+
+async function doSignup() {
+  const inputs = document.querySelectorAll('#form-signup input');
+  const name = inputs[0].value.trim();
+  const bizName = inputs[1].value.trim();
+  const email = inputs[2].value.trim();
+  const pass = inputs[3].value;
+  if (!name || !bizName || !email || pass.length < 8) {
+    toast('Preenche todos os campos (palavra-passe mín. 8 caracteres).');
+    return;
+  }
+  var termsBox = document.getElementById('signup-terms');
+  if (!termsBox || !termsBox.checked) {
+    toast('Para criares conta, precisas de aceitar os Termos e a Política de Privacidade.');
+    return;
+  }
+  const btn = event ? event.target : null;
+  if (btn) { btn.disabled = true; btn.textContent = 'A criar conta...'; }
+  // 1. Criar conta de autenticação
+  const { data: auth, error } = await db.auth.signUp({ email, password: pass });
+  if (error) {
+    toast(error.message.includes('registered') ? 'Este email já tem conta.' : 'Erro ao criar conta.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Criar conta grátis →'; }
+    return;
+  }
+  // 2. Criar o negócio ligado a essa conta
+  const { data: biz, error: bizErr } = await db.from('businesses').insert({
+    auth_user_id: auth.user.id, name: bizName, owner_name: name, email: email,
+    plan: chosenPlan, status: 'trial', mechanic: 'Carimbos', stamp_goal: 10,
+    reward_text: 'Um café grátis', logo_initial: bizName[0].toUpperCase()
+  }).select().single();
+  if (bizErr) {
+    toast('Erro ao criar o negócio.'); console.error(bizErr);
+    if (btn) { btn.disabled = false; btn.textContent = 'Criar conta grátis →'; }
+    return;
+  }
+  currentBiz = biz;
+  // O slug é gerado na base de dados; se não veio no insert, buscar de novo
+  if (!currentBiz.slug) {
+    var ref = await db.from('businesses').select('*').eq('id', biz.id).single();
+    if (ref.data) currentBiz = ref.data;
+  }
+  // Mostrar as boas-vindas PRIMEIRO (cobre tudo) e só depois montar a app por trás
+  document.getElementById('auth').style.display = 'none';
+  showWelcome(currentBiz);
+  document.getElementById('sb-plan').textContent = 'Plano ' + currentBiz.plan;
+  document.getElementById('app').classList.add('active');
+  setPlatformUser(currentBiz);
+  await renderAll();
+}
+
+async function logout() {
+  await db.auth.signOut();
+  currentBiz = null;
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('auth').style.display = 'grid';
+}
+
+// ---------- NAV ----------
+function getPageMeta() {
+  return {
+    dashboard: [t('nav_dashboard'), t('pm_dashboard')],
+    customers: [t('cust_title'), t('cust_sub')],
+    scan: [t('nav_scan'), t('pm_scan')],
+    analytics: [t('an_title'), t('an_sub')],
+    rewards: [t('nav_rewards'), t('pm_rewards')],
+        settings: [t('set_title'), t('pm_settings')]
+  };
+}
+var PAGE_META = getPageMeta();
+function nav(page, el) {
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  var meta = getPageMeta();
+  document.getElementById('page-title').textContent = meta[page][0];
+  document.getElementById('page-sub').textContent = meta[page][1];
+  window._currentPage = page;
+  document.getElementById('sidebar').classList.remove('open');
+  if (page === 'scan') initScanner();
+  else stopScanner();
+}
+
+// ---------- TOAST ----------
+function toast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ---------- MODAL ----------
+function openModal(html) {
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+document.getElementById('modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+
+// ---------- RENDER ALL ----------
+async function renderAll() {
+  await renderDashboard();
+  setLang(currentLang);
+  await renderCustomers();
+  renderScan();
+  renderAnalytics();
+  renderRewards();
+  renderSettings();
+}
+
+// ---------- DASHBOARD ----------
+async function renderDashboard() {
+  const cardLink = getCardLink();
+  const s = await API.getStats();
+  const weekData = await API.getWeekData();
+  const activity = await API.getActivity();
+  const maxV = Math.max(...weekData.map(d => d.v), 1);
+  const bars = weekData.map((d, i) => {
+    const h = Math.round((d.v / maxV) * 100);
+    const hi = d.v === maxV && d.v > 0 ? 'hi' : '';
+    return `<div class="chart-col"><div class="chart-bar ${hi}" style="height:${h}%"><span class="chart-val">${d.v}</span></div><span class="chart-lbl">${d.d}</span></div>`;
+  }).join('');
+
+  // Segmentos calculados a partir dos clientes reais
+  const allCust = await API.getCustomers();
+  const segCounts = { vip:0, active:0, risk:0, inactive:0 };
+  allCust.forEach(c => {
+    if (c.status === 'vip') segCounts.vip++;
+    else if (c.status === 'active') segCounts.active++;
+    else segCounts.inactive++;
+  });
+  const segments = [
+    { label: 'VIP', value: segCounts.vip, color: '#C6993B' },
+    { label: t('cust_active'), value: segCounts.active, color: '#2A6B3E' },
+    { label: t('cust_inactive'), value: segCounts.inactive, color: '#C0392B' }
+  ].filter(s => s.value > 0);
+
+  const total = segments.reduce((a, b) => a + b.value, 0) || 1;
+  let offset = 0;
+  const donutSegs = segments.map(seg => {
+    const pct = (seg.value / total) * 100;
+    const dash = `${pct} ${100 - pct}`;
+    const circle = `<circle r="15.915" cx="18" cy="18" fill="transparent" stroke="${seg.color}" stroke-width="5" stroke-dasharray="${dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 18 18)"/>`;
+    offset += pct;
+    return circle;
+  }).join('');
+  const legend = segments.map(seg =>
+    `<div class="legend-item"><span class="legend-dot" style="background:${seg.color}"></span>${seg.label}<span class="legend-val">${seg.value}</span></div>`
+  ).join('');
+
+  const acts = activity.map(a =>
+    `<div class="act-item"><div class="act-dot ${a.type}">${a.icon}</div><div class="act-txt">${a.txt}</div><div class="act-time">${a.time}</div></div>`
+  ).join('');
+
+  // ---- Uso do plano ----
+  var planLimits = { Starter: 500, Pro: 5000, Business: 1000000 };
+  var planName = (currentBiz && currentBiz.plan) ? currentBiz.plan : 'Starter';
+  var planCap = planLimits[planName] || 500;
+  var usedRes = await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', currentBiz.id);
+  var used = usedRes.count || 0;
+  var pct = planCap > 0 ? Math.round((used / planCap) * 100) : 0;
+  var usageHTML = '';
+  if (planName !== 'Business' && pct >= 80) {
+    var over = used >= planCap;
+    usageHTML =
+      '<div class="usage-bar ' + (over ? 'over' : 'warn') + '">' +
+        '<div class="usage-ic">' + (over ? '\u26A0\uFE0F' : '\uD83D\uDCC8') + '</div>' +
+        '<div class="usage-body">' +
+          '<div class="usage-t">' + (over ? t('usage_over_t') : t('usage_warn_t')) + '</div>' +
+          '<div class="usage-d">' + t('usage_d')
+              .replace('{used}', used.toLocaleString('pt-PT'))
+              .replace('{cap}', planCap.toLocaleString('pt-PT'))
+              .replace('{plan}', planName) + '</div>' +
+          '<div class="usage-track"><div class="usage-fill" style="width:' + Math.min(pct, 100) + '%"></div></div>' +
+        '</div>' +
+        '<button class="usage-btn" onclick="openUpgrade()">' + t('usage_btn') + '</button>' +
+      '</div>';
+  }
+
+  document.getElementById('page-dashboard').innerHTML = usageHTML + `
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic gold">👥</div><div class="kpi-trend up">↑ ${s.trendCustomers}%</div></div><div class="kpi-v">${s.activeCustomers}</div><div class="kpi-l">${t('dash_active')}</div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic green">🔄</div><div class="kpi-trend up">↑ ${s.trendRetention}%</div></div><div class="kpi-v">${s.retention}%</div><div class="kpi-l">${t('dash_retention')}</div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic blue">🎁</div><div class="kpi-trend up">↑ ${s.trendRewards}%</div></div><div class="kpi-v">${s.rewardsGiven}</div><div class="kpi-l">${t('dash_rewards')}</div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic dark">📈</div><div class="kpi-trend up">↑ ${s.trendVisits}%</div></div><div class="kpi-v">${s.visitsWeek.toLocaleString('pt-PT')}</div><div class="kpi-l">${t('dash_visits_month')}</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">${t('dash_visits_day')}</div><div class="card-sub">${t('dash_last_week')}</div></div><button class="filter-chip">${t('dash_week')} ▾</button></div>
+        <div class="chart-bars">${bars}</div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">${t('dash_segments')}</div><div class="card-sub">${total} ${t('dash_clients_count')}</div></div></div>
+        <div class="donut-wrap">
+          <svg class="donut" viewBox="0 0 36 36">
+            <rect x="0" y="0" width="36" height="36" fill="#fff" rx="0"/>
+            <circle r="15.915" cx="18" cy="18" fill="transparent" stroke="#f0ede8" stroke-width="5" stroke-dasharray="100 0" transform="rotate(-90 18 18)"/>
+            ${donutSegs}
+            <circle cx="18" cy="18" r="13" fill="#fff"/>
+            <text x="18" y="17" text-anchor="middle" style="font-family:var(--fh);font-size:7px;font-weight:800;fill:var(--dark)">${total}</text>
+            <text x="18" y="23" text-anchor="middle" style="font-size:3px;fill:var(--text3)">${t('dash_clients_count')}</text>
+          </svg>
+          <div class="legend">${legend}</div>
+        </div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h"><div class="card-title">${t('dash_activity')}</div><button class="filter-chip" onclick="nav('customers',document.querySelectorAll('.sb-item')[1])">${t('dash_see_more')}</button></div>
+        ${acts}
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-title">${t('dash_quick')}</div></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button class="btn-dark" style="justify-content:flex-start" onclick="nav('scan',document.querySelectorAll('.sb-item')[2])">📷 ${t('qa_scan')}</button>
+          <button class="btn-ghost" style="text-align:left;justify-content:flex-start;display:flex;gap:8px" onclick="openAddCustomer()">➕ ${t('qa_add')}</button>
+          <button class="btn-ghost" style="text-align:left;justify-content:flex-start;display:flex;gap:8px" onclick="nav('analytics',document.querySelectorAll('.sb-item')[3])">📊 ${t('qa_report')}</button>
+          </div>
+        <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--bg3)">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">${t('dash_card_link')}</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="card-link-input" readonly value="${cardLink}" style="flex:1;min-width:0;padding:10px 12px;border:1px solid var(--bg3);border-radius:9px;font-size:13px;color:var(--text2);background:var(--bg2);overflow:hidden;text-overflow:ellipsis">
+            <button class="btn-dark" style="padding:10px 14px;flex-shrink:0" onclick="copyCardLink()">${t('dash_copy')}</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn-ghost" style="display:flex;gap:6px;justify-content:center" onclick="window.open('${cardLink}','_blank')">🔗 ${t('dash_open_card')}</button>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.4">${t('dash_card_link_hint')}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// Link público do cartão do negócio autenticado
+function getCardLink() {
+  return 'https://loyalle.pt/c/' + (currentBiz && currentBiz.slug ? currentBiz.slug : '') + '/';
+}
+function copyCardLink() {
+  const url = getCardLink();
+  const done = () => toast(t('dash_link_copied'));
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(url).then(done).catch(fallbackCopy);
+  } else fallbackCopy();
+  function fallbackCopy() {
+    const el = document.getElementById('card-link-input');
+    if (el) { el.select(); el.setSelectionRange(0, 99999); }
+    try { document.execCommand('copy'); done(); } catch (e) { toast(url); }
+  }
+}
+
+// ---------- CUSTOMERS ----------
+let custFilter = 'all', custSearch = '';
+let custSortField = 'name', custSortDir = 'asc';
+function toggleSort(field) {
+  if (custSortField === field) {
+    custSortDir = custSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    custSortField = field;
+    custSortDir = field === 'name' ? 'asc' : 'desc'; // nomes asc por defeito, números desc
+  }
+  renderCustomers();
+}
+function sortCustomers(list) {
+  const statusOrder = { vip: 1, active: 2, inactive: 3 };
+  return [...list].sort((a, b) => {
+    let va, vb;
+    switch (custSortField) {
+      case 'name': va = a.name.toLowerCase(); vb = b.name.toLowerCase(); break;
+      case 'stamps': va = a.stamps; vb = b.stamps; break;
+      case 'points': va = a.points; vb = b.points; break;
+      case 'visits': va = a.visits; vb = b.visits; break;
+      case 'lastVisit': va = new Date(a.lastVisitRaw).getTime(); vb = new Date(b.lastVisitRaw).getTime(); break;
+      case 'status': va = statusOrder[a.status] || 9; vb = statusOrder[b.status] || 9; break;
+      default: va = a.name; vb = b.name;
+    }
+    if (va < vb) return custSortDir === 'asc' ? -1 : 1;
+    if (va > vb) return custSortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+}
+async function renderCustomers() {
+  const all = await API.getCustomers();
+  custCache = all;  // guardar para o scanner e outras vistas
+  { const el = document.getElementById('cust-count'); if (el) el.textContent = all.length; }
+  let list = all;
+  if (custFilter !== 'all') list = list.filter(c => c.status === custFilter);
+  if (custSearch) list = list.filter(c => c.name.toLowerCase().includes(custSearch) || (c.email||'').toLowerCase().includes(custSearch));
+  list = sortCustomers(list);
+
+  const rows = list.map(c => {
+    const pct = Math.round((c.stamps / c.goal) * 100);
+    const initials = c.name.split(' ').map(n => n[0]).slice(0, 2).join('');
+    const statusTag = c.status === 'vip' ? '<span class="tag vip">★ VIP</span>'
+      : c.status === 'active' ? '<span class="tag active">'+t('cust_active')+'</span>'
+      : '<span class="tag inactive">'+t('cust_inactive')+'</span>';
+    return `<tr>
+      <td><div class="cust-cell"><div class="cust-avatar" style="background:${c.color}">${initials}</div><div><div class="cust-name">${c.name}</div><div class="cust-email">${c.email}</div></div></div></td>
+      <td><div class="progress-mini"><div class="progress-mini-fill" style="width:${pct}%"></div></div><span style="font-size:13px;font-weight:600">${c.stamps}/${c.goal}</span></td>
+      <td style="font-family:var(--fh);font-weight:700">${c.points}</td>
+      <td>${c.visits}</td>
+      <td style="color:var(--text3);font-size:13px">${c.lastVisit}</td>
+      <td>${statusTag}</td>
+      <td style="white-space:nowrap"><button class="row-action" onclick="openCustomerDetail('${c.id}')">${t('cust_view')}</button> <button class="row-action" onclick="quickStamp('${c.id}')">${t('cust_stamp')}</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('page-customers').innerHTML = `
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <div class="search-box"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input type="text" placeholder="${t('cust_search')}" oninput="custSearch=this.value.toLowerCase();renderCustomers()" value="${custSearch}"></div>
+        <button class="filter-chip ${custFilter==='all'?'active':''}" onclick="custFilter='all';renderCustomers()">${t('cust_all')}</button>
+        <button class="filter-chip ${custFilter==='vip'?'active':''}" onclick="custFilter='vip';renderCustomers()">VIP</button>
+        <button class="filter-chip ${custFilter==='active'?'active':''}" onclick="custFilter='active';renderCustomers()">${t('cust_active')}</button>
+        <button class="filter-chip ${custFilter==='inactive'?'active':''}" onclick="custFilter='inactive';renderCustomers()">${t('cust_inactive')}</button>
+        <button class="filter-chip" onclick="exportCustomers('csv')" title="${t('exp_cust_csv')}">\u2193 ${t('exp_cust_csv')}</button>
+        <button class="filter-chip" onclick="exportTransactions('csv')" title="${t('exp_txn_csv')}">\u2193 ${t('exp_txn_csv')}</button>
+        <button class="btn-acc" onclick="openAddCustomer()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>${t('cust_add_short')}</button>
+      </div>
+      <table>
+        <thead><tr><th class="sortable" onclick="toggleSort('name')">${t('cust_name')} <span class="sort-arrow">${custSortField==='name'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('stamps')">${t('cust_progress')} <span class="sort-arrow">${custSortField==='stamps'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('points')">${t('cust_points')} <span class="sort-arrow">${custSortField==='points'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('visits')">${t('cust_visits')} <span class="sort-arrow">${custSortField==='visits'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('lastVisit')">${t('cust_last')} <span class="sort-arrow">${custSortField==='lastVisit'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('status')">${t('cust_status')} <span class="sort-arrow">${custSortField==='status'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th></th></tr></thead>
+        <tbody>${rows || ('<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:40px">' + t('cust_none') + '</td></tr>')}</tbody>
+      </table>
+    </div>`;
+}
+async function quickStamp(id) {
+  const c = await API.addStamp(id);
+  await renderCustomers();
+  await renderDashboard();
+  if (c) toast(t('cm_stamp_done') + ' ' + c.name.split(' ')[0] + ' (' + c.stamps + '/' + c.goal + ')');
+}
+
+// ---------- DETALHE DO CLIENTE + WALLETS ----------
+async function openCustomerDetail(id) {
+  const c = custCache.find(x => x.id === id);
+  if (!c) return;
+  const slug = currentBiz.slug || '';
+  const pct = Math.round((c.stamps / c.goal) * 100);
+  const initials = c.name.split(' ').map(n => n[0]).slice(0, 2).join('');
+
+  // URLs dos passes de wallet (apontam para o backend)
+  const appleUrl = `${WALLET_BACKEND_URL}/${slug}/apple/${c.id}`;
+  const googleUrl = `${WALLET_BACKEND_URL}/${slug}/google/${c.id}`;
+
+  openModal(`
+    <div style="text-align:center">
+      <div class="cust-avatar" style="background:${c.color};width:64px;height:64px;font-size:24px;margin:0 auto 12px">${initials}</div>
+      <div class="modal-h">${c.name}</div>
+      <div class="modal-sub">${c.email}</div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin:20px 0">
+      <div style="flex:1;text-align:center;background:var(--bg2);border-radius:12px;padding:14px">
+        <div style="font-family:var(--fh);font-size:22px;font-weight:700">${c.stamps}/${c.goal}</div>
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Carimbos</div>
+      </div>
+      <div style="flex:1;text-align:center;background:var(--bg2);border-radius:12px;padding:14px">
+        <div style="font-family:var(--fh);font-size:22px;font-weight:700">${c.points}</div>
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Pontos</div>
+      </div>
+      <div style="flex:1;text-align:center;background:var(--bg2);border-radius:12px;padding:14px">
+        <div style="font-family:var(--fh);font-size:22px;font-weight:700">${c.visits}</div>
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Visitas</div>
+      </div>
+    </div>
+
+    <div class="progress-mini" style="margin-bottom:6px"><div class="progress-mini-fill" style="width:${pct}%"></div></div>
+    <div style="font-size:12px;color:var(--text3);text-align:center;margin-bottom:20px">${pct}% até ao próximo prémio</div>
+
+    <div style="border-top:1px solid var(--line);padding-top:18px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px">Cartão digital do cliente</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <a href="${appleUrl}" target="_blank" rel="noopener" class="wallet-btn wallet-apple" onclick="walletClicked('Apple')">
+           Adicionar à Apple Wallet
+        </a>
+        <a href="${googleUrl}" target="_blank" rel="noopener" class="wallet-btn wallet-google" onclick="walletClicked('Google')">
+           Adicionar à Google Wallet
+        </a>
+      </div>
+      <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:10px">
+        O cliente recebe o cartão no telemóvel e atualiza sozinho a cada carimbo.
+      </div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="closeModal()">Fechar</button>
+      <button class="btn-primary" onclick="quickStamp('${c.id}');closeModal()">+ Adicionar carimbo</button>
+    </div>
+  `);
+}
+
+function walletClicked(tipo) {
+  // O link abre o passe gerado pelo backend. Se o backend ainda não estiver
+  // online, o browser mostra erro de ligação — é esperado até ao deploy.
+  toast(`A gerar cartão ${tipo} Wallet...`);
+}
+function openAddCustomer() {
+  openModal(`
+    <div class="modal-h">Adicionar cliente</div>
+    <div class="modal-sub">Regista um novo cliente manualmente. Recebe o link do cartão por email.</div>
+    <div class="field"><label>Nome completo</label><input type="text" id="nc-name" placeholder="Nome do cliente"></div>
+    <div class="field"><label>Email</label><input type="email" id="nc-email" placeholder="email@exemplo.pt"></div>
+    <div class="field"><label>Telemóvel (opcional)</label><input type="tel" id="nc-phone" placeholder="912 345 678"></div>
+    <div class="modal-btns"><button class="btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn-primary" onclick="submitCustomer()">Adicionar cliente</button></div>`);
+}
+async function submitCustomer() {
+  const name = document.getElementById('nc-name').value.trim();
+  const email = document.getElementById('nc-email').value.trim();
+  const phone = document.getElementById('nc-phone').value.trim();
+  if (!name || !email) { toast('Preenche nome e email'); return; }
+  await API.createCustomer({ name, email, phone });
+  closeModal();
+  custFilter = 'all'; custSearch = '';
+  await renderCustomers();
+  await renderDashboard();
+  { const el = document.getElementById('cust-count'); if (el) el.textContent = custCache.length; }
+  toast(`${name.split(' ')[0]} adicionado com sucesso`);
+}
+
+// ---------- SCAN ----------
+let scanner = null;
+function renderScan() {
+  document.getElementById('page-scan').innerHTML = `
+    <div class="scan-grid">
+      <div class="scan-camera">
+        <div id="qr-reader"></div>
+        <div class="scan-placeholder" id="scan-ph">
+          <div class="scan-icon-big">📷</div>
+          <div class="scan-frame"></div>
+          <div style="font-weight:600">Pronto para ler</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.5);max-width:240px">Aponta a câmara ao QR code do cartão do cliente para registar a visita.</div>
+          <button class="btn-acc" onclick="startScan()" style="margin-top:8px">Ativar câmara</button>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><div class="card-title">Registo manual</div></div>
+          <div class="card-sub" style="margin-bottom:14px">Sem QR à mão? Procura o cliente e regista a visita.</div>
+          <div class="search-box" style="margin-bottom:12px"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input type="text" id="scan-search" placeholder="Procurar cliente..." oninput="renderScanResults(this.value)"></div>
+          <div id="scan-results"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-title">Hoje</div></div>
+          <div class="kpi-v" style="font-size:36px">38</div>
+          <div class="kpi-l">visitas registadas hoje</div>
+          <div style="display:flex;gap:20px;margin-top:16px">
+            <div><div style="font-family:var(--fh);font-weight:800;font-size:20px">6</div><div style="font-size:12px;color:var(--text3)">prémios dados</div></div>
+            <div><div style="font-family:var(--fh);font-weight:800;font-size:20px">4</div><div style="font-size:12px;color:var(--text3)">novos clientes</div></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  renderScanResults('');
+}
+function renderScanResults(q) {
+  q = (q || '').toLowerCase();
+  const list = custCache.filter(c => !q || c.name.toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q)).slice(0, 5);
+  document.getElementById('scan-results').innerHTML = list.map(c => {
+    const initials = c.name.split(' ').map(n => n[0]).slice(0, 2).join('');
+    return `<div class="act-item"><div class="cust-avatar" style="background:${c.color}">${initials}</div><div class="act-txt"><b>${c.name}</b><div style="color:var(--text3);font-size:12px">${c.stamps}/${c.goal} carimbos · ${c.points} pts</div></div><button class="row-action" onclick="quickStamp('${c.id}');renderScanResults(document.getElementById('scan-search').value)">+ Carimbo</button></div>`;
+  }).join('') || ('<div style="color:var(--text3);font-size:13px;padding:8px 0">' + t('cust_none') + '</div>');
+}
+function initScanner() { /* lazy — only on activate */ }
+function startScan() {
+  if (typeof Html5Qrcode === 'undefined') { toast('Leitor não disponível neste ambiente'); simulateScan(); return; }
+  document.getElementById('scan-ph').style.display = 'none';
+  scanner = new Html5Qrcode('qr-reader');
+  scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: 200 },
+    (decoded) => { onScanSuccess(decoded); },
+    () => {}
+  ).catch(() => { document.getElementById('scan-ph').style.display = 'flex'; toast('Sem acesso à câmara — usa o registo manual'); });
+}
+async function onScanSuccess(text) {
+  stopScanner();
+  document.getElementById('scan-ph').style.display = 'flex';
+
+  // O QR do cartão contém o UUID do cliente
+  // Pode vir como UUID direto ou como URL (ex: .../scan/UUID)
+  let customerId = text.trim();
+
+  // Se for um URL, extrair o UUID do fim
+  if (customerId.includes('/')) {
+    const parts = customerId.split('/');
+    customerId = parts[parts.length - 1];
+  }
+
+  // Validar formato UUID básico
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(customerId)) {
+    toast('QR não reconhecido — formato inválido');
+    return;
+  }
+
+  // Verificar se o cliente pertence a este negócio
+  const c = custCache.find(x => x.id === customerId);
+  if (!c) {
+    // Tentar buscar à base de dados (pode ser um cliente novo que ainda não está na cache)
+    const updated = await API.addStamp(customerId);
+    if (updated) {
+      await renderCustomers();
+      await renderDashboard();
+      toast('✓ Carimbo registado para ' + updated.name.split(' ')[0] + ' (' + updated.stamps + '/' + updated.goal + ')');
+    } else {
+      toast('Cliente não encontrado neste negócio');
+    }
+    return;
+  }
+
+  // Cliente encontrado — dar carimbo
+  await quickStamp(customerId);
+  toast('✓ Carimbo registado para ' + c.name.split(' ')[0]);
+}
+function simulateScan() {
+  if (!custCache.length) { toast('Sem clientes para simular.'); return; }
+  // Simular: usa o ID do primeiro cliente (como se tivesse lido o QR dele)
+  const c = custCache[0];
+  toast('Simulação: a ler QR de ' + c.name + '...');
+  setTimeout(() => quickStamp(c.id), 600);
+}
+function stopScanner() {
+  if (scanner && scanner.isScanning) { scanner.stop().catch(() => {}); }
+}
+
+// ---------- ANALYTICS ----------
+async function renderAnalytics() {
+  // Buscar dados reais do Supabase
+  const { data: custs } = await db.from('customers').select('stamps, goal, visits, created_at, status').eq('business_id', currentBiz.id);
+  const { data: txns } = await db.from('transactions').select('type, created_at').eq('business_id', currentBiz.id);
+  const all = custs || [];
+  const allTxns = txns || [];
+  const stamps = allTxns.filter(t => t.type === 'stamp');
+  const redeems = allTxns.filter(t => t.type === 'redeem' || t.type === 'reward');
+
+  // KPIs reais
+  const avgVisits = all.length ? (all.reduce((s, c) => s + (c.visits || 0), 0) / all.length).toFixed(1) : '0';
+  const totalStamps = stamps.length;
+  const now = Date.now();
+  const month = 30 * 864e5;
+  const stampsThisMonth = stamps.filter(t => now - new Date(t.created_at).getTime() < month).length;
+  const activeThisMonth = all.filter(c => c.status === 'active' || c.status === 'vip').length;
+  const freq = activeThisMonth > 0 && stampsThisMonth > 0 ? (30 / (stampsThisMonth / activeThisMonth)).toFixed(1) : '—';
+  const completed = all.filter(c => c.stamps >= (c.goal || 10)).length;
+  const completionRate = all.length ? Math.round((completed / all.length) * 100) : 0;
+  const recurring = all.filter(c => (c.visits || 0) >= 3).length;
+  const recurringPct = all.length ? Math.round((recurring / all.length) * 100) : 0;
+
+  // Grafico mensal (ultimos 6 meses)
+  const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const monthData = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(); d.setMonth(d.getMonth() - i);
+    const mStart = new Date(d.getFullYear(), d.getMonth(), 1);
+    const mEnd = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    const mStamps = stamps.filter(t => { const td = new Date(t.created_at); return td >= mStart && td < mEnd; }).length;
+    monthData.push({ m: monthNames[mStart.getMonth()], v: mStamps });
+  }
+  const maxM = Math.max(...monthData.map(x => x.v), 1);
+  const monthBars = monthData.map(x => {
+    const h = Math.round((x.v / maxM) * 100);
+    return '<div class="chart-col"><div class="chart-bar hi" style="height:' + h + '%"><span class="chart-val">' + x.v + '</span></div><span class="chart-lbl">' + x.m + '</span></div>';
+  }).join('');
+
+  // Insights reais
+  const dayCount = [0,0,0,0,0,0,0];
+  const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+  stamps.forEach(t => dayCount[new Date(t.created_at).getDay()]++);
+  const bestDay = dayCount.indexOf(Math.max(...dayCount));
+  const totalDayVisits = dayCount.reduce((a,b) => a + b, 0);
+  const bestDayPct = totalDayVisits ? Math.round((dayCount[bestDay] / totalDayVisits) * 100) : 0;
+  const almostDone = all.filter(c => c.stamps >= (c.goal || 10) - 2 && c.stamps < (c.goal || 10)).length;
+  const inactive = all.filter(c => c.status === 'inactive').length;
+
+  document.getElementById('page-analytics').innerHTML =
+    '<div class="kpi-grid">' +
+      '<div class="kpi"><div class="kpi-top"><div class="kpi-ic gold">\u23F1</div></div><div class="kpi-v">' + avgVisits + '</div><div class="kpi-l">' + t('an_avg_visits') + '</div></div>' +
+      '<div class="kpi"><div class="kpi-top"><div class="kpi-ic green">\uD83D\uDCC5</div></div><div class="kpi-v">' + freq + 'd</div><div class="kpi-l">' + t('an_freq') + '</div></div>' +
+      '<div class="kpi"><div class="kpi-top"><div class="kpi-ic blue">\uD83C\uDFAF</div></div><div class="kpi-v">' + completionRate + '%</div><div class="kpi-l">' + t('an_completion') + '</div></div>' +
+      '<div class="kpi"><div class="kpi-top"><div class="kpi-ic dark">\uD83D\uDD01</div></div><div class="kpi-v">' + recurringPct + '%</div><div class="kpi-l">' + t('an_recurring') + '</div></div>' +
+    '</div>' +
+    '<div class="grid-2">' +
+      '<div class="card"><div class="card-h"><div><div class="card-title">' + t('an_monthly') + '</div><div class="card-sub">' + t('an_monthly_sub') + '</div></div></div><div class="chart-bars">' + monthBars + '</div></div>' +
+      '<div class="card"><div class="card-h"><div class="card-title">' + t('an_insights') + '</div></div><div style="display:flex;flex-direction:column;gap:14px">' +
+        '<div><div class="insight-t" style="font-size:14px">\uD83D\uDCC8 ' + dayNames[bestDay] + ' ' + t('an_best_day_txt') + '</div><div class="insight-d" style="font-size:12px">' + bestDayPct + '% ' + t('an_visits_happen') + ' ' + dayNames[bestDay] + '.</div></div>' +
+        (inactive > 0 ? '<div><div class="insight-t" style="font-size:14px">\u26A0\uFE0F ' + inactive + ' ' + t('an_inactive_txt') + '</div><div class="insight-d" style="font-size:12px">' + t('an_inactive_desc') + '</div></div>' : '') +
+        (almostDone > 0 ? '<div><div class="insight-t" style="font-size:14px">\u2B50 ' + almostDone + ' ' + t('an_almost_txt') + '</div><div class="insight-d" style="font-size:12px">' + t('an_almost_desc') + '</div></div>' : '') +
+      '</div></div>' +
+    '</div>' +
+    '<div class="insight-grid">' +
+      '<div class="insight"><div class="insight-ic">\uD83D\uDD01</div><div class="insight-t">' + t('an_total_stamps') + '</div><div class="insight-d">' + t('an_total_stamps_desc') + '</div><div class="insight-stat">' + totalStamps.toLocaleString() + '</div></div>' +
+      '<div class="insight"><div class="insight-ic">\uD83C\uDF81</div><div class="insight-t">' + t('an_total_rewards') + '</div><div class="insight-d">' + t('an_total_rewards_desc') + '</div><div class="insight-stat">' + redeems.length.toLocaleString() + '</div></div>' +
+    '</div>' +
+    '<div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap">' +
+      '<button class="btn-ghost" onclick="showExportModal(\'customers\')" style="display:flex;align-items:center;gap:6px">\uD83D\uDCC4 ' + t('an_export_cust') + '</button>' +
+      '<button class="btn-ghost" onclick="showExportModal(\'transactions\')" style="display:flex;align-items:center;gap:6px">\uD83D\uDCCB ' + t('an_export_txn') + '</button>' +
+      '<button class="btn-ghost" onclick="showExportModal(\'resumo\')" style="display:flex;align-items:center;gap:6px">\uD83D\uDCCA ' + t('an_export_summary') + '</button>' +
+    '</div>';
+}
+
+// ---------- REWARDS ----------
+function renderRewards() {
+  document.getElementById('page-rewards').innerHTML = `
+    <div class="grid-2b">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">${t('rw_stamps_title')}</div><div class="card-sub">${t('rw_stamps_sub')}</div></div><span class="tag active">${t('rw_active')}</span></div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.7">${t('rw_stamps_desc')}</div>
+        <div style="background:var(--accBg);border:1px solid var(--accBg2);border-radius:12px;padding:16px;margin-top:14px"><div style="font-family:var(--fh);font-weight:700;font-size:16px">☕ ${t('rw_free_coffee')}</div><div style="font-size:13px;color:var(--text2);margin-top:2px">${t('rw_auto_notif')}</div></div>
+        <button class="btn-ghost" style="width:100%;margin-top:16px" onclick="toast(t('rw_soon'))">${t('rw_edit')}</button>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">${t('rw_points_title')}</div><div class="card-sub">${t('rw_stamps_sub')}</div></div><span class="tag active">${t('rw_active')}</span></div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.7">${t('rw_points_desc')}</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+          <div style="display:flex;justify-content:space-between;padding:12px;background:var(--bg2);border-radius:10px"><span style="font-weight:600">🥐 Croissant grátis</span><span style="font-family:var(--fh);font-weight:700">200 pts</span></div>
+          <div style="display:flex;justify-content:space-between;padding:12px;background:var(--bg2);border-radius:10px"><span style="font-weight:600">🎂 Fatia de bolo</span><span style="font-family:var(--fh);font-weight:700">350 pts</span></div>
+          <div style="display:flex;justify-content:space-between;padding:12px;background:var(--bg2);border-radius:10px"><span style="font-weight:600">🎁 Desconto 10€</span><span style="font-family:var(--fh);font-weight:700">500 pts</span></div>
+        </div>
+        <button class="btn-acc" style="width:100%;margin-top:16px" onclick="toast(t('rw_soon'))">${t('rw_new')}</button>
+      </div>
+    </div>`;
+}
+
+// ---------- CARD & BRANDING ----------
+// ---------- CARD & BRANDING (Editor de Wallet) ----------
+// Estado da configuração da wallet — backend: GET/PUT /api/wallet-config
+
+
+
+
+
+
+
+
+function shade(hex, percent) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) + Math.round(2.55 * percent);
+  let g = ((n >> 8) & 0xff) + Math.round(2.55 * percent);
+  let b = (n & 0xff) + Math.round(2.55 * percent);
+  r = Math.max(0, Math.min(255, r)); g = Math.max(0, Math.min(255, g)); b = Math.max(0, Math.min(255, b));
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+// ---------- SETTINGS ----------
+function renderSettings() {
+  document.getElementById('page-settings').innerHTML = `
+    <div class="grid-2b">
+      <div class="card">
+        <div class="card-h"><div class="card-title">Conta</div></div>
+        <div class="field"><label>Nome</label><input type="text" value="${currentBiz?.owner_name || ''}"></div>
+        <div class="field"><label>Email</label><input type="email" value="${currentBiz?.email || ''}"></div>
+        <div class="field"><label>Negócio</label><input type="text" value="${currentBiz?.name || ''}"></div>
+        <button class="btn-primary" onclick="toast('Definições guardadas')">Guardar alterações</button>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><div class="card-title">Plano atual</div></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-family:var(--fh);font-size:20px;font-weight:800" id="set-plan">Starter</div><div style="font-size:13px;color:var(--text3)">até 100 clientes · 1 localização</div></div><span class="tag vip">Trial: 14 dias</span></div>
+          <button class="btn-acc" style="width:100%;margin-top:16px" onclick="toast('Em breve — estamos a preparar os planos de upgrade.')">Fazer upgrade</button>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-title">Notificações</div></div>
+          <div class="set-row"><div><div class="set-label">Email de resumo semanal</div><div class="set-desc">Recebe os números todas as segundas</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="set-row"><div><div class="set-label">Alertas de clientes em risco</div><div class="set-desc">Quando um cliente fica inativo</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="set-row"><div><div class="set-label">Novos registos</div><div class="set-desc">Notificar a cada novo cliente</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+        </div>
+      </div>
+    </div>`;
+  const sp = document.getElementById('set-plan');
+  if (sp) sp.textContent = chosenPlan;
+}
+
+
+// ---------- SESSÃO PERSISTENTE ----------
+// Ao carregar a página, verifica se já existe sessão ativa
+// ---------- RESGATE DE PRÉMIO + WALLET UPDATE (via Bruno) ----------
+// Quando cliente está a 10/10, mostra modal de resgate em vez de carimbar
+const _origQuickStamp = quickStamp;
+quickStamp = async function(id) {
+  const pre = await db.from('customers').select('*').eq('id', id).single();
+  if (pre.data && pre.data.stamps >= pre.data.goal) {
+    openModal(`
+      <div class="modal-h">Resgatar prémio</div>
+      <div class="modal-sub">${pre.data.name} completou o cartão! Confirma que entregaste o prémio?</div>
+      <div class="modal-btns">
+        <button class="btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button class="btn-primary" style="background:#D81F26" onclick="confirmRedeem('${id}')">Confirmar resgate</button>
+      </div>
+    `);
+    return;
+  }
+  return _origQuickStamp(id);
+};
+
+async function confirmRedeem(id) {
+  closeModal();
+  try {
+    await fetch(WALLET_BACKEND_URL + '/' + currentBiz.slug + '/redeem/' + id, { method: 'POST' });
+  } catch(e) { console.warn('Redeem endpoint:', e); }
+  await renderCustomers();
+  await renderDashboard();
+  toast('Prémio resgatado! Carimbos reiniciados. 🎉');
+}
+
+// Atualizar wallet depois de cada carimbo (push update automático)
+const _origAddStamp = API.addStamp.bind(API);
+API.addStamp = async function(id) {
+  const result = await _origAddStamp(id);
+  // Fire-and-forget: não bloqueia a UI enquanto atualiza a wallet
+  fetch(WALLET_BACKEND_URL + '/' + currentBiz.slug + '/update-pass/' + id, { method: 'POST' }).catch(() => {});
+  return result;
+};
+
+(async function checkSession() {
+  const { data } = await db.auth.getSession();
+  if (data && data.session) {
+    const { data: biz } = await db.from('businesses')
+      .select('*').eq('auth_user_id', data.session.user.id).single();
+    if (biz) {
+      currentBiz = biz;
+      chosenPlan = biz.plan;
+      const sp = document.getElementById('sb-plan');
+      if (sp) sp.textContent = 'Plano ' + biz.plan;
+      document.getElementById('auth').style.display = 'none';
+      document.getElementById('app').classList.add('active');
+      setPlatformUser(biz);
+      await renderAll();
+    }
+  }
+})();
+
+
+// ---- Recuperacao de password ----
+function showForgotPassword() {
+  openModal(
+    '<div class="modal-h">Recuperar password</div>' +
+    '<div class="modal-sub">Introduz o email da tua conta. Recebes um link para redefinir a password.</div>' +
+    '<div class="field"><label>Email</label><input type="email" id="fp-email" placeholder="email@exemplo.pt"></div>' +
+    '<div class="modal-btns"><button class="btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn-primary" onclick="sendPasswordReset()">Enviar link</button></div>'
+  );
+}
+async function sendPasswordReset() {
+  var email = document.getElementById('fp-email').value.trim();
+  if (!email) { toast('Introduz o teu email'); return; }
+  var { error } = await db.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://app.loyalle.pt'
+  });
+  closeModal();
+  if (error) { toast('Erro ao enviar. Verifica o email.'); }
+  else { toast('Email enviado! Verifica a tua caixa de correio.'); }
+}
+
+
+
+// ---- EXPORTAR RELATÓRIOS ----
+function downloadCSV(filename, rows) {
+  var csv = rows.map(function(r) { return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
+  var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  var link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  toast('Relatório exportado: ' + filename);
+}
+
+function downloadExcel(filename, rows, sheetName) {
+  var ws = XLSX.utils.aoa_to_sheet(rows);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Dados');
+  // Ajustar largura das colunas
+  ws['!cols'] = rows[0].map(function(h, i) {
+    var max = rows.reduce(function(m, r) { return Math.max(m, String(r[i] || '').length); }, String(h).length);
+    return { wch: Math.min(max + 2, 40) };
+  });
+  XLSX.writeFile(wb, filename);
+  toast('Excel exportado: ' + filename);
+}
+
+function downloadPDF(filename, title, rows, summary) {
+  var doc = new jspdf.jsPDF();
+  // Header com marca Loyalle
+  doc.setFillColor(12, 10, 6);
+  doc.rect(0, 0, 210, 28, 'F');
+  doc.setTextColor(198, 153, 59);
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text('loyalle.', 14, 18);
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(11);
+  doc.text(currentBiz.name, 60, 14);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(title + ' — ' + new Date().toLocaleDateString('pt-PT'), 60, 20);
+  // Resumo KPIs se existir
+  var startY = 36;
+  if (summary && summary.length) {
+    doc.setTextColor(12, 10, 6);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Resumo', 14, startY);
+    startY += 6;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    summary.forEach(function(s) {
+      doc.setTextColor(90, 85, 69);
+      doc.text(s[0] + ': ', 14, startY);
+      doc.setTextColor(12, 10, 6);
+      doc.setFont('helvetica', 'bold');
+      doc.text(String(s[1]), 14 + doc.getTextWidth(s[0] + ': '), startY);
+      doc.setFont('helvetica', 'normal');
+      startY += 5;
+    });
+    startY += 6;
+  }
+  // Tabela
+  if (rows && rows.length > 1) {
+    doc.autoTable({
+      head: [rows[0]],
+      body: rows.slice(1),
+      startY: startY,
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [12, 10, 6], textColor: [198, 153, 59], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [250, 250, 247] },
+      margin: { left: 14, right: 14 }
+    });
+  }
+  // Footer
+  var pageCount = doc.internal.getNumberOfPages();
+  for (var i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7);
+    doc.setTextColor(138, 130, 111);
+    doc.text('Gerado por Loyalle — loyalle.pt', 14, 290);
+    doc.text('Página ' + i + '/' + pageCount, 196, 290, { align: 'right' });
+  }
+  doc.save(filename);
+  toast('PDF exportado: ' + filename);
+}
+
+function showExportModal(type) {
+  openModal(
+    '<div class="modal-h">Exportar ' + (type === 'customers' ? 'clientes' : type === 'transactions' ? 'transações' : 'resumo') + '</div>' +
+    '<div class="modal-sub">Escolhe o formato de exportação</div>' +
+    '<div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">' +
+      '<button class="btn-ghost" style="justify-content:flex-start;display:flex;gap:8px" onclick="closeModal();export' + type.charAt(0).toUpperCase() + type.slice(1) + '(\'excel\')">📊 Excel — formatado com colunas</button>' +
+      '<button class="btn-ghost" style="justify-content:flex-start;display:flex;gap:8px" onclick="closeModal();export' + type.charAt(0).toUpperCase() + type.slice(1) + '(\'pdf\')">📕 PDF — relatório profissional</button>' +
+    '</div>'
+  );
+}
+
+async function exportCustomers(fmt) {
+  var { data } = await db.from('customers').select('*').eq('business_id', currentBiz.id).order('name');
+  if (!data || !data.length) { toast('Sem dados para exportar'); return; }
+  var rows = [['Nome', 'Email', 'Telefone', 'Carimbos', 'Objetivo', 'Pontos', 'Visitas', 'Estado']];
+  data.forEach(function(c) {
+    rows.push([c.name || '', c.email || '', c.phone || '', c.stamps || 0, c.goal || 10, c.points || 0, c.visits || 0, c.status || '']);
+  });
+  var d = new Date().toISOString().slice(0,10);
+  var fn = currentBiz.slug + '_clientes_' + d;
+  var summary = [['Total de clientes', data.length], ['Ativos', data.filter(function(c){return c.status==='active'||c.status==='vip'}).length], ['Inativos', data.filter(function(c){return c.status==='inactive'}).length]];
+  if (fmt === 'excel') downloadExcel(fn + '.xlsx', rows, 'Clientes');
+  else if (fmt === 'pdf') downloadPDF(fn + '.pdf', 'Lista de Clientes', rows, summary);
+  else downloadCSV(fn + '.csv', rows);
+}
+
+async function exportTransactions(fmt) {
+  var { data } = await db.from('transactions').select('type, amount, created_at, customers(name)').eq('business_id', currentBiz.id).order('created_at', { ascending: false });
+  if (!data || !data.length) { toast('Sem dados para exportar'); return; }
+  var tipos = { stamp: 'Carimbo', redeem: 'Resgate', reward: 'Prémio', points: 'Pontos', signup: 'Registo' };
+  var rows = [['Data', 'Cliente', 'Tipo', 'Quantidade']];
+  data.forEach(function(t) {
+    rows.push([new Date(t.created_at).toLocaleString('pt-PT'), t.customers ? t.customers.name : '', tipos[t.type] || t.type, t.amount || 1]);
+  });
+  var d = new Date().toISOString().slice(0,10);
+  var fn = currentBiz.slug + '_transacoes_' + d;
+  var summary = [['Total de transações', data.length], ['Carimbos', data.filter(function(t){return t.type==='stamp'}).length], ['Resgates', data.filter(function(t){return t.type==='redeem'||t.type==='reward'}).length]];
+  if (fmt === 'excel') downloadExcel(fn + '.xlsx', rows, 'Transações');
+  else if (fmt === 'pdf') downloadPDF(fn + '.pdf', 'Histórico de Transações', rows, summary);
+  else downloadCSV(fn + '.csv', rows);
+}
+
+async function exportResumo(fmt) {
+  var s = await API.getStats();
+  var { data: custs } = await db.from('customers').select('stamps, goal, visits, status').eq('business_id', currentBiz.id);
+  var all = custs || [];
+  var completed = all.filter(function(c) { return c.stamps >= (c.goal || 10); }).length;
+  var active = all.filter(function(c) { return c.status === 'active' || c.status === 'vip'; }).length;
+  var inactive = all.filter(function(c) { return c.status === 'inactive'; }).length;
+  var totalVisits = all.reduce(function(s, c) { return s + (c.visits || 0); }, 0);
+  var rows = [
+    ['Métrica', 'Valor'],
+    ['Total de clientes', all.length],
+    ['Clientes ativos', active],
+    ['Clientes inativos', inactive],
+    ['Taxa de retenção', s.retention + '%'],
+    ['Cartões completos', completed],
+    ['Taxa de conclusão', all.length ? Math.round((completed / all.length) * 100) + '%' : '0%'],
+    ['Total de visitas', totalVisits],
+    ['Visitas esta semana', s.visitsWeek],
+    ['Prémios resgatados', s.rewardsGiven],
+    ['Visitas médias / cliente', all.length ? (totalVisits / all.length).toFixed(1) : '0'],
+    ['Negócio', currentBiz.name],
+    ['Data do relatório', new Date().toLocaleString('pt-PT')]
+  ];
+  var d = new Date().toISOString().slice(0,10);
+  var fn = currentBiz.slug + '_resumo_' + d;
+  if (fmt === 'excel') downloadExcel(fn + '.xlsx', rows, 'Resumo');
+  else if (fmt === 'pdf') downloadPDF(fn + '.pdf', 'Resumo do Programa', rows, null);
+  else downloadCSV(fn + '.csv', rows);
+}
+
+
+// Inject language selector into settings page
+var _origRenderSettings = renderSettings;
+renderSettings = function() {
+  _origRenderSettings();
+  var sp = document.getElementById('page-settings');
+  if (sp) {
+    var langDiv = document.createElement('div');
+    langDiv.className = 'card';
+    langDiv.style.marginTop = '16px';
+    var flags = {pt:'🇵🇹 Português',en:'🇬🇧 English',es:'🇪🇸 Español',fr:'🇫🇷 Français',de:'🇩🇪 Deutsch'};
+    var html = '<div class="card-h"><div class="card-title">Idioma / Language</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;padding:4px 0">';
+    Object.keys(flags).forEach(function(l) {
+      var active = l === currentLang;
+      html += '<button class="lang-flag" data-lang="' + l + '" onclick="setLang(\'' + l + '\')" style="background:' + (active ? 'var(--accBg)' : 'transparent') + ';border:1px solid ' + (active ? 'var(--acc)' : 'var(--bg3)') + ';border-radius:8px;padding:6px 12px;cursor:pointer;font-size:14px;transition:all .2s">' + flags[l] + '</button>';
+    });
+    html += '</div>';
+    langDiv.innerHTML = html;
+    sp.appendChild(langDiv);
+  }
+};
+
+
+// Post-render DOM translation
+
+
+
+
+// ---- Detetar token de recuperacao de password ----
+(async function checkPasswordReset() {
+  var hash = window.location.hash;
+  if (hash && hash.includes('type=recovery')) {
+    var { data } = await db.auth.getSession();
+    if (data && data.session) {
+      document.querySelector('.auth-right').innerHTML = '<div style="max-width:400px;margin:0 auto;padding:40px 24px"><h2 style="font-family:var(--fh);font-size:24px;margin-bottom:8px">Nova password</h2><p style="color:var(--text3);margin-bottom:24px">Escolhe a tua nova password.</p><div class="field" style="margin-bottom:16px"><label>Nova password</label><div class="pw-wrap"><input type="password" id="new-pass" placeholder="Minimo 6 caracteres" style="width:100%;padding:12px;padding-right:44px;border:1px solid var(--bg3);border-radius:8px;font-size:15px"><button type="button" class="pw-eye" onclick="togglePw(this)" aria-label="Mostrar palavra-passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><div class="field" style="margin-bottom:24px"><label>Confirmar password</label><div class="pw-wrap"><input type="password" id="new-pass2" placeholder="Repete a password" style="width:100%;padding:12px;padding-right:44px;border:1px solid var(--bg3);border-radius:8px;font-size:15px"><button type="button" class="pw-eye" onclick="togglePw(this)" aria-label="Mostrar palavra-passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><button class="btn-primary" style="width:100%" onclick="resetPassword()">Guardar nova password</button></div>';
+    }
+  }
+})();
+
+async function resetPassword() {
+  var p1 = document.getElementById('new-pass').value;
+  var p2 = document.getElementById('new-pass2').value;
+  if (p1.length < 6) { toast('A password precisa de pelo menos 6 caracteres'); return; }
+  if (p1 !== p2) { toast('As passwords nao coincidem'); return; }
+  var { error } = await db.auth.updateUser({ password: p1 });
+  if (error) { toast('Erro ao atualizar: ' + error.message); return; }
+  toast('Password atualizada com sucesso!');
+  await db.auth.signOut();
+  window.location.hash = '';
+  window.location.reload();
+}
+
+
+
+function openUpgrade() {
+  openModal(
+    '<div class="modal-h">' + t('usage_modal_t') + '</div>' +
+    '<div class="modal-sub">' + t('usage_modal_d') + '</div>' +
+    '<div class="modal-btns"><button class="btn-ghost" onclick="closeModal()">' + t('redeem_cancel') + '</button>' +
+    '<a class="btn-primary" href="mailto:geral@loyalle.pt?subject=Upgrade%20de%20plano" style="text-decoration:none;text-align:center">' + t('usage_modal_btn') + '</a></div>'
+  );
+}
+
+</script>
+</body>
+</html>

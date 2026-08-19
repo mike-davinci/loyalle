@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cartão de fidelização · Loyalle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@0,400;0,500;0,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  /* Cores da marca — sobrescritas dinamicamente via JS a partir da BD */
+  --orange:#F7941D;--orange2:#FBB040;--red:#D81F26;--navy:#1B1F3B;--cream:#FFF8EF;
+  --dark:#14101A;--text2:#5C5545;--text3:#8A826F;--white:#fff;
+  --fh:'Bricolage Grotesque',sans-serif;--fb:'Instrument Sans',sans-serif
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fb);background:var(--cream);color:var(--dark);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;align-items:center;padding:24px 16px 48px}
+.wrap{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center}
+
+/* Top brand bar */
+.brand-bar{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}
+.brand-by{font-size:12px;color:var(--text3)}
+.brand-by b{font-family:var(--fh);font-weight:800;color:var(--orange)}
+
+.hero-logo{max-width:104px;max-height:104px;width:auto;height:auto;object-fit:contain;border-radius:22px;
+  margin:6px 0 16px;box-shadow:0 8px 24px rgba(27,31,59,.13),0 2px 6px rgba(27,31,59,.07)}
+.hero-sub{font-size:15px;color:var(--text2);text-align:center;margin-bottom:26px;max-width:330px;line-height:1.55}
+.hero-sub b{color:var(--text);font-weight:700}
+
+/* ============================================
+   CARTÃO — espelha o passe Apple/Google Wallet real
+   ============================================ */
+.card{width:100%;max-width:330px;border-radius:20px;overflow:hidden;position:relative;
+  box-shadow:0 1px 2px rgba(0,0,0,.08),0 14px 30px rgba(27,31,59,.20),0 34px 70px rgba(27,31,59,.13);
+  background:var(--navy)}
+.card-flames{display:none}
+.card-inner{position:relative;padding:0}
+
+/* --- Cabeçalho --- */
+.card-top{display:flex;align-items:center;gap:10px;padding:12px 15px 11px;background:rgba(0,0,0,.20)}
+.card-logo{width:40px;height:40px;border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;overflow:hidden;padding:3px}
+.card-logo img{width:100%;height:100%;object-fit:contain}
+.card-hdr-right{margin-left:auto;display:flex;align-items:flex-end;gap:12px}
+.card-hdr-name{font-size:14px;font-weight:700;color:var(--orange);letter-spacing:-.01em;
+  max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.card-hdr-stamps{text-align:right;flex-shrink:0}
+.card-hdr-stamps .lbl{font-size:8px;color:var(--orange);text-transform:uppercase;letter-spacing:.09em;font-weight:700;line-height:1}
+.card-hdr-stamps .val{font-family:var(--fh);font-size:17px;font-weight:700;color:#fff;line-height:1.1;margin-top:1px}
+
+/* --- Campo principal (com marca de água) --- */
+.card-hero{position:relative;padding:20px 15px 18px;overflow:hidden}
+.card-watermark{position:absolute;right:-14px;bottom:-22px;width:150px;height:150px;opacity:.13;
+  object-fit:contain;pointer-events:none;filter:grayscale(.15)}
+.card-hero-inner{position:relative}
+.card-reward{font-family:var(--fh);font-size:30px;font-weight:800;color:#fff;line-height:1.08;letter-spacing:-.025em;
+  text-shadow:0 2px 12px rgba(0,0,0,.35)}
+.card-reward-lbl{font-size:10px;color:rgba(255,255,255,.62);text-transform:uppercase;letter-spacing:.14em;
+  font-weight:700;margin-top:10px}
+
+/* --- Linha divisória laranja --- */
+.card-rule{height:1.5px;background:var(--orange);margin:0 15px;opacity:.9}
+
+/* --- Campos secundários --- */
+.card-fields{display:flex;gap:10px;padding:14px 15px 4px}
+.card-field{min-width:0}
+.card-field:nth-child(1){flex:0 0 33%}
+.card-field:nth-child(2){flex:1}
+.card-field:nth-child(3){flex:0 0 auto;text-align:right;margin-left:auto}
+.field-label{font-size:9px;color:var(--orange);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:3px}
+.field-value{font-size:13px;font-weight:500;color:rgba(255,255,255,.95);line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* --- Strip de carimbos --- */
+.stamps{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;padding:16px 15px 4px}
+.stamp{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  border:1.5px dashed rgba(255,255,255,.20);background:rgba(255,255,255,.04)}
+.stamp svg{width:10px;height:10px}
+.stamp:not(.on):not(.goal) svg{color:rgba(255,255,255,.16)}
+.stamp.on{background:var(--orange);border:1.5px solid transparent;box-shadow:0 2px 6px rgba(247,148,29,.40)}
+.stamp.on svg{color:#fff}
+.stamp.goal{border:1.5px solid var(--orange);background:rgba(247,148,29,.14)}
+.stamp.goal svg{color:var(--orange);width:11px;height:11px}
+.stamp.goal.reached{background:var(--orange);border-color:transparent;box-shadow:0 0 14px rgba(247,148,29,.6)}
+.stamp.goal.reached svg{color:#fff}
+
+/* --- QR grande e centrado --- */
+.card-foot{padding:22px 15px 26px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.card-qr{width:168px;height:168px;background:#fff;border-radius:6px;padding:11px;line-height:0}
+.card-qr canvas,.card-qr img{width:100%!important;height:100%!important}
+.card-status{display:flex;align-items:center;gap:5px;font-size:10px;color:rgba(255,255,255,.42)}
+.card-status-dot{width:5px;height:5px;border-radius:50%;background:#3CB45C;box-shadow:0 0 6px #3CB45C}
+
+/* Progress text */
+.XXprogress-lineXX{width:100%;text-align:center;margin:22px 0 8px;font-size:14px;color:var(--text2)}
+.progress-line b{color:var(--red);font-family:var(--fh);font-weight:800}
+
+/* Wallet buttons */
+.wallet-form{width:100%;display:flex;flex-direction:column;gap:12px;margin-top:18px}
+.form-field{display:flex;flex-direction:column;gap:4px}
+.form-field label{font-size:13px;font-weight:600;color:var(--dark)}
+.form-field .optional{font-weight:400;color:var(--text3);font-size:11px}
+.form-field input{padding:13px 16px;border-radius:12px;border:1.5px solid rgba(12,10,6,.12);font-size:15px;font-family:var(--fb);background:#fff;outline:none;transition:border-color .2s}
+.form-field input:focus{border-color:var(--orange)}
+.terms-consent{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text3);line-height:1.5;cursor:pointer;text-align:left}
+.terms-consent input{margin-top:2px;width:15px;height:15px;flex-shrink:0;accent-color:var(--orange);cursor:pointer}
+.terms-consent a{color:inherit;text-decoration:underline}
+.form-field input::placeholder{color:var(--text3)}
+.wallet-btns{width:100%;display:flex;flex-direction:column;gap:12px;margin-top:18px}
+.wallet-btn{display:flex;align-items:center;justify-content:center;gap:10px;padding:15px;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer;transition:transform .15s,box-shadow .15s;border:none;text-decoration:none}
+.wallet-btn:active{transform:scale(.98)}
+.wallet-btn.apple{background:#000;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.wallet-btn.apple:hover{box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.wallet-btn.google{background:#fff;color:#3c4043;border:1px solid #dadce0;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.wallet-btn.google:hover{box-shadow:0 4px 14px rgba(0,0,0,.12)}
+.wallet-btn svg,.wallet-btn img{height:24px;width:auto;flex-shrink:0}
+.wallet-btn-sub{display:block;font-size:10px;font-weight:500;opacity:.7;margin-top:-2px}
+.wallet-btn-stack{display:flex;flex-direction:column;align-items:flex-start;line-height:1.1}
+
+.info-note{margin-top:20px;font-size:12px;color:var(--text3);text-align:center;line-height:1.6;max-width:320px}
+.info-note svg{vertical-align:-2px;margin-right:3px}
+
+.foot-brand{margin-top:32px;font-size:11px;color:var(--text3);text-align:center}
+.foot-brand b{font-family:var(--fh);font-weight:800;color:var(--orange)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:14px 22px;border-radius:14px;font-size:14px;font-weight:600;box-shadow:0 12px 32px rgba(0,0,0,.25);z-index:300;opacity:0;transition:all .3s;display:flex;align-items:center;gap:10px;max-width:340px}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+@media(max-width:380px){.stamps{gap:7px}.card-inner{padding:18px}}
+
+/* Elementos à volta do cartão */
+body{padding:32px 16px 56px}
+.wrap{max-width:400px}
+.brand-bar{margin-bottom:6px}
+.brand-by{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;font-weight:700}
+.progress-line{font-size:13.5px;color:var(--text2);text-align:center;margin:18px 0 26px;line-height:1.5}
+.progress-line b{color:var(--acc,#C6993B);font-weight:700}
+
+.wallet-form{width:100%;max-width:340px}
+.wallet-btns{width:100%;max-width:340px}
+.info-note{max-width:340px;line-height:1.55}
+.foot-brand{margin-top:26px;font-size:12px;color:var(--text3)}
+.foot-brand b{font-family:var(--fh);font-weight:800;color:var(--text2)}
+
+/* ---------- Polimento da página ---------- */
+.brand-bar{margin-bottom:14px}
+.brand-by{font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.16em;font-weight:700}
+
+.progress-line{font-size:14px;color:var(--text2);text-align:center;margin:22px 0 30px;line-height:1.55;max-width:300px}
+.progress-line b{color:var(--dark);font-weight:700}
+
+.wallet-form{width:100%;max-width:330px;display:flex;flex-direction:column;gap:14px;margin-bottom:16px}
+.form-field input{padding:14px 16px;border-radius:13px;border:1.5px solid rgba(12,10,6,.10);
+  background:#fff;box-shadow:0 1px 2px rgba(12,10,6,.04);transition:border-color .18s,box-shadow .18s}
+.form-field input:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(247,148,29,.13)}
+
+.wallet-btns{width:100%;max-width:330px;display:flex;flex-direction:column;gap:10px}
+.wallet-btn{padding:15px;border-radius:14px;transition:transform .16s ease,box-shadow .16s ease,filter .16s}
+.wallet-btn:hover{transform:translateY(-1.5px)}
+.wallet-btn:active{transform:translateY(0)}
+.wallet-btn.apple{background:#000;color:#fff;box-shadow:0 5px 16px rgba(0,0,0,.18)}
+.wallet-btn.apple:hover{box-shadow:0 9px 24px rgba(0,0,0,.24)}
+.wallet-btn.google{background:#fff;color:#1f1f1f;border:1.5px solid rgba(12,10,6,.11);
+  box-shadow:0 3px 12px rgba(12,10,6,.06)}
+.wallet-btn.google:hover{box-shadow:0 8px 20px rgba(12,10,6,.11)}
+
+.info-note{max-width:330px;line-height:1.6;font-size:12.5px;color:var(--text3);margin-top:18px}
+.foot-brand{margin-top:30px;font-size:11.5px;color:var(--text3);letter-spacing:.01em}
+.foot-brand b{font-family:var(--fh);font-weight:800;color:var(--text2)}
+
+/* Estados de carregamento e erro */
+#loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;gap:16px}
+.spinner{width:38px;height:38px;border:3px solid rgba(0,0,0,.08);border-top-color:var(--orange);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading p{font-size:14px;color:var(--text3)}
+#error{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;gap:12px;text-align:center;padding:24px}
+#error h2{font-family:var(--fh);font-size:22px;font-weight:800}
+#error p{font-size:14px;color:var(--text2);max-width:320px}
+#error .err-logo{font-family:var(--fh);font-weight:800;font-size:20px;margin-bottom:8px}
+#error .err-logo span{color:var(--orange)}
+#content{display:none;width:100%;flex-direction:column;align-items:center}
+.hero-logo-txt{font-family:var(--fh);font-weight:800;font-size:34px;margin:12px 0 4px;text-align:center}
+.card-logo-txt{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;font-size:24px;color:var(--navy)}
+</style>
+</head>
+<body>
+
+<!-- ESTADO: A CARREGAR -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p>A carregar o cartão...</p>
+</div>
+
+<!-- ESTADO: ERRO -->
+<div id="error">
+  <div class="err-logo">loyalle<span>.</span></div>
+  <h2 id="err-title">Cartão não encontrado</h2>
+  <p id="err-msg">O link que usaste não corresponde a nenhum negócio. Confirma o endereço com o estabelecimento.</p>
+</div>
+
+<!-- ESTADO: CONTEÚDO -->
+<div id="content">
+<div class="wrap">
+  <div class="brand-bar"><span class="brand-by">Cartão de fidelização digital</span></div>
+
+  <div id="hero-logo-slot"></div>
+  <div class="hero-sub" id="hero-sub"></div>
+
+  <!-- Wallet Card — espelha o passe real -->
+  <div class="card">
+    <div class="card-inner">
+
+      <!-- Cabeçalho: logo · nome · carimbos -->
+      <div class="card-top">
+        <div class="card-logo" id="card-logo-slot"></div>
+        <div class="card-hdr-right">
+          <div class="card-hdr-name" id="card-hdr-name"></div>
+          <div class="card-hdr-stamps">
+            <div class="lbl">Carimbos</div>
+            <div class="val"><span id="stamp-count">0</span>/<span id="stamp-goal">10</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Campo principal: o prémio, com marca de água -->
+      <div class="card-hero">
+        <div id="watermark-slot"></div>
+        <div class="card-hero-inner">
+          <div class="card-reward" id="reward-title"></div>
+          <div class="card-reward-lbl">Prémio</div>
+        </div>
+      </div>
+
+      <div class="card-rule"></div>
+
+      <!-- Campos secundários -->
+      <div class="card-fields">
+        <div class="card-field">
+          <div class="field-label">Cliente</div>
+          <div class="field-value" id="member-name">O teu nome</div>
+        </div>
+        <div class="card-field">
+          <div class="field-label">Negócio</div>
+          <div class="field-value" id="card-biz"></div>
+        </div>
+        <div class="card-field">
+          <div class="field-label">Faltam</div>
+          <div class="field-value" id="field-left">10 carimbos</div>
+        </div>
+      </div>
+
+      <!-- Strip de carimbos -->
+      <div class="stamps" id="stamps"></div>
+
+      <!-- QR grande e centrado -->
+      <div class="card-foot">
+        <div class="card-qr" id="qr"></div>
+        <div class="card-status"><span class="card-status-dot"></span><span id="status-txt">Pronto a adicionar</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="progress-line" id="progress-line"></div>
+
+  <!-- Formulário -->
+  <div class="wallet-form" id="wallet-form">
+    <div class="form-field">
+      <label for="client-name">O teu nome</label>
+      <input type="text" id="client-name" placeholder="Ex: Maria Silva" required>
+    </div>
+    <div class="form-field">
+      <label for="client-email">Email <span class="optional">(opcional)</span></label>
+      <input type="email" id="client-email" placeholder="Ex: maria@email.com">
+    </div>
+    <label class="terms-consent" for="client-terms">
+      <input type="checkbox" id="client-terms">
+      <span>Aceito os <a href="https://loyalle.pt/termos.html" target="_blank" rel="noopener">Termos</a> e a <a href="https://loyalle.pt/privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.</span>
+    </label>
+  </div>
+  <div class="wallet-btns">
+    <a class="wallet-btn apple" onclick="addWallet('apple')">
+      <svg viewBox="0 0 24 24" fill="#fff"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+      <span class="wallet-btn-stack"><span class="wallet-btn-sub">Adicionar à</span>Apple Wallet</span>
+    </a>
+    <a class="wallet-btn google" onclick="addWallet('google')">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      <span class="wallet-btn-stack"><span class="wallet-btn-sub">Adicionar ao</span>Google Wallet</span>
+    </a>
+  </div>
+
+  <div class="info-note">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    Não precisas de instalar nenhuma app. A Wallet já vem no teu iPhone ou Android — o cartão entra com um toque e atualiza-se sozinho a cada visita.
+  </div>
+
+  <div class="foot-brand">Cartão criado com <b>loyalle.</b></div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+//  LOYALLE — Página de cartão DINÂMICA (multi-negócio)
+//  Serve QUALQUER negócio. O slug vem do URL.
+//  Exemplos:  loyalle.pt/c/frangalhados/   |   loyalle.pt/c/?s=frangalhados
+// ============================================================
+
+var SUPABASE_URL = 'https://tokxxrnkxyldqkhiktbm.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_J-4YCVcHvX_zoQTsxrUkLg_UNMCt46y';
+var WALLET_BACKEND = 'https://loyalle-wallet-backend-production.up.railway.app';
+
+var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ---------- Ícones genéricos (servem qualquer negócio) ----------
+var STAMP_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 5.9 6.6.9-4.8 4.6 1.1 6.5-5.8-3-5.8 3 1.1-6.5L2.5 9.3l6.6-.9L12 2.5z"/></svg>';
+var TROPHY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>';
+
+// ---------- Estado ----------
+var BIZ = null;
+var BUSINESS_SLUG = null;
+var existingCustomerId = null;
+var FILLED = 0;
+var GOAL = 10;
+
+// ---------- Ler o slug do URL ----------
+function getSlug() {
+  // 1) Query string:  ?s=frangalhados
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('s')) return params.get('s').toLowerCase().trim();
+  // 2) Path:  /c/frangalhados/  ou  /frangalhados/
+  var parts = window.location.pathname.split('/').filter(function(p){ return p && p !== 'index.html'; });
+  if (parts.length && parts[0] === 'c') parts.shift();
+  if (parts.length) return parts[0].toLowerCase().trim();
+  return null;
+}
+
+// ---------- Helpers ----------
+function showError(title, msg) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('content').style.display = 'none';
+  var e = document.getElementById('error');
+  if (title) document.getElementById('err-title').textContent = title;
+  if (msg) document.getElementById('err-msg').textContent = msg;
+  e.style.display = 'flex';
+}
+
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 3200);
+}
+
+function escapeHtml(s) {
+  var d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+// Escurece uma cor hex (para o gradiente do cartão)
+function shade(hex, percent) {
+  hex = (hex || '#1B1F3B').replace('#','');
+  if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+  var num = parseInt(hex, 16);
+  var r = (num >> 16) & 255, g = (num >> 8) & 255, b = num & 255;
+  r = Math.max(0, Math.min(255, Math.round(r * (1 + percent))));
+  g = Math.max(0, Math.min(255, Math.round(g * (1 + percent))));
+  b = Math.max(0, Math.min(255, Math.round(b * (1 + percent))));
+  return '#' + ((1<<24) + (r<<16) + (g<<8) + b).toString(16).slice(1);
+}
+
+// ---------- Aplicar a marca do negócio ----------
+function applyBranding(biz) {
+  var brand = biz.brand_color || '#F7941D';
+  var bg    = biz.bg_color    || '#1B1F3B';
+
+  var root = document.documentElement.style;
+  root.setProperty('--orange',  brand);
+  root.setProperty('--orange2', shade(brand, 0.18));
+  root.setProperty('--red',     shade(brand, -0.15));
+  root.setProperty('--navy',    bg);
+
+  var logo = biz.wallet_logo_url || biz.logo_url;
+  var heroSlot = document.getElementById('hero-logo-slot');
+  var cardSlot = document.getElementById('card-logo-slot');
+  var wmSlot   = document.getElementById('watermark-slot');
+
+  if (logo) {
+    heroSlot.innerHTML = '<img class="hero-logo" src="' + escapeHtml(logo) + '" alt="' + escapeHtml(biz.name) + '">';
+    cardSlot.innerHTML = '<img src="' + escapeHtml(logo) + '" alt="">';
+    wmSlot.innerHTML   = '<img class="card-watermark" src="' + escapeHtml(logo) + '" alt="" aria-hidden="true">';
+  } else {
+    heroSlot.innerHTML = '<div class="hero-logo-txt">' + escapeHtml(biz.name) + '</div>';
+    cardSlot.innerHTML = '<div class="card-logo-txt" style="font-size:16px">' + escapeHtml(biz.logo_initial || biz.name.charAt(0).toUpperCase()) + '</div>';
+  }
+
+  var tag = biz.tagline || '';
+  document.getElementById('card-hdr-name').textContent = biz.name;
+  document.getElementById('card-biz').textContent = tag ? (biz.name + ' · ' + tag) : biz.name;
+  document.getElementById('reward-title').textContent = biz.reward_text || 'Recompensa';
+
+  document.getElementById('hero-sub').innerHTML =
+    'Junta carimbos a cada visita e ganha o <b>' + escapeHtml(biz.reward_text || 'teu prémio') + '</b>.<br>Tudo no teu telemóvel, sem app.';
+
+  document.title = 'Cartão ' + biz.name + ' · Loyalle';
+}
+
+// ---------- Carimbos ----------
+function renderStamps() {
+  var html = '';
+  for (var i = 1; i <= GOAL; i++) {
+    if (i === GOAL)       html += '<div class="stamp goal' + (FILLED >= GOAL ? ' reached' : '') + '">' + TROPHY + '</div>';
+    else if (i <= FILLED) html += '<div class="stamp on">' + STAMP_ICON + '</div>';
+    else                  html += '<div class="stamp">' + STAMP_ICON + '</div>';
+  }
+  var grid = document.getElementById('stamps');
+  grid.style.gridTemplateColumns = 'repeat(' + Math.min(GOAL, 10) + ',1fr)';
+  grid.innerHTML = html;
+
+  document.getElementById('stamp-count').textContent = FILLED;
+  document.getElementById('stamp-goal').textContent = GOAL;
+
+  var left = Math.max(0, GOAL - FILLED);
+  document.getElementById('field-left').textContent =
+    left === 0 ? 'Completo!' : (left + (left === 1 ? ' carimbo' : ' carimbos'));
+
+  var line = document.getElementById('progress-line');
+  if (left === 0) line.innerHTML = '<b>Cartão completo!</b> Mostra o QR no balcão para levantar o prémio.';
+  else            line.innerHTML = 'Faltam <b>' + left + (left === 1 ? ' carimbo' : ' carimbos') + '</b> para o teu prémio.';
+}
+
+// ---------- QR ----------
+function renderQR(customerId) {
+  var qr = document.getElementById('qr');
+  if (!qr) return;
+  qr.innerHTML = '';
+  var text = customerId || ('https://loyalle.pt/c/' + BUSINESS_SLUG + '/');
+  try {
+    new QRCode(qr, {
+      text: text, width: 240, height: 240,
+      colorDark: '#1B1F3B', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } catch(e) { console.log('QR error', e); }
+}
+
+// ---------- Carregar cliente existente ----------
+async function loadCustomer(customerId) {
+  try {
+    var res = await db.rpc('card_customer', { cid: customerId, biz: BIZ.id });
+    if (res.error || !res.data || !res.data.length) return false;
+    var c = res.data[0];
+    FILLED = c.stamps || 0;
+    GOAL = c.goal || BIZ.stamp_goal || 10;
+    document.getElementById('member-name').textContent = c.name;
+    var st = document.getElementById('status-txt'); if (st) st.textContent = 'Atualizado agora';
+    document.getElementById('wallet-form').style.display = 'none';
+    renderStamps();
+    renderQR(c.id);
+    return true;
+  } catch(e) { return false; }
+}
+
+// ---------- Registar e adicionar à wallet ----------
+async function addWallet(type) {
+  var customerId = existingCustomerId;
+
+  if (!customerId) {
+    var name  = document.getElementById('client-name').value.trim();
+    var email = document.getElementById('client-email').value.trim();
+    if (!name) { toast('Escreve o teu nome para continuar'); document.getElementById('client-name').focus(); return; }
+    var termsBox = document.getElementById('client-terms');
+    if (termsBox && !termsBox.checked) { toast('Para continuares, aceita os Termos e a Política de Privacidade'); return; }
+
+    toast('A criar o teu cartão...');
+    try {
+      var resp = await fetch(WALLET_BACKEND + '/' + BUSINESS_SLUG + '/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, email: email || null })
+      });
+      var result = await resp.json();
+      if (!result.ok || !result.customer) { toast('Erro ao criar o cartão. Tenta de novo.'); return; }
+
+      customerId = result.customer.id;
+      existingCustomerId = customerId;
+      history.replaceState(null, '', window.location.pathname + '?c=' + customerId);
+
+      document.getElementById('wallet-form').style.display = 'none';
+      document.getElementById('member-name').textContent = name;
+      var st = document.getElementById('status-txt'); if (st) st.textContent = 'Atualizado agora';
+      FILLED = result.customer.stamps || 0;
+      renderStamps();
+      renderQR(customerId);
+    } catch (e) {
+      toast('Erro de ligação. Verifica a internet.');
+      return;
+    }
+  }
+
+  if (type === 'apple') {
+    toast('A abrir a Apple Wallet...');
+    window.location.href = WALLET_BACKEND + '/' + BUSINESS_SLUG + '/apple/' + customerId;
+  } else {
+    toast('A abrir o Google Wallet...');
+    window.location.href = WALLET_BACKEND + '/' + BUSINESS_SLUG + '/google/' + customerId;
+  }
+}
+
+// ---------- ARRANQUE ----------
+(async function init() {
+  BUSINESS_SLUG = getSlug();
+
+  if (!BUSINESS_SLUG) {
+    showError('Link incompleto', 'Este link não indica nenhum negócio. Pede o link correto ao estabelecimento.');
+    return;
+  }
+
+  try {
+    var res = await db.from('businesses')
+      .select('id,name,slug,tagline,mechanic,stamp_goal,reward_text,brand_color,bg_color,color_text,logo_url,wallet_logo_url,logo_initial,status')
+      .eq('slug', BUSINESS_SLUG)
+      .single();
+
+    if (res.error || !res.data) {
+      showError('Cartão não encontrado', 'Não existe nenhum negócio com o endereço "' + BUSINESS_SLUG + '". Confirma o link com o estabelecimento.');
+      return;
+    }
+
+    BIZ = res.data;
+
+    if (BIZ.status === 'churned') {
+      showError('Cartão indisponível', 'O programa de fidelização de ' + BIZ.name + ' não está ativo de momento.');
+      return;
+    }
+
+    GOAL = BIZ.stamp_goal || 10;
+    applyBranding(BIZ);
+
+    // Cliente já existente no URL?
+    var params = new URLSearchParams(window.location.search);
+    var cid = params.get('c');
+    if (cid) {
+      var ok = await loadCustomer(cid);
+      if (ok) existingCustomerId = cid;
+      else { renderStamps(); renderQR(null); }
+    } else {
+      renderStamps();
+      renderQR(null);
+    }
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'flex';
+
+  } catch (e) {
+    console.error(e);
+    showError('Erro de ligação', 'Não foi possível carregar o cartão. Verifica a tua ligação à internet e tenta de novo.');
+  }
+})();
+</script>
+</body>
+</html>

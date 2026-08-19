@@ -1,0 +1,15 @@
+# ============================================
+# LOYALLE — _redirects (Netlify)
+# Este ficheiro NÃO pode ter extensão (.txt = ignorado)
+# ============================================
+
+# --- Subdomínios (quando configurados no Netlify) ---
+https://app.loyalle.pt/*      /plataforma.html    200
+https://admin.loyalle.pt/*    /admin.html         200
+
+# --- Cartões de cliente (rota dinâmica multi-negócio) ---
+/c/*    /c/index.html    200
+
+# --- Frangalhados: links antigos continuam a funcionar ---
+/frangalhados/*    /c/frangalhados/    301
+/frangalhados      /c/frangalhados/    301

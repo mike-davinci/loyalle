@@ -1,0 +1,36 @@
+[build]
+  publish = "."
+
+# ============================================
+# REDIRECTS — rota dinâmica dos cartões
+# (NÃO REMOVER: sem isto, /c/{slug}/ dá 404)
+# ============================================
+[[redirects]]
+  from = "/c/*"
+  to = "/c/index.html"
+  status = 200
+
+# Links antigos do Frangalhados → rota dinâmica
+[[redirects]]
+  from = "/frangalhados/*"
+  to = "/c/frangalhados/"
+  status = 301
+
+[[redirects]]
+  from = "/frangalhados"
+  to = "/c/frangalhados/"
+  status = 301
+
+# Headers de segurança
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Cache para ficheiros estáticos
+[[headers]]
+  for = "*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
