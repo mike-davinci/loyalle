@@ -133,6 +133,18 @@ a{text-decoration:none;color:inherit}
 .btn-dark{padding:10px 18px;background:var(--dark);color:#fff;border-radius:9px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px;transition:all .2s}
 .btn-dark:hover{background:var(--dark2)}
 .notif-dot{position:absolute;top:8px;right:9px;width:7px;height:7px;background:var(--acc);border-radius:50%;border:2px solid #fff}
+.notif-wrap{position:relative}
+.notif-panel{position:absolute;top:46px;right:0;width:330px;max-height:440px;overflow-y:auto;background:#fff;border:1px solid var(--bg3);border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,.14);padding:8px;z-index:90;display:none}
+.notif-panel.open{display:block}
+.notif-h{font-family:var(--fh);font-weight:700;font-size:14px;padding:8px 10px 8px;display:flex;align-items:center;justify-content:space-between}
+.notif-empty{padding:26px 14px;text-align:center;color:var(--text3);font-size:13px;line-height:1.5}
+.notif-item{display:flex;gap:11px;align-items:flex-start;padding:10px;border-radius:10px;cursor:pointer;transition:background .15s}
+.notif-item:hover{background:var(--bg2)}
+.notif-ic{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.notif-ic.warn{background:var(--accBg);color:var(--acc)}.notif-ic.info{background:var(--blueBg);color:var(--blue)}.notif-ic.ok{background:var(--greenBg);color:var(--green)}
+.notif-t{font-size:13px;font-weight:600;color:var(--text);line-height:1.3}
+.notif-d{font-size:12px;color:var(--text3);margin-top:2px}
+@media(max-width:520px){.notif-panel{width:calc(100vw - 40px);right:-8px}}
 .content{padding:28px 32px 48px}
 .page{display:none}.page.active{display:block;animation:fade .3s ease}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
@@ -156,7 +168,7 @@ a{text-decoration:none;color:inherit}
 .kpi{background:#fff;border:1px solid var(--bg3);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden}
 .kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .kpi-ic{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
-.kpi-ic.gold{background:var(--accBg)}.kpi-ic.green{background:var(--greenBg)}.kpi-ic.blue{background:var(--blueBg)}.kpi-ic.dark{background:var(--bg2)}
+.kpi-ic.gold{background:var(--accBg);color:var(--acc)}.kpi-ic.green{background:var(--greenBg);color:var(--green)}.kpi-ic.blue{background:var(--blueBg);color:var(--blue)}.kpi-ic.dark{background:var(--bg2);color:var(--dark)}
 .kpi-trend{font-size:12px;font-weight:700;padding:3px 8px;border-radius:100px;display:flex;align-items:center;gap:3px}
 .kpi-trend.up{background:var(--greenBg);color:var(--green)}
 .kpi-trend.down{background:var(--redBg);color:var(--red)}
@@ -269,7 +281,7 @@ tbody tr:hover{background:var(--bg)}
 .act-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bg3)}
 .act-item:last-child{border-bottom:none}
 .act-dot{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
-.act-dot.g{background:var(--greenBg)}.act-dot.a{background:var(--accBg)}.act-dot.b{background:var(--blueBg)}
+.act-dot.g{background:var(--greenBg);color:var(--green)}.act-dot.a{background:var(--accBg);color:var(--acc)}.act-dot.b{background:var(--blueBg);color:var(--blue)}
 .act-txt{font-size:13px;flex:1}.act-txt b{font-weight:600}
 .act-time{font-size:12px;color:var(--text3)}
 
@@ -533,7 +545,10 @@ tbody tr:hover{background:var(--bg)}
         </div>
       </div>
       <div class="topbar-actions">
-        <button class="btn-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="notif-dot"></span></button>
+        <div class="notif-wrap">
+          <button class="btn-icon" onclick="toggleNotifs(event)" aria-label="Notificações"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="notif-dot" id="notif-dot" style="display:none"></span></button>
+          <div class="notif-panel" id="notif-panel"></div>
+        </div>
         <button class="btn-acc" onclick="nav('scan',document.querySelectorAll('.sb-item')[2])">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Registar visita
@@ -594,7 +609,7 @@ function mapCustomer(r) {
     id: r.id, name: r.name, email: r.email || '—', phone: r.phone || '—',
     stamps: r.stamps, goal: r.goal, points: r.points, visits: r.visits,
     lastVisit: timeAgo(r.last_visit), lastVisitRaw: r.last_visit || '1970-01-01', status: r.status,
-    joined: timeAgo(r.created_at), color: r.color || '#C6993B'
+    joined: timeAgo(r.created_at), createdRaw: r.created_at || null, color: r.color || '#C6993B'
   };
 }
 
@@ -674,7 +689,7 @@ const API = {
       .select('type, created_at, customers(name)')
       .eq('business_id', currentBiz.id)
       .order('created_at', { ascending: false }).limit(8);
-    const map = { stamp:{t:'g',i:'☕',x:'carimbo'}, reward:{t:'a',i:'🎁',x:'resgatou um prémio'}, signup:{t:'b',i:'➕',x:'adicionou o cartão'}, points:{t:'g',i:'⭐',x:'ganhou pontos'} };
+    const map = { stamp:{t:'g',i:ICON('coffee',17),x:'carimbo'}, reward:{t:'a',i:ICON('gift',17),x:'resgatou um prémio'}, signup:{t:'b',i:ICON('userplus',17),x:'adicionou o cartão'}, points:{t:'g',i:ICON('star',17),x:'ganhou pontos'} };
     return (data || []).map(t => {
       const m = map[t.type] || map.stamp;
       const nm = t.customers ? t.customers.name : 'Cliente';
@@ -683,6 +698,28 @@ const API = {
     });
   }
 };
+
+// ---------- ÍCONES SVG (Feather/Lucide style, monocromáticos) ----------
+function ICON(name, size) {
+  size = size || 20;
+  var p = {
+    users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    refresh:'<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
+    gift:'<polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>',
+    trend:'<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+    scan:'<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/>',
+    userplus:'<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>',
+    chart:'<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+    external:'<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
+    coffee:'<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>',
+    star:'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+    sheet:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>',
+    file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>',
+    check:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+    clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'
+  };
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(p[name]||'')+'</svg>';
+}
 
 // ---------- SEED removido — dados agora vêm do Supabase ----------
 const SEED = { customers: [] };  // mantido vazio por compatibilidade
@@ -888,7 +925,63 @@ async function renderAll() {
   renderAnalytics();
   renderRewards();
   renderSettings();
+  renderNotifs();
 }
+
+// ---------- SINO / NOTIFICAÇÕES (alertas acionáveis) ----------
+async function buildNotifications() {
+  var out = [];
+  try {
+    var custs = await API.getCustomers();
+    if (!custs) return out;
+    var ready = custs.filter(function(c){ return c.goal > 0 && c.stamps >= c.goal; });
+    var inactive = custs.filter(function(c){ return c.status === 'inactive'; });
+    var today = new Date(); today.setHours(0,0,0,0);
+    var newToday = custs.filter(function(c){ return c.createdRaw && new Date(c.createdRaw) >= today; });
+    ready.slice(0,6).forEach(function(c){ out.push({ cls:'ok', icon:ICON('check',16), id:c.id, t:c.name + ' — cartão completo', d:'Pronto a resgatar (' + c.stamps + '/' + c.goal + ')' }); });
+    inactive.slice(0,5).forEach(function(c){ out.push({ cls:'warn', icon:ICON('clock',16), id:c.id, t:c.name + ' — inativo', d:'Sem visitar · ' + c.lastVisit }); });
+    newToday.slice(0,5).forEach(function(c){ out.push({ cls:'info', icon:ICON('userplus',16), id:c.id, t:c.name + ' — novo registo', d:'Aderiu hoje' }); });
+  } catch(e) { console.warn('Notificações:', e); }
+  return out;
+}
+async function renderNotifs() {
+  var panel = document.getElementById('notif-panel');
+  var dot = document.getElementById('notif-dot');
+  if (!panel) return;
+  var items = await buildNotifications();
+  if (dot) dot.style.display = items.length ? 'block' : 'none';
+  if (!items.length) {
+    panel.innerHTML = '<div class="notif-h">Notificações</div><div class="notif-empty">Tudo em dia.<br>Sem alertas por agora.</div>';
+    return;
+  }
+  panel.innerHTML = '<div class="notif-h"><span>Notificações</span><span style="color:var(--text3);font-weight:600">' + items.length + '</span></div>' +
+    items.map(function(n){
+      return '<div class="notif-item" onclick="openNotif(\'' + n.id + '\')"><div class="notif-ic ' + n.cls + '">' + n.icon + '</div><div><div class="notif-t">' + n.t + '</div><div class="notif-d">' + n.d + '</div></div></div>';
+    }).join('');
+}
+function toggleNotifs(ev) {
+  if (ev) ev.stopPropagation();
+  var panel = document.getElementById('notif-panel');
+  if (!panel) return;
+  var willOpen = !panel.classList.contains('open');
+  panel.classList.toggle('open', willOpen);
+  if (willOpen) renderNotifs();
+}
+function openNotif(id) {
+  var panel = document.getElementById('notif-panel');
+  if (panel) panel.classList.remove('open');
+  var custBtn = document.querySelectorAll('.sb-item')[1];
+  nav('customers', custBtn);
+  if (typeof openCustomerDetail === 'function') openCustomerDetail(id);
+}
+// Fechar o painel ao clicar fora
+document.addEventListener('click', function(e){
+  var wrap = document.querySelector('.notif-wrap');
+  var panel = document.getElementById('notif-panel');
+  if (panel && panel.classList.contains('open') && wrap && !wrap.contains(e.target)) {
+    panel.classList.remove('open');
+  }
+});
 
 // ---------- DASHBOARD ----------
 async function renderDashboard() {
@@ -961,10 +1054,10 @@ async function renderDashboard() {
 
   document.getElementById('page-dashboard').innerHTML = usageHTML + `
     <div class="kpi-grid">
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic gold">👥</div><div class="kpi-trend up">↑ ${s.trendCustomers}%</div></div><div class="kpi-v">${s.activeCustomers}</div><div class="kpi-l">${t('dash_active')}</div></div>
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic green">🔄</div><div class="kpi-trend up">↑ ${s.trendRetention}%</div></div><div class="kpi-v">${s.retention}%</div><div class="kpi-l">${t('dash_retention')}</div></div>
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic blue">🎁</div><div class="kpi-trend up">↑ ${s.trendRewards}%</div></div><div class="kpi-v">${s.rewardsGiven}</div><div class="kpi-l">${t('dash_rewards')}</div></div>
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic dark">📈</div><div class="kpi-trend up">↑ ${s.trendVisits}%</div></div><div class="kpi-v">${s.visitsWeek.toLocaleString('pt-PT')}</div><div class="kpi-l">${t('dash_visits_month')}</div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic gold">${ICON('users')}</div><div class="kpi-trend up">↑ ${s.trendCustomers}%</div></div><div class="kpi-v">${s.activeCustomers}</div><div class="kpi-l">${t('dash_active')}</div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic green">${ICON('refresh')}</div><div class="kpi-trend up">↑ ${s.trendRetention}%</div></div><div class="kpi-v">${s.retention}%</div><div class="kpi-l">${t('dash_retention')}</div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic blue">${ICON('gift')}</div><div class="kpi-trend up">↑ ${s.trendRewards}%</div></div><div class="kpi-v">${s.rewardsGiven}</div><div class="kpi-l">${t('dash_rewards')}</div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic dark">${ICON('trend')}</div><div class="kpi-trend up">↑ ${s.trendVisits}%</div></div><div class="kpi-v">${s.visitsWeek.toLocaleString('pt-PT')}</div><div class="kpi-l">${t('dash_visits_month')}</div></div>
     </div>
     <div class="grid-2">
       <div class="card">
@@ -994,9 +1087,9 @@ async function renderDashboard() {
       <div class="card">
         <div class="card-h"><div class="card-title">${t('dash_quick')}</div></div>
         <div style="display:flex;flex-direction:column;gap:10px">
-          <button class="btn-dark" style="justify-content:flex-start" onclick="nav('scan',document.querySelectorAll('.sb-item')[2])">📷 ${t('qa_scan')}</button>
-          <button class="btn-ghost" style="text-align:left;justify-content:flex-start;display:flex;gap:8px" onclick="openAddCustomer()">➕ ${t('qa_add')}</button>
-          <button class="btn-ghost" style="text-align:left;justify-content:flex-start;display:flex;gap:8px" onclick="nav('analytics',document.querySelectorAll('.sb-item')[3])">📊 ${t('qa_report')}</button>
+          <button class="btn-dark" style="display:flex;align-items:center;gap:8px;justify-content:flex-start" onclick="nav('scan',document.querySelectorAll('.sb-item')[2])">${ICON('scan',16)} ${t('qa_scan')}</button>
+          <button class="btn-ghost" style="text-align:left;justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="openAddCustomer()">${ICON('userplus',16)} ${t('qa_add')}</button>
+          <button class="btn-ghost" style="text-align:left;justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="nav('analytics',document.querySelectorAll('.sb-item')[3])">${ICON('chart',16)} ${t('qa_report')}</button>
           </div>
         <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--bg3)">
           <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">${t('dash_card_link')}</div>
@@ -1005,7 +1098,7 @@ async function renderDashboard() {
             <button class="btn-dark" style="padding:10px 14px;flex-shrink:0" onclick="copyCardLink()">${t('dash_copy')}</button>
           </div>
           <div style="display:flex;gap:8px;margin-top:8px">
-            <button class="btn-ghost" style="display:flex;gap:6px;justify-content:center" onclick="window.open('${cardLink}','_blank')">🔗 ${t('dash_open_card')}</button>
+            <button class="btn-ghost" style="display:flex;align-items:center;gap:6px;justify-content:center" onclick="window.open('${cardLink}','_blank')">${ICON('external',16)} ${t('dash_open_card')}</button>
           </div>
           <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.4">${t('dash_card_link_hint')}</div>
         </div>
@@ -1206,7 +1299,7 @@ function renderScan() {
       <div class="scan-camera">
         <div id="qr-reader"></div>
         <div class="scan-placeholder" id="scan-ph">
-          <div class="scan-icon-big">📷</div>
+          <div class="scan-icon-big" style="color:var(--acc)">${ICON('scan',38)}</div>
           <div class="scan-frame"></div>
           <div style="font-weight:600">Pronto para ler</div>
           <div style="font-size:13px;color:rgba(255,255,255,.5);max-width:240px">Aponta a câmara ao QR code do cartão do cliente para registar a visita.</div>
@@ -1649,8 +1742,8 @@ function showExportModal(type) {
     '<div class="modal-h">Exportar ' + (type === 'customers' ? 'clientes' : type === 'transactions' ? 'transações' : 'resumo') + '</div>' +
     '<div class="modal-sub">Escolhe o formato de exportação</div>' +
     '<div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">' +
-      '<button class="btn-ghost" style="justify-content:flex-start;display:flex;gap:8px" onclick="closeModal();export' + type.charAt(0).toUpperCase() + type.slice(1) + '(\'excel\')">📊 Excel — formatado com colunas</button>' +
-      '<button class="btn-ghost" style="justify-content:flex-start;display:flex;gap:8px" onclick="closeModal();export' + type.charAt(0).toUpperCase() + type.slice(1) + '(\'pdf\')">📕 PDF — relatório profissional</button>' +
+      '<button class="btn-ghost" style="justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="closeModal();export' + type.charAt(0).toUpperCase() + type.slice(1) + '(\'excel\')">' + ICON('sheet',16) + ' Excel — formatado com colunas</button>' +
+      '<button class="btn-ghost" style="justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="closeModal();export' + type.charAt(0).toUpperCase() + type.slice(1) + '(\'pdf\')">' + ICON('file',16) + ' PDF — relatório profissional</button>' +
     '</div>'
   );
 }
