@@ -1384,7 +1384,6 @@ function renderRewards() {
         <div class="card-h"><div><div class="card-title">${t('rw_stamps_title')}</div><div class="card-sub">${t('rw_stamps_sub')}</div></div><span class="tag active">${t('rw_active')}</span></div>
         <div style="font-size:14px;color:var(--text2);line-height:1.7">${t('rw_stamps_desc')}</div>
         <div style="background:var(--accBg);border:1px solid var(--accBg2);border-radius:12px;padding:16px;margin-top:14px"><div style="font-family:var(--fh);font-weight:700;font-size:16px">☕ ${t('rw_free_coffee')}</div><div style="font-size:13px;color:var(--text2);margin-top:2px">${t('rw_auto_notif')}</div></div>
-        <button class="btn-ghost" style="width:100%;margin-top:16px" onclick="toast(t('rw_soon'))">${t('rw_edit')}</button>
       </div>
       <div class="card">
         <div class="card-h"><div><div class="card-title">${t('rw_points_title')}</div><div class="card-sub">${t('rw_stamps_sub')}</div></div><span class="tag active">${t('rw_active')}</span></div>
@@ -1394,7 +1393,6 @@ function renderRewards() {
           <div style="display:flex;justify-content:space-between;padding:12px;background:var(--bg2);border-radius:10px"><span style="font-weight:600">🎂 Fatia de bolo</span><span style="font-family:var(--fh);font-weight:700">350 pts</span></div>
           <div style="display:flex;justify-content:space-between;padding:12px;background:var(--bg2);border-radius:10px"><span style="font-weight:600">🎁 Desconto 10€</span><span style="font-family:var(--fh);font-weight:700">500 pts</span></div>
         </div>
-        <button class="btn-acc" style="width:100%;margin-top:16px" onclick="toast(t('rw_soon'))">${t('rw_new')}</button>
       </div>
     </div>`;
 }
@@ -1425,27 +1423,56 @@ function renderSettings() {
     <div class="grid-2b">
       <div class="card">
         <div class="card-h"><div class="card-title">Conta</div></div>
-        <div class="field"><label>Nome</label><input type="text" value="${currentBiz?.owner_name || ''}"></div>
-        <div class="field"><label>Email</label><input type="email" value="${currentBiz?.email || ''}"></div>
-        <div class="field"><label>Negócio</label><input type="text" value="${currentBiz?.name || ''}"></div>
-        <button class="btn-primary" onclick="toast('Definições guardadas')">Guardar alterações</button>
+        <div class="field"><label>Nome</label><input type="text" id="set-name" value="${currentBiz?.owner_name || ''}"></div>
+        <div class="field"><label>Email</label><input type="email" id="set-email" value="${currentBiz?.email || ''}" readonly style="opacity:.6;cursor:not-allowed"><div style="font-size:12px;color:var(--text3);margin-top:4px">O email de acesso não pode ser alterado aqui. Fala connosco para o mudar.</div></div>
+        <div class="field"><label>Negócio</label><input type="text" id="set-biz" value="${currentBiz?.name || ''}"></div>
+        <button class="btn-primary" onclick="saveAccount()">Guardar alterações</button>
       </div>
       <div>
         <div class="card" style="margin-bottom:16px">
           <div class="card-h"><div class="card-title">Plano atual</div></div>
           <div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-family:var(--fh);font-size:20px;font-weight:800" id="set-plan">Starter</div><div style="font-size:13px;color:var(--text3)">até 100 clientes · 1 localização</div></div><span class="tag vip">Trial: 14 dias</span></div>
-          <button class="btn-acc" style="width:100%;margin-top:16px" onclick="toast('Em breve — estamos a preparar os planos de upgrade.')">Fazer upgrade</button>
+          <button class="btn-acc" style="width:100%;margin-top:16px" onclick="openUpgrade()">Fazer upgrade</button>
         </div>
         <div class="card">
           <div class="card-h"><div class="card-title">Notificações</div></div>
-          <div class="set-row"><div><div class="set-label">Email de resumo semanal</div><div class="set-desc">Recebe os números todas as segundas</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-          <div class="set-row"><div><div class="set-label">Alertas de clientes em risco</div><div class="set-desc">Quando um cliente fica inativo</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-          <div class="set-row"><div><div class="set-label">Novos registos</div><div class="set-desc">Notificar a cada novo cliente</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+          <div class="set-row"><div><div class="set-label">Email de resumo semanal</div><div class="set-desc">Recebe os números todas as segundas</div></div><div class="toggle ${notifPref('weekly')?'on':''}" onclick="toggleNotif(this,'weekly')"></div></div>
+          <div class="set-row"><div><div class="set-label">Alertas de clientes em risco</div><div class="set-desc">Quando um cliente fica inativo</div></div><div class="toggle ${notifPref('risk')?'on':''}" onclick="toggleNotif(this,'risk')"></div></div>
+          <div class="set-row"><div><div class="set-label">Novos registos</div><div class="set-desc">Notificar a cada novo cliente</div></div><div class="toggle ${notifPref('signup')?'on':''}" onclick="toggleNotif(this,'signup')"></div></div>
         </div>
       </div>
     </div>`;
   const sp = document.getElementById('set-plan');
   if (sp) sp.textContent = chosenPlan;
+}
+
+// Guardar alterações da conta (nome do dono + nome do negócio)
+async function saveAccount() {
+  var name = (document.getElementById('set-name').value || '').trim();
+  var biz = (document.getElementById('set-biz').value || '').trim();
+  if (!currentBiz || !currentBiz.id) { toast('Sessão não encontrada. Volta a entrar.'); return; }
+  if (!biz) { toast('O nome do negócio não pode ficar vazio'); return; }
+  var { error } = await db.from('businesses').update({ owner_name: name, name: biz }).eq('id', currentBiz.id);
+  if (error) { toast('Erro ao guardar: ' + error.message); return; }
+  currentBiz.owner_name = name;
+  currentBiz.name = biz;
+  try { setPlatformUser(currentBiz); } catch(e) {}
+  toast('Alterações guardadas');
+}
+
+// Preferências de notificações (guardadas no dispositivo)
+function notifPrefs() {
+  var def = { weekly: true, risk: true, signup: false };
+  try { return Object.assign(def, JSON.parse(localStorage.getItem('loyalle_notif') || '{}')); }
+  catch(e) { return def; }
+}
+function notifPref(k) { return !!notifPrefs()[k]; }
+function toggleNotif(el, k) {
+  el.classList.toggle('on');
+  var p = notifPrefs();
+  p[k] = el.classList.contains('on');
+  try { localStorage.setItem('loyalle_notif', JSON.stringify(p)); } catch(e) {}
+  toast('Preferência guardada');
 }
 
 
