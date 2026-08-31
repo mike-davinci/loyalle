@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Obrigado — Loyalle</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#FAFAF7; --bg2:#F4F1EB; --bg3:#EAE5DA;
+      --dark:#0C0A06; --text:#1A1610; --text2:#5C5545; --text3:#8A826F;
+      --acc:#C6993B; --acc2:#D4A642; --green:#2A6B3E; --white:#FFFFFF;
+      --fh:'Bricolage Grotesque',sans-serif;
+      --fb:'Instrument Sans',sans-serif;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:var(--fb);
+      background:var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      -webkit-font-smoothing:antialiased;
+    }
+    .card{
+      background:var(--white);
+      border:1px solid var(--bg3);
+      border-radius:20px;
+      padding:48px 40px;
+      max-width:480px;
+      width:100%;
+      text-align:center;
+      box-shadow:0 4px 24px rgba(12,10,6,.04);
+    }
+    .logo{
+      font-family:var(--fh);
+      font-weight:800;
+      font-size:26px;
+      letter-spacing:-.02em;
+      color:var(--dark);
+      margin-bottom:32px;
+    }
+    .logo span{color:var(--acc)}
+    .check{
+      width:72px;height:72px;
+      margin:0 auto 24px;
+      border-radius:50%;
+      background:linear-gradient(135deg,var(--acc2),var(--acc));
+      display:flex;align-items:center;justify-content:center;
+    }
+    .check svg{width:36px;height:36px;stroke:#fff;stroke-width:3;fill:none}
+    h1{
+      font-family:var(--fh);
+      font-size:28px;
+      font-weight:700;
+      letter-spacing:-.02em;
+      color:var(--dark);
+      margin-bottom:12px;
+    }
+    p{
+      font-size:16px;
+      line-height:1.6;
+      color:var(--text2);
+      margin-bottom:32px;
+    }
+    .btn{
+      display:inline-block;
+      background:var(--dark);
+      color:#fff;
+      text-decoration:none;
+      font-family:var(--fb);
+      font-weight:600;
+      font-size:15px;
+      padding:14px 28px;
+      border-radius:11px;
+      transition:transform .15s ease,opacity .15s ease;
+    }
+    .btn:hover{transform:translateY(-1px);opacity:.92}
+    .foot{
+      margin-top:28px;
+      font-size:13px;
+      color:var(--text3);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">Loyalle<span>.</span></div>
+    <div class="check">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
+    <h1>Mensagem enviada!</h1>
+    <p>Obrigado pelo teu contacto. Recebemos o teu pedido e responderemos o mais breve possível.</p>
+    <a class="btn" href="/">Voltar ao início</a>
+    <div class="foot">Equipa Loyalle</div>
+  </div>
+</body>
+</html>
