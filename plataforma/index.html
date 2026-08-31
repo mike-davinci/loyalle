@@ -823,6 +823,50 @@ function copyWelcomeLink() {
   } else { el.select(); document.execCommand('copy'); done(); }
 }
 
+// Cria (se ainda não existir) o negócio ligado à conta autenticada, a partir dos metadados do registo
+async function ensureBusiness(user) {
+  var existing = await db.from('businesses').select('*').eq('auth_user_id', user.id).single();
+  if (existing.data) return existing.data;
+  var md = user.user_metadata || {};
+  var bizName = (md.business_name || 'O meu negócio').trim();
+  var ins = await db.from('businesses').insert({
+    auth_user_id: user.id, name: bizName, owner_name: md.owner_name || '', email: user.email,
+    plan: md.plan || 'Starter', status: 'trial', mechanic: 'Carimbos', stamp_goal: 10,
+    reward_text: 'Um café grátis', logo_initial: (bizName[0] || 'L').toUpperCase()
+  }).select().single();
+  if (ins.error) { console.error('Criar negócio:', ins.error); return null; }
+  return ins.data;
+}
+
+// Entra na aplicação com um negócio já carregado
+async function enterApp(biz, opts) {
+  currentBiz = biz;
+  chosenPlan = biz.plan;
+  if (!currentBiz.slug) {
+    var ref = await db.from('businesses').select('*').eq('id', biz.id).single();
+    if (ref.data) { currentBiz = ref.data; biz = ref.data; }
+  }
+  var sp = document.getElementById('sb-plan');
+  if (sp) sp.textContent = 'Plano ' + biz.plan;
+  document.getElementById('auth').style.display = 'none';
+  if (opts && opts.welcome) showWelcome(biz);
+  document.getElementById('app').classList.add('active');
+  setPlatformUser(biz);
+  await renderAll();
+}
+
+// Ecrã "confirma o teu email" mostrado após o registo
+function showCheckEmail(email) {
+  var right = document.querySelector('.auth-right');
+  if (!right) { toast('Conta criada! Confirma o teu email para entrar.'); return; }
+  right.innerHTML = '<div style="max-width:420px;margin:0 auto;padding:40px 24px;text-align:center">' +
+    '<div style="width:56px;height:56px;border-radius:14px;background:var(--accBg);color:var(--acc);display:flex;align-items:center;justify-content:center;margin:0 auto 18px">' + ICON('check',28) + '</div>' +
+    '<h2 style="font-family:var(--fh);font-size:24px;margin-bottom:10px">Confirma o teu email</h2>' +
+    '<p style="color:var(--text2);line-height:1.6;margin-bottom:8px">Enviámos um link de confirmação para <b>' + email + '</b>.</p>' +
+    '<p style="color:var(--text3);font-size:13px;line-height:1.6">Abre o email e carrega em “Confirmar o meu email” para ativares a conta. Se não estiver na caixa de entrada, vê o spam.</p>' +
+    '</div>';
+}
+
 async function doSignup() {
   const inputs = document.querySelectorAll('#form-signup input');
   const name = inputs[0].value.trim();
@@ -840,37 +884,34 @@ async function doSignup() {
   }
   const btn = event ? event.target : null;
   if (btn) { btn.disabled = true; btn.textContent = 'A criar conta...'; }
-  // 1. Criar conta de autenticação
-  const { data: auth, error } = await db.auth.signUp({ email, password: pass });
+  // Criar conta de autenticação, guardando os dados do negócio nos metadados
+  const { data: auth, error } = await db.auth.signUp({
+    email, password: pass,
+    options: {
+      emailRedirectTo: 'https://app.loyalle.pt',
+      data: { owner_name: name, business_name: bizName, plan: chosenPlan }
+    }
+  });
   if (error) {
     toast(error.message.includes('registered') ? 'Este email já tem conta.' : 'Erro ao criar conta.');
     if (btn) { btn.disabled = false; btn.textContent = 'Criar conta grátis →'; }
     return;
   }
-  // 2. Criar o negócio ligado a essa conta
-  const { data: biz, error: bizErr } = await db.from('businesses').insert({
-    auth_user_id: auth.user.id, name: bizName, owner_name: name, email: email,
-    plan: chosenPlan, status: 'trial', mechanic: 'Carimbos', stamp_goal: 10,
-    reward_text: 'Um café grátis', logo_initial: bizName[0].toUpperCase()
-  }).select().single();
-  if (bizErr) {
-    toast('Erro ao criar o negócio.'); console.error(bizErr);
+  // Confirmação de email LIGADA → não há sessão ainda: mostrar ecrã de confirmação.
+  // O negócio é criado quando o utilizador confirma e entra (ver checkSession/ensureBusiness).
+  if (!auth.session) {
+    showCheckEmail(email);
     if (btn) { btn.disabled = false; btn.textContent = 'Criar conta grátis →'; }
     return;
   }
-  currentBiz = biz;
-  // O slug é gerado na base de dados; se não veio no insert, buscar de novo
-  if (!currentBiz.slug) {
-    var ref = await db.from('businesses').select('*').eq('id', biz.id).single();
-    if (ref.data) currentBiz = ref.data;
+  // Confirmação desligada → sessão imediata: criar negócio e entrar já.
+  var biz = await ensureBusiness(auth.user);
+  if (!biz) {
+    toast('Conta criada, mas houve um erro a preparar o negócio. Tenta entrar de novo.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Criar conta grátis →'; }
+    return;
   }
-  // Mostrar as boas-vindas PRIMEIRO (cobre tudo) e só depois montar a app por trás
-  document.getElementById('auth').style.display = 'none';
-  showWelcome(currentBiz);
-  document.getElementById('sb-plan').textContent = 'Plano ' + currentBiz.plan;
-  document.getElementById('app').classList.add('active');
-  setPlatformUser(currentBiz);
-  await renderAll();
+  await enterApp(biz, { welcome: true });
 }
 
 async function logout() {
@@ -1620,18 +1661,12 @@ API.addStamp = async function(id) {
   if (window.location.hash && window.location.hash.includes('type=recovery')) return;
   const { data } = await db.auth.getSession();
   if (data && data.session) {
-    const { data: biz } = await db.from('businesses')
+    const res = await db.from('businesses')
       .select('*').eq('auth_user_id', data.session.user.id).single();
-    if (biz) {
-      currentBiz = biz;
-      chosenPlan = biz.plan;
-      const sp = document.getElementById('sb-plan');
-      if (sp) sp.textContent = 'Plano ' + biz.plan;
-      document.getElementById('auth').style.display = 'none';
-      document.getElementById('app').classList.add('active');
-      setPlatformUser(biz);
-      await renderAll();
-    }
+    let biz = res.data, justCreated = false;
+    // Primeira entrada depois de confirmar o email: criar o negócio a partir dos metadados
+    if (!biz) { biz = await ensureBusiness(data.session.user); justCreated = !!biz; }
+    if (biz) await enterApp(biz, { welcome: justCreated });
   }
 })();
 
