@@ -1056,10 +1056,11 @@ async function renderDashboard() {
     { label: t('cust_inactive'), value: segCounts.inactive, color: '#C0392B' }
   ].filter(s => s.value > 0);
 
-  const total = segments.reduce((a, b) => a + b.value, 0) || 1;
+  const total = segments.reduce((a, b) => a + b.value, 0);
+  const totalDiv = total || 1; // só para o cálculo do donut não dividir por zero
   let offset = 0;
   const donutSegs = segments.map(seg => {
-    const pct = (seg.value / total) * 100;
+    const pct = (seg.value / totalDiv) * 100;
     const dash = `${pct} ${100 - pct}`;
     const circle = `<circle r="15.915" cx="18" cy="18" fill="transparent" stroke="${seg.color}" stroke-width="5" stroke-dasharray="${dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 18 18)"/>`;
     offset += pct;
