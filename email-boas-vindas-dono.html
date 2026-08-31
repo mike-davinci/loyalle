@@ -1,0 +1,151 @@
+<!-- ============================================================
+  LOYALLE — Email de boas-vindas / confirmação (dono do negócio)
+  Para: Supabase > Authentication > Email Templates > "Confirm signup"
+  Cola TODO este HTML no corpo do template.
+  Variáveis Supabase usadas: {{ .ConfirmationURL }} , {{ .Email }}
+  ============================================================ -->
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="x-apple-disable-message-reformatting">
+<title>Bem-vindo à Loyalle</title>
+</head>
+<body style="margin:0;padding:0;background:#F4F1EB;font-family:Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+
+  <!-- preheader (texto de pré-visualização, escondido) -->
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#F4F1EB;font-size:1px;line-height:1px;">
+    A tua conta Loyalle está quase pronta. Confirma o email e põe a tua marca na wallet dos clientes.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F1EB;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background:#FFFFFF;border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.06);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#1A1610;padding:28px 40px;">
+              <span style="font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:bold;letter-spacing:-1px;color:#FFFFFF;">loyalle<span style="color:#C6993B;">.</span></span>
+            </td>
+          </tr>
+
+          <!-- Faixa dourada -->
+          <tr><td style="height:4px;background:#C6993B;line-height:4px;font-size:4px;">&nbsp;</td></tr>
+
+          <!-- Corpo -->
+          <tr>
+            <td style="padding:40px 40px 8px 40px;">
+              <h1 style="margin:0 0 14px 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.2;color:#1A1610;font-weight:bold;">
+                Bem-vindo à Loyalle.
+              </h1>
+              <p style="margin:0 0 18px 0;font-size:16px;line-height:1.65;color:#5C5545;">
+                A tua conta está criada. Falta só um passo: confirmar o teu email para começares a pôr a tua marca na wallet de cada cliente.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Botão confirmar -->
+          <tr>
+            <td align="center" style="padding:12px 40px 32px 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="border-radius:10px;background:#1A1610;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank"
+                       style="display:inline-block;padding:15px 34px;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:bold;color:#FFFFFF;text-decoration:none;border-radius:10px;">
+                      Confirmar o meu email
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:16px 0 0 0;font-size:12px;line-height:1.5;color:#8A826F;">
+                Se o botão não funcionar, copia e cola este link no navegador:<br>
+                <a href="{{ .ConfirmationURL }}" style="color:#C6993B;word-break:break-all;">{{ .ConfirmationURL }}</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Separador -->
+          <tr><td style="padding:0 40px;"><div style="border-top:1px solid #EAE5DA;"></div></td></tr>
+
+          <!-- Primeiros passos -->
+          <tr>
+            <td style="padding:28px 40px 8px 40px;">
+              <p style="margin:0 0 20px 0;font-family:Georgia,'Times New Roman',serif;font-size:13px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:#8A826F;">
+                Os teus primeiros passos
+              </p>
+
+              <!-- passo 1 -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;">
+                <tr>
+                  <td width="40" valign="top">
+                    <div style="width:30px;height:30px;border-radius:8px;background:#FDF6EA;color:#C6993B;font-family:Georgia,serif;font-size:15px;font-weight:bold;text-align:center;line-height:30px;">1</div>
+                  </td>
+                  <td valign="top" style="padding-left:6px;">
+                    <p style="margin:0 0 3px 0;font-size:15px;font-weight:bold;color:#1A1610;">Partilha o link do teu cartão</p>
+                    <p style="margin:0;font-size:14px;line-height:1.55;color:#5C5545;">Envia-o por WhatsApp ou redes sociais. Cada cliente adiciona o cartão à wallet com um toque.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- passo 2 -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;">
+                <tr>
+                  <td width="40" valign="top">
+                    <div style="width:30px;height:30px;border-radius:8px;background:#FDF6EA;color:#C6993B;font-family:Georgia,serif;font-size:15px;font-weight:bold;text-align:center;line-height:30px;">2</div>
+                  </td>
+                  <td valign="top" style="padding-left:6px;">
+                    <p style="margin:0 0 3px 0;font-size:15px;font-weight:bold;color:#1A1610;">Dá o primeiro carimbo</p>
+                    <p style="margin:0;font-size:14px;line-height:1.55;color:#5C5545;">Quando um cliente mostrar o QR do cartão, usa o Scan / Registar no painel para registar a visita.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- passo 3 -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
+                <tr>
+                  <td width="40" valign="top">
+                    <div style="width:30px;height:30px;border-radius:8px;background:#FDF6EA;color:#C6993B;font-family:Georgia,serif;font-size:15px;font-weight:bold;text-align:center;line-height:30px;">3</div>
+                  </td>
+                  <td valign="top" style="padding-left:6px;">
+                    <p style="margin:0 0 3px 0;font-size:15px;font-weight:bold;color:#1A1610;">Acompanha os números</p>
+                    <p style="margin:0;font-size:14px;line-height:1.55;color:#5C5545;">No painel vês clientes ativos, retenção e prémios resgatados. Decides com dados reais.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Ajuda -->
+          <tr>
+            <td style="padding:20px 40px 36px 40px;">
+              <p style="margin:0;font-size:14px;line-height:1.6;color:#5C5545;">
+                Precisas de ajuda? Responde a este email ou escreve-nos para
+                <a href="mailto:geral@loyalle.pt" style="color:#C6993B;text-decoration:none;">geral@loyalle.pt</a>. Estamos cá para ti.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#1A1610;padding:26px 40px;">
+              <span style="font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:bold;color:#FFFFFF;">loyalle<span style="color:#C6993B;">.</span></span>
+              <p style="margin:10px 0 0 0;font-size:12px;line-height:1.6;color:rgba(255,255,255,.45);">
+                Carteiras digitais de fidelidade para negócios independentes. Feito em Portugal.<br>
+                Recebeste este email porque criaste uma conta com {{ .Email }}.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+        <p style="margin:20px 0 0 0;font-size:11px;color:#8A826F;">© Loyalle · <a href="https://loyalle.pt" style="color:#8A826F;">loyalle.pt</a></p>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
