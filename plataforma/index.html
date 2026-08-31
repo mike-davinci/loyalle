@@ -849,7 +849,6 @@ async function enterApp(biz, opts) {
   var sp = document.getElementById('sb-plan');
   if (sp) sp.textContent = 'Plano ' + biz.plan;
   document.getElementById('auth').style.display = 'none';
-  if (opts && opts.welcome) showWelcome(biz);
   document.getElementById('app').classList.add('active');
   setPlatformUser(biz);
   await renderAll();
