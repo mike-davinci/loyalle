@@ -88,6 +88,14 @@ a{text-decoration:none;color:inherit}
 .plan-opt.sel{border-color:var(--acc);background:var(--accBg)}
 .plan-opt-n{font-family:var(--fh);font-size:13px;font-weight:700;color:var(--dark)}
 .plan-opt-p{font-size:11px;color:var(--text3);margin-top:2px}
+.plan-cycle{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px}
+.pc-lbl{font-size:12px;color:var(--text3);cursor:pointer;font-weight:600}
+.pc-lbl.act{color:var(--dark)}
+.pc-switch{width:38px;height:22px;border-radius:11px;background:var(--bg3);position:relative;cursor:pointer;border:none;transition:background .2s;flex-shrink:0;padding:0}
+.pc-switch::after{content:'';width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.pc-switch.on{background:var(--acc)}
+.pc-switch.on::after{transform:translateX(16px)}
+.pc-save{font-size:11px;font-weight:700;color:var(--acc);background:var(--accBg);padding:2px 8px;border-radius:20px}
 .btn-primary{width:100%;padding:13px;background:var(--dark);color:#fff;border-radius:10px;font-size:15px;font-weight:600;transition:all .2s;margin-top:4px}
 .btn-primary:hover{background:var(--dark2)}
 .auth-alt{text-align:center;font-size:13px;color:var(--text3);margin-top:20px}
@@ -431,11 +439,17 @@ tbody tr:hover{background:var(--bg)}
         </div>
         <div class="field"><label>Email</label><input type="email" placeholder="nome@negocio.pt"></div>
         <div class="field"><label>Palavra-passe</label><div class="pw-wrap"><input type="password" placeholder="Mínimo 8 caracteres"><button type="button" class="pw-eye" onclick="togglePw(this)" aria-label="Mostrar palavra-passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
-        <label style="display:block;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px">Escolhe o teu plano</label>
+        <label style="display:block;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px">Escolhe o teu plano</label>
+        <div class="plan-cycle">
+          <span class="pc-lbl act" id="pc-m" onclick="setBilling(false)">Mensal</span>
+          <button type="button" class="pc-switch" id="pc-switch" onclick="setBilling(!annualBilling)"></button>
+          <span class="pc-lbl" id="pc-a" onclick="setBilling(true)">Anual</span>
+          <span class="pc-save">-20%</span>
+        </div>
         <div class="plan-pick">
-          <div class="plan-opt sel" onclick="pickPlan(this,'Starter')"><div class="plan-opt-n">Starter</div><div class="plan-opt-p">€35/mês</div></div>
-          <div class="plan-opt" onclick="pickPlan(this,'Pro')"><div class="plan-opt-n">Pro</div><div class="plan-opt-p">€69/mês</div></div>
-          <div class="plan-opt" onclick="pickPlan(this,'Business')"><div class="plan-opt-n">Business</div><div class="plan-opt-p">Custom</div></div>
+          <div class="plan-opt sel" onclick="pickPlan(this,'Starter')"><div class="plan-opt-n">Starter</div><div class="plan-opt-p" id="po-1">€35/mês</div></div>
+          <div class="plan-opt" onclick="pickPlan(this,'Pro')"><div class="plan-opt-n">Pro</div><div class="plan-opt-p" id="po-2">€69/mês</div></div>
+          <div class="plan-opt" onclick="pickPlan(this,'Business')"><div class="plan-opt-n">Business</div><div class="plan-opt-p" id="po-3">Personalizado</div></div>
         </div>
         <label style="display:flex;align-items:flex-start;gap:9px;margin:14px 0 4px;font-size:12.5px;color:var(--text2);line-height:1.5;cursor:pointer">
           <input type="checkbox" id="signup-terms" style="margin-top:2px;width:15px;height:15px;flex-shrink:0;accent-color:var(--gold,#C6993B);cursor:pointer">
@@ -742,6 +756,20 @@ function pickPlan(el, plan) {
   chosenPlan = plan;
 }
 
+// Ciclo de faturação Mensal/Anual (preços iguais aos da landing: -20% no anual)
+let annualBilling = false;
+const planPrices = { monthly: [35, 69], annual: [28, 55] };
+function setBilling(annual) {
+  annualBilling = annual;
+  var el = function(id){ return document.getElementById(id); };
+  if (el('pc-switch')) el('pc-switch').className = 'pc-switch' + (annual ? ' on' : '');
+  if (el('pc-m')) el('pc-m').className = 'pc-lbl' + (annual ? '' : ' act');
+  if (el('pc-a')) el('pc-a').className = 'pc-lbl' + (annual ? ' act' : '');
+  var p = annual ? planPrices.annual : planPrices.monthly;
+  if (el('po-1')) el('po-1').textContent = '€' + p[0] + '/mês';
+  if (el('po-2')) el('po-2').textContent = '€' + p[1] + '/mês';
+}
+
 function setPlatformUser(biz) {
   // Sidebar inferior — utilizador
   const n = document.getElementById('sb-user-name');
@@ -886,7 +914,7 @@ async function doSignup() {
     email, password: pass,
     options: {
       emailRedirectTo: 'https://app.loyalle.pt',
-      data: { owner_name: name, business_name: bizName, plan: chosenPlan }
+      data: { owner_name: name, business_name: bizName, plan: chosenPlan, billing: annualBilling ? 'annual' : 'monthly' }
     }
   });
   if (error) {
