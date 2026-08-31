@@ -38,6 +38,9 @@ a{text-decoration:none;color:inherit}
 .auth-stats{display:flex;gap:32px;margin-top:36px;position:relative;z-index:1}
 .auth-stat-v{font-family:var(--fh);font-size:28px;font-weight:800;color:#fff;letter-spacing:-.03em}
 .auth-stat-l{font-size:12px;color:rgba(255,255,255,.4);margin-top:2px}
+.auth-features{display:flex;flex-direction:column;gap:16px;margin-top:36px;position:relative;z-index:1}
+.auth-feat{display:flex;align-items:center;gap:13px;font-size:15px;color:rgba(255,255,255,.78);font-weight:500}
+.auth-feat-ic{width:28px;height:28px;border-radius:8px;background:rgba(198,153,59,.16);color:var(--acc);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .auth-foot{font-size:12px;color:rgba(255,255,255,.25);position:relative;z-index:1}
 
 /* ===== Ecrã de boas-vindas pós-registo ===== */
@@ -392,10 +395,10 @@ tbody tr:hover{background:var(--bg)}
     <div class="auth-left-content">
       <div class="auth-left-title">A tua marca na <em>Wallet</em> de cada cliente.</div>
       <div class="auth-left-desc">Gere o teu programa de fidelização, vê quem volta e quando, e faz crescer o teu negócio com dados reais.</div>
-      <div class="auth-stats">
-        <div><div class="auth-stat-v" style="font-size:20px;letter-spacing:-.02em">Apple &amp; Google</div><div class="auth-stat-l">Wallet nativo</div></div>
-        <div><div class="auth-stat-v" style="font-size:20px;letter-spacing:-.02em">Sem app</div><div class="auth-stat-l">para o cliente</div></div>
-        <div><div class="auth-stat-v" style="font-size:20px;letter-spacing:-.02em">Push</div><div class="auth-stat-l">notificações automáticas</div></div>
+      <div class="auth-features">
+        <div class="auth-feat"><span class="auth-feat-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Apple &amp; Google Wallet nativo</div>
+        <div class="auth-feat"><span class="auth-feat-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Sem app para o cliente instalar</div>
+        <div class="auth-feat"><span class="auth-feat-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Notificações automáticas de prémios</div>
       </div>
     </div>
     <div class="auth-foot">© 2026 Loyalle. Plataforma de fidelização digital.</div>
