@@ -1615,8 +1615,8 @@ function renderRewards() {
   document.getElementById('page-rewards').innerHTML = `
     <div class="grid-2b">
       <div class="card">
-        <div class="card-h"><div><div class="card-title">${t('rw_stamps_title')}</div><div class="card-sub">${t('rw_stamps_sub')}</div></div><span class="tag active">${t('rw_active')}</span></div>
-        <div style="font-size:14px;color:var(--text2);line-height:1.7">${t('rw_stamps_desc')}</div>
+        <div class="card-h"><div><div class="card-title">${t('rw_stamps_title')}</div><div class="card-sub">${t('rw_stamps_sub')}</div></div><div style="display:flex;align-items:center;gap:8px"><span class="tag active">${t('rw_active')}</span><button class="btn-ghost" style="padding:6px 12px;font-size:13px;display:flex;align-items:center;gap:6px" onclick="openStampEditor()">${ICON('target',15)} ${t('rw_edit')}</button></div></div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.7">${t('rw_stamps_desc').replace('10', (currentBiz && currentBiz.stamp_goal) ? currentBiz.stamp_goal : 10)}</div>
         <div style="background:var(--accBg);border:1px solid var(--accBg2);border-radius:12px;padding:16px;margin-top:14px;display:flex;align-items:center;gap:12px"><span style="color:var(--acc);flex-shrink:0;display:flex">${ICON('gift',22)}</span><div><div style="font-family:var(--fh);font-weight:700;font-size:16px">${(currentBiz && currentBiz.reward_text) ? currentBiz.reward_text : 'Prémio de fidelidade'}</div><div style="font-size:13px;color:var(--text2);margin-top:4px">Ao completar <b>${(currentBiz && currentBiz.stamp_goal) ? currentBiz.stamp_goal : 10}</b> carimbos · ${t('rw_auto_notif')}</div></div></div>
       </div>
       <div class="card" style="opacity:.72">
@@ -1625,6 +1625,34 @@ function renderRewards() {
         <div style="margin-top:14px;padding:16px;background:var(--bg2);border:1px dashed var(--bg3);border-radius:12px;text-align:center;color:var(--text3);font-size:13px;line-height:1.6">Vais poder criar prémios por pontos (ex.: um prémio aos 200 pontos, um desconto aos 500) e definir os teus próprios valores. <b>Em breve.</b></div>
       </div>
     </div>`;
+}
+
+// Editor do cartão de carimbos — prémio + nº de carimbos (guardado por negócio)
+function openStampEditor() {
+  var goal = (currentBiz && currentBiz.stamp_goal) ? currentBiz.stamp_goal : 10;
+  var reward = (currentBiz && currentBiz.reward_text) ? currentBiz.reward_text : '';
+  openModal(
+    '<div class="modal-h">Editar cartão de carimbos</div>' +
+    '<div class="modal-sub">Define o prémio e quantos carimbos são precisos para o ganhar.</div>' +
+    '<div class="field"><label>Prémio</label><input type="text" id="rw-reward" value="' + reward.replace(/"/g, '&quot;') + '" placeholder="Ex.: Uma sobremesa grátis"></div>' +
+    '<div class="field"><label>Nº de carimbos para o prémio</label><input type="number" id="rw-goal" min="1" max="50" value="' + goal + '"></div>' +
+    '<div class="modal-btns"><button class="btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn-primary" onclick="saveStampReward()">Guardar</button></div>'
+  );
+}
+async function saveStampReward() {
+  var reward = (document.getElementById('rw-reward').value || '').trim();
+  var goal = parseInt(document.getElementById('rw-goal').value, 10);
+  if (!reward) { toast('Escreve o prémio'); return; }
+  if (!goal || goal < 1) { toast('Número de carimbos inválido'); return; }
+  if (!currentBiz || !currentBiz.id) { toast('Sessão não encontrada. Volta a entrar.'); return; }
+  var { error } = await db.from('businesses').update({ reward_text: reward, stamp_goal: goal }).eq('id', currentBiz.id);
+  if (error) { toast('Erro ao guardar: ' + error.message); return; }
+  currentBiz.reward_text = reward;
+  currentBiz.stamp_goal = goal;
+  closeModal();
+  toast('Cartão de carimbos atualizado');
+  renderRewards();
+  try { renderDashboard(); } catch (e) {}
 }
 
 // ---------- CARD & BRANDING ----------
