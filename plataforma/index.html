@@ -1619,14 +1619,10 @@ function renderRewards() {
         <div style="font-size:14px;color:var(--text2);line-height:1.7">${t('rw_stamps_desc')}</div>
         <div style="background:var(--accBg);border:1px solid var(--accBg2);border-radius:12px;padding:16px;margin-top:14px"><div style="font-family:var(--fh);font-weight:700;font-size:16px">☕ ${(currentBiz && currentBiz.reward_text) ? currentBiz.reward_text : t('rw_free_coffee')}</div><div style="font-size:13px;color:var(--text2);margin-top:6px">Ao completar <b>${(currentBiz && currentBiz.stamp_goal) ? currentBiz.stamp_goal : 10}</b> carimbos · ${t('rw_auto_notif')}</div></div>
       </div>
-      <div class="card">
-        <div class="card-h"><div><div class="card-title">${t('rw_points_title')}</div><div class="card-sub">${t('rw_stamps_sub')}</div></div><span class="tag active">${t('rw_active')}</span></div>
+      <div class="card" style="opacity:.72">
+        <div class="card-h"><div><div class="card-title">${t('rw_points_title')}</div><div class="card-sub">${t('rw_soon')}</div></div><span class="tag">${t('rw_soon')}</span></div>
         <div style="font-size:14px;color:var(--text2);line-height:1.7">${t('rw_points_desc')}</div>
-        <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
-          <div style="display:flex;justify-content:space-between;padding:12px;background:var(--bg2);border-radius:10px"><span style="font-weight:600">🥐 Croissant grátis</span><span style="font-family:var(--fh);font-weight:700">200 pts</span></div>
-          <div style="display:flex;justify-content:space-between;padding:12px;background:var(--bg2);border-radius:10px"><span style="font-weight:600">🎂 Fatia de bolo</span><span style="font-family:var(--fh);font-weight:700">350 pts</span></div>
-          <div style="display:flex;justify-content:space-between;padding:12px;background:var(--bg2);border-radius:10px"><span style="font-weight:600">🎁 Desconto 10€</span><span style="font-family:var(--fh);font-weight:700">500 pts</span></div>
-        </div>
+        <div style="margin-top:14px;padding:16px;background:var(--bg2);border:1px dashed var(--bg3);border-radius:12px;text-align:center;color:var(--text3);font-size:13px;line-height:1.6">Vais poder criar prémios por pontos (ex.: café aos 200, desconto aos 500) e definir os teus valores. <b>Em breve.</b></div>
       </div>
     </div>`;
 }
