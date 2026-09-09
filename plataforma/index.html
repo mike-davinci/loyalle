@@ -1425,16 +1425,32 @@ function renderScan() {
         </div>
         <div class="card">
           <div class="card-h"><div class="card-title">Hoje</div></div>
-          <div class="kpi-v" style="font-size:36px">38</div>
+          <div class="kpi-v" style="font-size:36px" id="scan-visits">0</div>
           <div class="kpi-l">visitas registadas hoje</div>
           <div style="display:flex;gap:20px;margin-top:16px">
-            <div><div style="font-family:var(--fh);font-weight:800;font-size:20px">6</div><div style="font-size:12px;color:var(--text3)">prémios dados</div></div>
-            <div><div style="font-family:var(--fh);font-weight:800;font-size:20px">4</div><div style="font-size:12px;color:var(--text3)">novos clientes</div></div>
+            <div><div style="font-family:var(--fh);font-weight:800;font-size:20px" id="scan-rewards">0</div><div style="font-size:12px;color:var(--text3)">prémios dados</div></div>
+            <div><div style="font-family:var(--fh);font-weight:800;font-size:20px" id="scan-newcust">0</div><div style="font-size:12px;color:var(--text3)">novos clientes</div></div>
           </div>
         </div>
       </div>
     </div>`;
   renderScanResults('');
+  loadScanToday();
+}
+
+// Estatísticas reais de HOJE (visitas, prémios, novos clientes)
+async function loadScanToday() {
+  if (!currentBiz || !currentBiz.id) return;
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  const iso = start.toISOString();
+  const bid = currentBiz.id;
+  const v = await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).eq('type', 'stamp').gte('created_at', iso);
+  const r = await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).eq('type', 'reward').gte('created_at', iso);
+  const n = await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', bid).gte('created_at', iso);
+  const set = function(id, val) { const el = document.getElementById(id); if (el) el.textContent = (val || 0); };
+  set('scan-visits', v.count);
+  set('scan-rewards', r.count);
+  set('scan-newcust', n.count);
 }
 function renderScanResults(q) {
   q = (q || '').toLowerCase();
