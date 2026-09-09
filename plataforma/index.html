@@ -697,6 +697,26 @@ const API = {
     const order = [1,2,3,4,5,6,0];
     return order.map(i => ({ d: labels[i], v: counts[i] }));
   },
+  // GET visitas dos últimos 6 meses (agrupadas por mês) para o gráfico
+  async getMonthData() {
+    const mLabels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const now = new Date();
+    const buckets = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      buckets.push({ y: d.getFullYear(), m: d.getMonth(), d: mLabels[d.getMonth()], v: 0 });
+    }
+    const sixAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString();
+    const { data } = await db.from('transactions')
+      .select('created_at').eq('business_id', currentBiz.id)
+      .eq('type','stamp').gte('created_at', sixAgo);
+    (data || []).forEach(t => {
+      const dt = new Date(t.created_at);
+      const b = buckets.find(x => x.y === dt.getFullYear() && x.m === dt.getMonth());
+      if (b) b.v++;
+    });
+    return buckets.map(b => ({ d: b.d, v: b.v }));
+  },
   // GET atividade recente
   async getActivity() {
     const { data } = await db.from('transactions')
@@ -1134,8 +1154,8 @@ async function renderDashboard() {
     </div>
     <div class="grid-2">
       <div class="card">
-        <div class="card-h"><div><div class="card-title">${t('dash_visits_day')}</div><div class="card-sub">${t('dash_last_week')}</div></div><button class="filter-chip">${t('dash_week')} ▾</button></div>
-        <div class="chart-bars">${bars}</div>
+        <div class="card-h"><div><div class="card-title">${t('dash_visits_day')}</div><div class="card-sub" id="visits-sub">${t('dash_last_week')}</div></div><button class="filter-chip" id="visits-chip" onclick="toggleVisitsPeriod()" style="cursor:pointer">${t('dash_week')} ▾</button></div>
+        <div class="chart-bars" id="visits-chart">${bars}</div>
       </div>
       <div class="card">
         <div class="card-h"><div><div class="card-title">${t('dash_segments')}</div><div class="card-sub">${total} ${t('dash_clients_count')}</div></div></div>
@@ -1166,6 +1186,34 @@ async function renderDashboard() {
         </div>
       </div>
     </div>`;
+  renderVisitsChart();
+}
+
+// Seletor Semana / Mês do gráfico de visitas
+let dashPeriod = 'week';
+function toggleVisitsPeriod() {
+  dashPeriod = dashPeriod === 'week' ? 'month' : 'week';
+  renderVisitsChart();
+}
+async function renderVisitsChart() {
+  const chart = document.getElementById('visits-chart');
+  if (!chart) return;
+  const isMonth = dashPeriod === 'month';
+  const data = isMonth ? await API.getMonthData() : await API.getWeekData();
+  const maxV = Math.max.apply(null, data.map(d => d.v).concat(1));
+  chart.innerHTML = data.map(d => {
+    const h = Math.round((d.v / maxV) * 100);
+    const hi = d.v === maxV && d.v > 0 ? 'hi' : '';
+    return '<div class="chart-col"><div class="chart-bar ' + hi + '" style="height:' + h + '%"><span class="chart-val">' + d.v + '</span></div><span class="chart-lbl">' + d.d + '</span></div>';
+  }).join('');
+  const subTxt = { pt:[ 'Última semana','Últimos 6 meses'], en:['Last week','Last 6 months'], es:['Última semana','Últimos 6 meses'], fr:['Semaine dernière','6 derniers mois'], de:['Letzte Woche','Letzte 6 Monate'] };
+  const chipTxt = { pt:['Semana','Mês'], en:['Week','Month'], es:['Semana','Mes'], fr:['Semaine','Mois'], de:['Woche','Monat'] };
+  const lang = (typeof curLang !== 'undefined' && subTxt[curLang]) ? curLang : 'pt';
+  const idx = isMonth ? 1 : 0;
+  const subEl = document.getElementById('visits-sub');
+  const chipEl = document.getElementById('visits-chip');
+  if (subEl) subEl.textContent = subTxt[lang][idx];
+  if (chipEl) chipEl.textContent = chipTxt[lang][idx] + ' ▾';
 }
 
 // Link público do cartão do negócio autenticado
