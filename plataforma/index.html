@@ -1163,17 +1163,6 @@ async function renderDashboard() {
           <button class="btn-dark" style="display:flex;align-items:center;gap:8px;justify-content:flex-start" onclick="nav('scan',document.querySelectorAll('.sb-item')[2])">${ICON('scan',16)} ${t('qa_scan')}</button>
           <button class="btn-ghost" style="text-align:left;justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="openAddCustomer()">${ICON('userplus',16)} ${t('qa_add')}</button>
           <button class="btn-ghost" style="text-align:left;justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="nav('analytics',document.querySelectorAll('.sb-item')[3])">${ICON('chart',16)} ${t('qa_report')}</button>
-          </div>
-        <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--bg3)">
-          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">${t('dash_card_link')}</div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input id="card-link-input" readonly value="${cardLink}" style="flex:1;min-width:0;padding:10px 12px;border:1px solid var(--bg3);border-radius:9px;font-size:13px;color:var(--text2);background:var(--bg2);overflow:hidden;text-overflow:ellipsis">
-            <button class="btn-dark" style="padding:10px 14px;flex-shrink:0" onclick="copyCardLink()">${t('dash_copy')}</button>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <button class="btn-ghost" style="display:flex;align-items:center;gap:6px;justify-content:center" onclick="window.open('${cardLink}','_blank')">${ICON('external',16)} ${t('dash_open_card')}</button>
-          </div>
-          <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.4">${t('dash_card_link_hint')}</div>
         </div>
       </div>
     </div>`;
