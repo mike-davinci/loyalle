@@ -673,16 +673,24 @@ const API = {
     const { count: visitsWeek } = await db.from('transactions')
       .select('*', { count: 'exact', head: true })
       .eq('business_id', currentBiz.id).eq('type', 'stamp').gte('created_at', weekAgo);
+    // Tendência real: esta semana vs semana anterior
+    const thisWeek = new Date(Date.now() - 7*864e5).toISOString();
+    const lastWeek = new Date(Date.now() - 14*864e5).toISOString();
+    const bid = currentBiz.id;
+    const wowTxn = async (type) => {
+      const cur = (await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).eq('type', type).gte('created_at', thisWeek)).count || 0;
+      const prev = (await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).eq('type', type).gte('created_at', lastWeek).lt('created_at', thisWeek)).count || 0;
+      return prev > 0 ? Math.round(((cur - prev) / prev) * 100) : (cur > 0 ? 100 : 0);
+    };
+    const curCust = (await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', bid).gte('created_at', thisWeek)).count || 0;
+    const prevCust = (await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', bid).gte('created_at', lastWeek).lt('created_at', thisWeek)).count || 0;
     return {
       activeCustomers: total, retention: retention,
       rewardsGiven: rewardsGiven || 0, visitsWeek: visitsWeek || 0,
-      trendCustomers: await (async () => {
-        const lastWeek = new Date(Date.now() - 14*864e5).toISOString();
-        const thisWeek = new Date(Date.now() - 7*864e5).toISOString();
-        const { count: prev } = await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', currentBiz.id).lte('created_at', thisWeek).gte('created_at', lastWeek);
-        const { count: curr } = await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', currentBiz.id).gte('created_at', thisWeek);
-        return prev > 0 ? Math.round(((curr - prev) / prev) * 100) : curr > 0 ? 100 : 0;
-      })(), trendRetention: 0, trendRewards: 0, trendVisits: 0
+      trendCustomers: prevCust > 0 ? Math.round(((curCust - prevCust) / prevCust) * 100) : (curCust > 0 ? 100 : 0),
+      trendRetention: null,
+      trendRewards: await wowTxn('reward'),
+      trendVisits: await wowTxn('stamp')
     };
   },
   // GET dados de visitas dos últimos 7 dias (para o gráfico)
@@ -1075,6 +1083,13 @@ document.addEventListener('click', function(e){
   }
 });
 
+// Badge de tendência (↑ verde / ↓ vermelho). Sem badge quando não há dados para comparar.
+function trendBadge(v) {
+  if (v === null || v === undefined || isNaN(v)) return '';
+  var up = v >= 0;
+  return '<div class="kpi-trend ' + (up ? 'up' : 'down') + '">' + (up ? '↑' : '↓') + ' ' + Math.abs(v) + '%</div>';
+}
+
 // ---------- DASHBOARD ----------
 async function renderDashboard() {
   const cardLink = getCardLink();
@@ -1147,10 +1162,10 @@ async function renderDashboard() {
 
   document.getElementById('page-dashboard').innerHTML = usageHTML + `
     <div class="kpi-grid">
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic gold">${ICON('users')}</div><div class="kpi-trend up">↑ ${s.trendCustomers}%</div></div><div class="kpi-v">${s.activeCustomers}</div><div class="kpi-l">${t('dash_active')}</div></div>
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic green">${ICON('refresh')}</div><div class="kpi-trend up">↑ ${s.trendRetention}%</div></div><div class="kpi-v">${s.retention}%</div><div class="kpi-l">${t('dash_retention')}</div></div>
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic blue">${ICON('gift')}</div><div class="kpi-trend up">↑ ${s.trendRewards}%</div></div><div class="kpi-v">${s.rewardsGiven}</div><div class="kpi-l">${t('dash_rewards')}</div></div>
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic dark">${ICON('trend')}</div><div class="kpi-trend up">↑ ${s.trendVisits}%</div></div><div class="kpi-v">${s.visitsWeek.toLocaleString('pt-PT')}</div><div class="kpi-l">${t('dash_visits_month')}</div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic gold">${ICON('users')}</div>${trendBadge(s.trendCustomers)}</div><div class="kpi-v">${s.activeCustomers}</div><div class="kpi-l">${t('dash_active')}</div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic green">${ICON('refresh')}</div>${trendBadge(s.trendRetention)}</div><div class="kpi-v">${s.retention}%</div><div class="kpi-l">${t('dash_retention')}</div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic blue">${ICON('gift')}</div>${trendBadge(s.trendRewards)}</div><div class="kpi-v">${s.rewardsGiven}</div><div class="kpi-l">${t('dash_rewards')}</div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic dark">${ICON('trend')}</div>${trendBadge(s.trendVisits)}</div><div class="kpi-v">${s.visitsWeek.toLocaleString('pt-PT')}</div><div class="kpi-l">${t('dash_visits_month')}</div></div>
     </div>
     <div class="grid-2">
       <div class="card">
@@ -1571,7 +1586,7 @@ async function renderAnalytics() {
 
   document.getElementById('page-analytics').innerHTML =
     '<div class="kpi-grid">' +
-      '<div class="kpi"><div class="kpi-top"><div class="kpi-ic gold">\u23F1</div></div><div class="kpi-v">' + avgVisits + '</div><div class="kpi-l">' + t('an_avg_visits') + '</div></div>' +
+      '<div class="kpi"><div class="kpi-top"><div class="kpi-ic gold">' + ICON('clock') + '</div></div><div class="kpi-v">' + avgVisits + '</div><div class="kpi-l">' + t('an_avg_visits') + '</div></div>' +
       '<div class="kpi"><div class="kpi-top"><div class="kpi-ic green">' + ICON('calendar') + '</div></div><div class="kpi-v">' + freq + 'd</div><div class="kpi-l">' + t('an_freq') + '</div></div>' +
       '<div class="kpi"><div class="kpi-top"><div class="kpi-ic blue">' + ICON('target') + '</div></div><div class="kpi-v">' + completionRate + '%</div><div class="kpi-l">' + t('an_completion') + '</div></div>' +
       '<div class="kpi"><div class="kpi-top"><div class="kpi-ic dark">' + ICON('refresh') + '</div></div><div class="kpi-v">' + recurringPct + '%</div><div class="kpi-l">' + t('an_recurring') + '</div></div>' +
@@ -1602,7 +1617,7 @@ function renderRewards() {
       <div class="card">
         <div class="card-h"><div><div class="card-title">${t('rw_stamps_title')}</div><div class="card-sub">${t('rw_stamps_sub')}</div></div><span class="tag active">${t('rw_active')}</span></div>
         <div style="font-size:14px;color:var(--text2);line-height:1.7">${t('rw_stamps_desc')}</div>
-        <div style="background:var(--accBg);border:1px solid var(--accBg2);border-radius:12px;padding:16px;margin-top:14px"><div style="font-family:var(--fh);font-weight:700;font-size:16px">☕ ${t('rw_free_coffee')}</div><div style="font-size:13px;color:var(--text2);margin-top:2px">${t('rw_auto_notif')}</div></div>
+        <div style="background:var(--accBg);border:1px solid var(--accBg2);border-radius:12px;padding:16px;margin-top:14px"><div style="font-family:var(--fh);font-weight:700;font-size:16px">☕ ${(currentBiz && currentBiz.reward_text) ? currentBiz.reward_text : t('rw_free_coffee')}</div><div style="font-size:13px;color:var(--text2);margin-top:6px">Ao completar <b>${(currentBiz && currentBiz.stamp_goal) ? currentBiz.stamp_goal : 10}</b> carimbos · ${t('rw_auto_notif')}</div></div>
       </div>
       <div class="card">
         <div class="card-h"><div><div class="card-title">${t('rw_points_title')}</div><div class="card-sub">${t('rw_stamps_sub')}</div></div><span class="tag active">${t('rw_active')}</span></div>
