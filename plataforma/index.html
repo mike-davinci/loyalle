@@ -1718,6 +1718,44 @@ async function saveAccount() {
   toast('Alterações guardadas');
 }
 
+// Upload de uma imagem de branding para o Supabase Storage (bucket "branding")
+async function uploadBrandingFile(kind, file) {
+  if (!file) return null;
+  if (file.size > 3 * 1024 * 1024) { toast('Imagem demasiado grande (máx. 3 MB)'); return null; }
+  var ext = (file.name.split('.').pop() || 'png').toLowerCase();
+  var path = currentBiz.id + '/' + kind + '_' + Date.now() + '.' + ext;
+  var up = await db.storage.from('branding').upload(path, file, { upsert: true, cacheControl: '3600', contentType: file.type });
+  if (up.error) { console.error('upload', up.error); toast('Erro no upload: ' + up.error.message); return null; }
+  var pub = db.storage.from('branding').getPublicUrl(path);
+  return pub.data.publicUrl;
+}
+
+// Guardar branding: logo, banner e cores
+async function saveBranding() {
+  if (!currentBiz || !currentBiz.id) { toast('Sessão não encontrada. Volta a entrar.'); return; }
+  var btn = document.getElementById('brand-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'A guardar...'; }
+  try {
+    var update = {
+      brand_color: document.getElementById('brand-color').value,
+      bg_color: document.getElementById('brand-bg').value
+    };
+    var logoFile = document.getElementById('brand-logo-file').files[0];
+    var bannerFile = document.getElementById('brand-banner-file').files[0];
+    if (logoFile) { var u = await uploadBrandingFile('logo', logoFile); if (u) { update.logo_url = u; update.wallet_logo_url = u; } }
+    if (bannerFile) { var b = await uploadBrandingFile('banner', bannerFile); if (b) { update.banner_url = b; } }
+    var { error } = await db.from('businesses').update(update).eq('id', currentBiz.id);
+    if (error) { toast('Erro ao guardar: ' + error.message); return; }
+    Object.assign(currentBiz, update);
+    toast('Branding atualizado');
+    renderSettings();
+  } catch (e) {
+    console.error('saveBranding', e); toast('Algo correu mal ao guardar o branding.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Guardar branding'; }
+  }
+}
+
 // Preferências de notificações (guardadas no dispositivo)
 function notifPrefs() {
   var def = { weekly: true, risk: true, signup: false };
@@ -1998,6 +2036,25 @@ renderSettings = function() {
       '<div class="field" style="margin-bottom:16px"><label>Confirmar password</label><div class="pw-wrap"><input type="password" id="set-new-pass2" placeholder="Repete a password" style="width:100%;padding:12px;padding-right:44px;border:1px solid var(--bg3);border-radius:8px;font-size:15px"><button type="button" class="pw-eye" onclick="togglePw(this)" aria-label="Mostrar palavra-passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>' +
       '<button class="btn-primary" onclick="changePassword()">Alterar password</button>';
     sp.appendChild(secDiv);
+
+    // Card "Cartão & Branding" — logo, banner e cores
+    var brandDiv = document.createElement('div');
+    brandDiv.className = 'card';
+    brandDiv.style.marginTop = '16px';
+    var bColor = (currentBiz && currentBiz.brand_color) ? currentBiz.brand_color : '#C6993B';
+    var bBg = (currentBiz && currentBiz.bg_color) ? currentBiz.bg_color : '#1B1F3B';
+    var logoU = currentBiz && (currentBiz.wallet_logo_url || currentBiz.logo_url);
+    var bannerU = currentBiz && currentBiz.banner_url;
+    var logoPrev = logoU ? '<img src="' + logoU + '" style="width:100%;height:100%;object-fit:contain">' : '<span style="color:var(--text3);font-size:20px">—</span>';
+    var bannerPrev = bannerU ? '<img src="' + bannerU + '" style="width:100%;height:100%;object-fit:cover">' : '<span style="color:var(--text3);font-size:12px">sem banner</span>';
+    brandDiv.innerHTML =
+      '<div class="card-h"><div class="card-title">Cartão & Branding</div></div>' +
+      '<div class="card-sub" style="margin-bottom:16px">Personaliza o cartão digital que os teus clientes veem na wallet. As alterações refletem-se em passes novos.</div>' +
+      '<div class="field" style="margin-bottom:14px"><label>Logo (imagem quadrada, PNG de preferência)</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div id="brand-logo-prev" style="width:56px;height:56px;border-radius:12px;background:' + bBg + ';display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + logoPrev + '</div><input type="file" id="brand-logo-file" accept="image/png,image/jpeg,image/webp" style="font-size:13px"></div></div>' +
+      '<div class="field" style="margin-bottom:16px"><label>Banner / faixa (imagem larga)</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div id="brand-banner-prev" style="width:120px;height:40px;border-radius:8px;background:' + bBg + ';display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + bannerPrev + '</div><input type="file" id="brand-banner-file" accept="image/png,image/jpeg,image/webp" style="font-size:13px"></div></div>' +
+      '<div style="display:flex;gap:16px;margin-bottom:18px"><div class="field" style="flex:1"><label>Cor principal</label><input type="color" id="brand-color" value="' + bColor + '" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div><div class="field" style="flex:1"><label>Cor de fundo do cartão</label><input type="color" id="brand-bg" value="' + bBg + '" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div></div>' +
+      '<button class="btn-primary" id="brand-save-btn" onclick="saveBranding()">Guardar branding</button>';
+    sp.appendChild(brandDiv);
   }
 };
 
