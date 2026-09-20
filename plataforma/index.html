@@ -1754,6 +1754,10 @@ async function saveBranding() {
       brand_color: document.getElementById('brand-color').value,
       bg_color: document.getElementById('brand-bg').value
     };
+    var rw = document.getElementById('brand-reward');
+    if (rw && rw.value.trim()) update.reward_text = rw.value.trim();
+    var gl = document.getElementById('brand-goal');
+    if (gl) { var glv = parseInt(gl.value, 10); if (glv >= 1) update.stamp_goal = glv; }
     var logoFile = document.getElementById('brand-logo-file').files[0];
     var bannerFile = document.getElementById('brand-banner-file').files[0];
     if (logoFile) { var u = await uploadBrandingFile('logo', logoFile); if (u) { update.logo_url = u; update.wallet_logo_url = u; } }
@@ -2076,7 +2080,9 @@ function renderCard() {
           '<div class="card-sub" style="margin-bottom:16px">Personaliza o cartão que os teus clientes veem na wallet. A pré-visualização à direita é igual ao que aparece no link e nas wallets.</div>' +
           '<div class="field" style="margin-bottom:14px"><label>Logo (imagem quadrada)</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div style="width:52px;height:52px;border-radius:12px;background:' + bBg + ';display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + (logoU ? '<img id="prevmini-logo" src="' + logoU + '" style="width:100%;height:100%;object-fit:contain">' : '<span id="prevmini-logo" style="color:var(--text3)">—</span>') + '</div><input type="file" id="brand-logo-file" accept="image/png,image/jpeg,image/webp" onchange="onBrandFile(this,\'logo\')" style="font-size:13px"></div></div>' +
           '<div class="field" style="margin-bottom:16px"><label>Banner / faixa (imagem larga)</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div style="width:110px;height:38px;border-radius:8px;background:' + bBg + ';display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + (bannerU ? '<img id="prevmini-banner" src="' + bannerU + '" style="width:100%;height:100%;object-fit:cover">' : '<span id="prevmini-banner" style="color:var(--text3);font-size:11px">sem banner</span>') + '</div><input type="file" id="brand-banner-file" accept="image/png,image/jpeg,image/webp" onchange="onBrandFile(this,\'banner\')" style="font-size:13px"></div></div>' +
-          '<div style="display:flex;gap:16px;margin-bottom:18px"><div class="field" style="flex:1"><label>Cor principal</label><input type="color" id="brand-color" value="' + bColor + '" oninput="updateCardPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div><div class="field" style="flex:1"><label>Cor de fundo</label><input type="color" id="brand-bg" value="' + bBg + '" oninput="updateCardPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div></div>' +
+          '<div style="display:flex;gap:16px;margin-bottom:16px"><div class="field" style="flex:1"><label>Cor principal</label><input type="color" id="brand-color" value="' + bColor + '" oninput="updateCardPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div><div class="field" style="flex:1"><label>Cor de fundo</label><input type="color" id="brand-bg" value="' + bBg + '" oninput="updateCardPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div></div>' +
+          '<div class="field" style="margin-bottom:14px"><label>Prémio</label><input type="text" id="brand-reward" value="' + String(reward).replace(/"/g, '&quot;') + '" oninput="updateCardPreview()" placeholder="Ex.: Uma sobremesa grátis" style="width:100%;padding:11px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px"></div>' +
+          '<div class="field" style="margin-bottom:18px"><label>Nº de carimbos para o prémio</label><input type="number" id="brand-goal" min="1" max="50" value="' + goal + '" oninput="updateCardPreview()" style="width:120px;padding:11px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px"></div>' +
           '<button class="btn-primary" id="brand-save-btn" onclick="saveBranding()">Guardar branding</button>' +
         '</div>' +
         '<div class="card" style="margin-top:16px">' +
@@ -2102,8 +2108,8 @@ function cardPreviewHTML() {
   var logoU = (window.__prevLogo) || (currentBiz && (currentBiz.wallet_logo_url || currentBiz.logo_url)) || '';
   var bannerU = (window.__prevBanner) || (currentBiz && currentBiz.banner_url) || '';
   var name = (currentBiz && currentBiz.name) || 'O teu negócio';
-  var reward = (currentBiz && currentBiz.reward_text) || 'Prémio de fidelidade';
-  var goal = (currentBiz && currentBiz.stamp_goal) || 10;
+  var reward = g('brand-reward') || (currentBiz && currentBiz.reward_text) || 'Prémio de fidelidade';
+  var goal = parseInt(g('brand-goal'), 10) || (currentBiz && currentBiz.stamp_goal) || 10;
   var initial = name.charAt(0).toUpperCase();
   var stamps = '';
   for (var i = 0; i < goal; i++) {
