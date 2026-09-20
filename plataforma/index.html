@@ -1212,6 +1212,7 @@ async function renderDashboard() {
             <input readonly value="${getCardLink()}" style="flex:1;min-width:0;padding:9px 11px;border:1px solid var(--bg3);border-radius:9px;font-size:12px;color:var(--text2);background:var(--bg2);overflow:hidden;text-overflow:ellipsis">
             <button class="btn-dark" style="padding:9px 13px;flex-shrink:0" onclick="copyCardLink()">${t('dash_copy')}</button>
           </div>
+          <button class="btn-ghost" style="width:100%;margin-top:8px;display:flex;align-items:center;gap:6px;justify-content:center" onclick="openStoreDisplay()">${ICON('target',16)} Display para o balcão</button>
         </div>
       </div>
     </div>`;
@@ -2089,7 +2090,7 @@ function renderCard() {
           '<div class="card-h"><div class="card-title">Link do teu cartão</div></div>' +
           '<div class="card-sub" style="margin-bottom:14px">Partilha com os teus clientes para adicionarem o cartão à wallet.</div>' +
           '<div style="display:flex;gap:8px;align-items:center"><input id="card-link-input" readonly value="' + cardLink + '" style="flex:1;min-width:0;padding:10px 12px;border:1px solid var(--bg3);border-radius:9px;font-size:13px;color:var(--text2);background:var(--bg2);overflow:hidden;text-overflow:ellipsis"><button class="btn-dark" style="padding:10px 14px;flex-shrink:0" onclick="copyCardLink()">Copiar</button></div>' +
-          '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn-ghost" style="flex:1;display:flex;align-items:center;gap:6px;justify-content:center" onclick="window.open(getCardLink(),\'_blank\')">' + ICON('external', 16) + ' Abrir cartão</button><button class="btn-dark" style="flex:1;display:flex;align-items:center;gap:6px;justify-content:center" onclick="openStoreDisplay()">' + ICON('target', 16) + ' Display para o balcão</button></div>' +
+          '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn-ghost" style="flex:1;display:flex;align-items:center;gap:6px;justify-content:center" onclick="window.open(getCardLink(),\'_blank\')">' + ICON('external', 16) + ' Abrir cartão</button></div>' +
         '</div>' +
       '</div>' +
       // Coluna direita: pré-visualização
