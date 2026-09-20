@@ -2153,44 +2153,53 @@ function updateCardPreview() {
   if (host && host.parentElement) host.parentElement.innerHTML = cardPreviewHTML();
 }
 
-// Abre um cartaz de balcão (A5) pronto a imprimir, com o QR e os passos
+// Abre um cartaz de balcão (A4) pronto a imprimir, com o QR e os passos
 function openStoreDisplay() {
   var name = (currentBiz && currentBiz.name) || 'A tua loja';
   var reward = (currentBiz && currentBiz.reward_text) || 'um prémio';
   var brand = (currentBiz && currentBiz.brand_color) || '#C6993B';
+  var bg = (currentBiz && currentBiz.bg_color) || '#141B2E';
   var logo = (currentBiz && (currentBiz.wallet_logo_url || currentBiz.logo_url)) || '';
   var link = getCardLink();
   var esc = function(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
   var w = window.open('', '_blank');
   if (!w) { toast('Permite pop-ups para abrir o display.'); return; }
   var logoHtml = logo
-    ? '<img src="' + esc(logo) + '" style="width:96px;height:96px;object-fit:contain;border-radius:20px">'
-    : '<div style="width:96px;height:96px;border-radius:20px;background:' + brand + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:46px;font-weight:800;font-family:Georgia,serif">' + esc(name.charAt(0).toUpperCase()) + '</div>';
+    ? '<img src="' + esc(logo) + '" style="width:110px;height:110px;object-fit:contain;border-radius:24px;background:#fff;padding:8px">'
+    : '<div style="width:110px;height:110px;border-radius:24px;background:#fff;color:' + bg + ';display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:800;font-family:Georgia,serif">' + esc(name.charAt(0).toUpperCase()) + '</div>';
   var stepData = [['1','Aponta a câmara do telemóvel ao código'],['2','Toca no link que aparece'],['3','Adiciona o cartão à Apple ou Google Wallet']];
   var steps = stepData.map(function(s){
-    return '<div style="display:flex;align-items:center;gap:14px;margin:0 auto;max-width:420px;text-align:left"><div style="width:34px;height:34px;flex-shrink:0;border-radius:50%;background:' + brand + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px">' + s[0] + '</div><div style="font-size:17px;color:#222">' + s[1] + '</div></div>';
-  }).join('<div style="height:14px"></div>');
+    return '<div style="display:flex;align-items:center;gap:16px;width:100%;max-width:460px;text-align:left"><div style="width:40px;height:40px;flex-shrink:0;border-radius:50%;background:' + brand + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px">' + s[0] + '</div><div style="font-size:19px;color:rgba(255,255,255,.92)">' + s[1] + '</div></div>';
+  }).join('<div style="height:18px"></div>');
   var html = '<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Display — ' + esc(name) + '</title>' +
     '<scr' + 'ipt src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></scr' + 'ipt>' +
-    '<style>@page{size:A5 portrait;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#eee;display:flex;flex-direction:column;align-items:center;padding:24px}' +
-    '.poster{width:148mm;min-height:210mm;background:#fff;padding:24mm 16mm;text-align:center;display:flex;flex-direction:column;align-items:center;box-shadow:0 10px 40px rgba(0,0,0,.15)}' +
-    '.hl{font-size:29px;font-weight:800;line-height:1.15;margin:16px 0 6px;color:#111}.rw{color:' + brand + '}' +
-    '.qr{margin:20px auto;padding:16px;border:3px solid ' + brand + ';border-radius:20px;display:inline-block;background:#fff}' +
-    '.no-print{margin-top:18px;padding:12px 26px;border:none;border-radius:10px;background:#111;color:#fff;font-size:15px;font-weight:600;cursor:pointer}' +
-    '@media print{body{background:#fff;padding:0}.poster{box-shadow:none;width:100%;min-height:100vh}.no-print{display:none}}</style></head>' +
+    '<style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box;margin:0;padding:0}html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    'body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#e9e9ec;display:flex;flex-direction:column;align-items:center;padding:20px}' +
+    '.poster{width:210mm;min-height:297mm;background:' + bg + ';color:#fff;padding:22mm 22mm;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:0 12px 50px rgba(0,0,0,.25)}' +
+    '.eyebrow{font-size:14px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:' + brand + ';margin-top:20px}' +
+    '.name{font-family:Georgia,\'Times New Roman\',serif;font-size:26px;font-weight:700;margin-top:6px}' +
+    '.hl{font-size:36px;font-weight:800;line-height:1.12;margin:22px 0 8px}.rw{color:' + brand + '}' +
+    '.sub{font-size:17px;color:rgba(255,255,255,.6);max-width:460px}' +
+    '.qr{margin:22px auto 10px;padding:18px;background:#fff;border-radius:22px;display:inline-block}' +
+    '.qrcap{font-size:14px;color:rgba(255,255,255,.55);letter-spacing:.05em;text-transform:uppercase;font-weight:700;margin-bottom:26px}' +
+    '.foot{font-size:15px;color:rgba(255,255,255,.55)}' +
+    '.wm{margin-top:8px;font-family:Georgia,serif;font-weight:700;font-size:20px}' +
+    '.no-print{margin-top:18px;padding:13px 28px;border:none;border-radius:10px;background:#111;color:#fff;font-size:15px;font-weight:600;cursor:pointer}' +
+    '@media print{body{background:#fff;padding:0}.poster{box-shadow:none}.no-print{display:none}}</style></head>' +
     '<body><div class="poster">' + logoHtml +
-      '<div style="font-family:Georgia,serif;font-size:20px;font-weight:700;margin-top:12px;color:#111">' + esc(name) + '</div>' +
+      '<div class="eyebrow">Cartão de fidelização</div>' +
+      '<div class="name">' + esc(name) + '</div>' +
       '<div class="hl">Junta carimbos e ganha<br><span class="rw">' + esc(reward) + '</span></div>' +
-      '<div style="font-size:15px;color:#666;margin-top:4px">O teu cartão de fidelidade, no telemóvel — sem instalar apps.</div>' +
+      '<div class="sub">O teu cartão no telemóvel — sem instalar nenhuma app.</div>' +
       '<div class="qr"><div id="qr"></div></div>' +
-      '<div style="font-size:13px;color:#999;letter-spacing:.04em;text-transform:uppercase;font-weight:700;margin-bottom:22px">Aponta a câmara ao código</div>' +
-      steps +
+      '<div class="qrcap">Aponta a câmara ao código</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:0">' + steps + '</div>' +
       '<div style="flex:1"></div>' +
-      '<div style="margin-top:26px;font-size:13px;color:#888">Funciona no iPhone e Android</div>' +
-      '<div style="margin-top:6px;font-family:Georgia,serif;font-weight:700;color:#111">loyalle<span style="color:' + brand + '">.</span></div>' +
+      '<div class="foot">Funciona no iPhone e Android</div>' +
+      '<div class="wm">loyalle<span style="color:' + brand + '">.</span></div>' +
     '</div>' +
     '<button class="no-print" onclick="window.print()">Imprimir</button>' +
-    '<scr' + 'ipt>window.onload=function(){new QRCode(document.getElementById("qr"),{text:' + JSON.stringify(link) + ',width:260,height:260,correctLevel:QRCode.CorrectLevel.M});};</scr' + 'ipt>' +
+    '<scr' + 'ipt>window.onload=function(){new QRCode(document.getElementById("qr"),{text:' + JSON.stringify(link) + ',width:264,height:264,correctLevel:QRCode.CorrectLevel.M});};</scr' + 'ipt>' +
     '</body></html>';
   w.document.write(html);
   w.document.close();
