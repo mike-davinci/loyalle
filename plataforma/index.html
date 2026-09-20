@@ -2120,7 +2120,17 @@ function displayEditorHTML() {
       '<div class="field" style="flex:1"><label>Cor de fundo</label><input type="color" id="disp-bgcolor" value="' + cfg.bgColor + '" oninput="updateDisplayPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div>' +
       '<div class="field" style="flex:1"><label>Cor de destaque</label><input type="color" id="disp-accent" value="' + cfg.accent + '" oninput="updateDisplayPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div>' +
     '</div>' +
-    '<div class="field" style="margin-bottom:14px"><label>Imagem de fundo (opcional)</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div style="width:72px;height:48px;border-radius:8px;background:var(--bg2);overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + (hasImg ? '<img src="' + cfg.bgImage + '" style="width:100%;height:100%;object-fit:cover">' : '') + '</div><input type="file" id="disp-bgimage-file" accept="image/png,image/jpeg,image/webp" onchange="onDispBgFile(this)" style="font-size:13px"></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Escolhe "Imagem" no Fundo para a usar. É escurecida automaticamente para o texto se ler.</div></div>' +
+    '<div class="field" style="margin-bottom:14px"><label>Imagem de fundo (opcional)</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div style="width:72px;height:48px;border-radius:8px;background:var(--bg2);overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + (hasImg ? '<img src="' + cfg.bgImage + '" style="width:100%;height:100%;object-fit:cover">' : '') + '</div><input type="file" id="disp-bgimage-file" accept="image/png,image/jpeg,image/webp" onchange="onDispBgFile(this)" style="font-size:13px"></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Escolhe "Imagem" no Fundo para a usar.</div></div>' +
+    '<div style="display:flex;gap:16px;margin-bottom:14px">' +
+      '<div class="field" style="flex:1"><label>Posição da imagem</label><select id="disp-imgpos" onchange="updateDisplayPreview()" style="width:100%;padding:10px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px;background:#fff">' +
+        ['center|Centro','top|Topo','bottom|Fundo','left|Esquerda','right|Direita'].map(function(o){ var p=o.split('|'); return '<option value="'+p[0]+'"'+(cfg.bgImagePos===p[0]?' selected':'')+'>'+p[1]+'</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="field" style="flex:1"><label>Ajuste</label><select id="disp-imgfit" onchange="updateDisplayPreview()" style="width:100%;padding:10px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px;background:#fff">' +
+        '<option value="cover"' + (cfg.bgImageFit !== 'contain' ? ' selected' : '') + '>Preencher (corta)</option>' +
+        '<option value="contain"' + (cfg.bgImageFit === 'contain' ? ' selected' : '') + '>Ver imagem toda</option>' +
+      '</select></div>' +
+    '</div>' +
+    '<div class="field" style="margin-bottom:14px"><label>Escurecer imagem para o texto se ler</label><input type="range" id="disp-overlay" min="0" max="80" value="' + cfg.bgOverlay + '" oninput="updateDisplayPreview()" style="width:100%;margin-top:6px"></div>' +
     '<div class="field" style="margin-bottom:14px"><label>Título</label><input type="text" id="disp-headline" value="' + String(cfg.headline).replace(/"/g, '&quot;') + '" oninput="updateDisplayPreview()" style="width:100%;padding:11px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px"></div>' +
     '<div class="field" style="margin-bottom:18px"><label>Subtítulo</label><input type="text" id="disp-subtitle" value="' + String(cfg.subtitle).replace(/"/g, '&quot;') + '" oninput="updateDisplayPreview()" style="width:100%;padding:11px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px"></div>' +
     '<div style="display:flex;gap:8px"><button class="btn-primary" id="disp-save-btn" style="flex:1" onclick="saveDisplay()">Guardar display</button><button class="btn-dark" style="flex:1;display:flex;align-items:center;gap:6px;justify-content:center" onclick="openStoreDisplay()">' + ICON('external', 16) + ' Abrir / imprimir</button></div>' +
@@ -2161,6 +2171,9 @@ function getDisplayConfig() {
     bgType: c.bgType || 'color',
     bgColor: c.bgColor || (currentBiz && currentBiz.bg_color) || '#141B2E',
     bgImage: c.bgImage || '',
+    bgImagePos: c.bgImagePos || 'center',
+    bgImageFit: c.bgImageFit || 'cover',
+    bgOverlay: (c.bgOverlay != null) ? c.bgOverlay : 50,
     accent: c.accent || (currentBiz && currentBiz.brand_color) || '#C6993B',
     headline: (c.headline != null) ? c.headline : 'Junta carimbos e ganha',
     subtitle: (c.subtitle != null) ? c.subtitle : 'O teu cartão no telemóvel — sem instalar nenhuma app.'
@@ -2175,6 +2188,9 @@ function currentDisplayCfg() {
     bgType: g('disp-bgtype') || saved.bgType,
     bgColor: g('disp-bgcolor') || saved.bgColor,
     bgImage: window.__dispBg || saved.bgImage,
+    bgImagePos: g('disp-imgpos') || saved.bgImagePos,
+    bgImageFit: g('disp-imgfit') || saved.bgImageFit,
+    bgOverlay: (function(){ var e = document.getElementById('disp-overlay'); return e ? parseInt(e.value, 10) : saved.bgOverlay; })(),
     accent: g('disp-accent') || saved.accent,
     headline: (g('disp-headline') != null) ? g('disp-headline') : saved.headline,
     subtitle: (g('disp-subtitle') != null) ? g('disp-subtitle') : saved.subtitle
@@ -2209,9 +2225,15 @@ function posterDivHTML(cfg, qrInner) {
   var reward = (currentBiz && currentBiz.reward_text) || 'um prémio';
   var logo = (currentBiz && (currentBiz.wallet_logo_url || currentBiz.logo_url)) || '';
   var accent = cfg.accent;
-  var bgStyle = (cfg.bgType === 'image' && cfg.bgImage)
-    ? "background:linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,.55)),url('" + esc(cfg.bgImage) + "') center/cover no-repeat"
-    : 'background:' + cfg.bgColor;
+  var bgStyle;
+  if (cfg.bgType === 'image' && cfg.bgImage) {
+    var ov = (((cfg.bgOverlay != null ? cfg.bgOverlay : 50)) / 100).toFixed(2);
+    var pos = cfg.bgImagePos || 'center';
+    var fit = cfg.bgImageFit || 'cover';
+    bgStyle = "background:linear-gradient(rgba(0,0,0," + ov + "),rgba(0,0,0," + ov + ")),url('" + esc(cfg.bgImage) + "') " + pos + "/" + fit + " no-repeat," + cfg.bgColor;
+  } else {
+    bgStyle = 'background:' + cfg.bgColor;
+  }
   var logoHtml = logo
     ? '<img src="' + esc(logo) + '" style="width:110px;height:110px;object-fit:contain;border-radius:24px;background:#fff;padding:8px">'
     : '<div style="width:110px;height:110px;border-radius:24px;background:#fff;color:' + cfg.bgColor + ';display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:800;font-family:Georgia,serif">' + esc(name.charAt(0).toUpperCase()) + '</div>';
