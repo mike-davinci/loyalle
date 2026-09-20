@@ -369,7 +369,7 @@ tbody tr:hover{background:var(--bg)}
       b.style.borderColor=b.dataset.lang===lang?'var(--acc)':'var(--bg3)';
     });
     // Update sidebar text nodes
-    var sbKeys=['nav_dashboard','nav_customers','nav_scan','nav_analytics','nav_rewards','nav_settings'];
+    var sbKeys=['nav_dashboard','nav_customers','nav_scan','nav_analytics','nav_rewards','nav_card','nav_settings'];
     document.querySelectorAll('.sb-item').forEach(function(el,i){
       if(i<sbKeys.length){var nodes=el.childNodes;for(var n=0;n<nodes.length;n++){if(nodes[n].nodeType===3&&nodes[n].textContent.trim()){nodes[n].textContent='\n        '+t(sbKeys[i])+'\n      ';break}}}
     });
@@ -530,6 +530,10 @@ tbody tr:hover{background:var(--bg)}
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         Recompensas
       </a>
+      <a class="sb-item" onclick="nav('card',this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Cartão & Branding
+      </a>
       <a class="sb-item" onclick="nav('settings',this)">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         Definições
@@ -577,6 +581,7 @@ tbody tr:hover{background:var(--bg)}
       <div class="page" id="page-scan"></div>
       <div class="page" id="page-analytics"></div>
       <div class="page" id="page-rewards"></div>
+      <div class="page" id="page-card"></div>
       <div class="page" id="page-settings"></div>
     </div>
   </main>
@@ -982,6 +987,7 @@ function getPageMeta() {
     scan: [t('nav_scan'), t('pm_scan')],
     analytics: [t('an_title'), t('an_sub')],
     rewards: [t('nav_rewards'), t('pm_rewards')],
+    card: [t('nav_card'), t('pm_card')],
         settings: [t('set_title'), t('pm_settings')]
   };
 }
@@ -1024,6 +1030,7 @@ async function renderAll() {
   renderScan();
   renderAnalytics();
   renderRewards();
+  renderCard();
   renderSettings();
   renderNotifs();
 }
@@ -1198,6 +1205,13 @@ async function renderDashboard() {
           <button class="btn-dark" style="display:flex;align-items:center;gap:8px;justify-content:flex-start" onclick="nav('scan',document.querySelectorAll('.sb-item')[2])">${ICON('scan',16)} ${t('qa_scan')}</button>
           <button class="btn-ghost" style="text-align:left;justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="openAddCustomer()">${ICON('userplus',16)} ${t('qa_add')}</button>
           <button class="btn-ghost" style="text-align:left;justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="nav('analytics',document.querySelectorAll('.sb-item')[3])">${ICON('chart',16)} ${t('qa_report')}</button>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bg3)">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">${t('dash_card_link')}</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input readonly value="${getCardLink()}" style="flex:1;min-width:0;padding:9px 11px;border:1px solid var(--bg3);border-radius:9px;font-size:12px;color:var(--text2);background:var(--bg2);overflow:hidden;text-overflow:ellipsis">
+            <button class="btn-dark" style="padding:9px 13px;flex-shrink:0" onclick="copyCardLink()">${t('dash_copy')}</button>
+          </div>
         </div>
       </div>
     </div>`;
@@ -1747,8 +1761,9 @@ async function saveBranding() {
     var { error } = await db.from('businesses').update(update).eq('id', currentBiz.id);
     if (error) { toast('Erro ao guardar: ' + error.message); return; }
     Object.assign(currentBiz, update);
+    window.__prevLogo = null; window.__prevBanner = null;
     toast('Branding atualizado');
-    renderSettings();
+    renderCard();
   } catch (e) {
     console.error('saveBranding', e); toast('Algo correu mal ao guardar o branding.');
   } finally {
@@ -2013,23 +2028,6 @@ renderSettings = function() {
   _origRenderSettings();
   var sp = document.getElementById('page-settings');
   if (sp) {
-    // Card "Link do teu cartão" — para partilhar com os clientes
-    var linkDiv = document.createElement('div');
-    linkDiv.className = 'card';
-    linkDiv.style.marginTop = '16px';
-    var cardLink = getCardLink();
-    linkDiv.innerHTML =
-      '<div class="card-h"><div class="card-title">Link do teu cartão</div></div>' +
-      '<div class="card-sub" style="margin-bottom:14px">Partilha este link com os teus clientes para adicionarem o cartão à wallet.</div>' +
-      '<div style="display:flex;gap:8px;align-items:center">' +
-        '<input id="card-link-input" readonly value="' + cardLink + '" style="flex:1;min-width:0;padding:10px 12px;border:1px solid var(--bg3);border-radius:9px;font-size:13px;color:var(--text2);background:var(--bg2);overflow:hidden;text-overflow:ellipsis">' +
-        '<button class="btn-dark" style="padding:10px 14px;flex-shrink:0" onclick="copyCardLink()">Copiar</button>' +
-      '</div>' +
-      '<div style="display:flex;gap:8px;margin-top:8px">' +
-        '<button class="btn-ghost" style="display:flex;align-items:center;gap:6px;justify-content:center" onclick="window.open(getCardLink(),\'_blank\')">' + ICON('external', 16) + ' Abrir cartão</button>' +
-      '</div>';
-    sp.appendChild(linkDiv);
-
     var langDiv = document.createElement('div');
     langDiv.className = 'card';
     langDiv.style.marginTop = '16px';
@@ -2053,27 +2051,101 @@ renderSettings = function() {
       '<div class="field" style="margin-bottom:16px"><label>Confirmar password</label><div class="pw-wrap"><input type="password" id="set-new-pass2" placeholder="Repete a password" style="width:100%;padding:12px;padding-right:44px;border:1px solid var(--bg3);border-radius:8px;font-size:15px"><button type="button" class="pw-eye" onclick="togglePw(this)" aria-label="Mostrar palavra-passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>' +
       '<button class="btn-primary" onclick="changePassword()">Alterar password</button>';
     sp.appendChild(secDiv);
-
-    // Card "Cartão & Branding" — logo, banner e cores
-    var brandDiv = document.createElement('div');
-    brandDiv.className = 'card';
-    brandDiv.style.marginTop = '16px';
-    var bColor = (currentBiz && currentBiz.brand_color) ? currentBiz.brand_color : '#C6993B';
-    var bBg = (currentBiz && currentBiz.bg_color) ? currentBiz.bg_color : '#1B1F3B';
-    var logoU = currentBiz && (currentBiz.wallet_logo_url || currentBiz.logo_url);
-    var bannerU = currentBiz && currentBiz.banner_url;
-    var logoPrev = logoU ? '<img src="' + logoU + '" style="width:100%;height:100%;object-fit:contain">' : '<span style="color:var(--text3);font-size:20px">—</span>';
-    var bannerPrev = bannerU ? '<img src="' + bannerU + '" style="width:100%;height:100%;object-fit:cover">' : '<span style="color:var(--text3);font-size:12px">sem banner</span>';
-    brandDiv.innerHTML =
-      '<div class="card-h"><div class="card-title">Cartão & Branding</div></div>' +
-      '<div class="card-sub" style="margin-bottom:16px">Personaliza o cartão digital que os teus clientes veem na wallet. As alterações refletem-se em passes novos.</div>' +
-      '<div class="field" style="margin-bottom:14px"><label>Logo (imagem quadrada, PNG de preferência)</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div id="brand-logo-prev" style="width:56px;height:56px;border-radius:12px;background:' + bBg + ';display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + logoPrev + '</div><input type="file" id="brand-logo-file" accept="image/png,image/jpeg,image/webp" style="font-size:13px"></div></div>' +
-      '<div class="field" style="margin-bottom:16px"><label>Banner / faixa (imagem larga)</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div id="brand-banner-prev" style="width:120px;height:40px;border-radius:8px;background:' + bBg + ';display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + bannerPrev + '</div><input type="file" id="brand-banner-file" accept="image/png,image/jpeg,image/webp" style="font-size:13px"></div></div>' +
-      '<div style="display:flex;gap:16px;margin-bottom:18px"><div class="field" style="flex:1"><label>Cor principal</label><input type="color" id="brand-color" value="' + bColor + '" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div><div class="field" style="flex:1"><label>Cor de fundo do cartão</label><input type="color" id="brand-bg" value="' + bBg + '" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div></div>' +
-      '<button class="btn-primary" id="brand-save-btn" onclick="saveBranding()">Guardar branding</button>';
-    sp.appendChild(brandDiv);
   }
 };
+
+// ---------- CARTÃO & BRANDING (separador próprio) ----------
+function renderCard() {
+  var el = document.getElementById('page-card');
+  if (!el) return;
+  var bColor = (currentBiz && currentBiz.brand_color) ? currentBiz.brand_color : '#C6993B';
+  var bBg = (currentBiz && currentBiz.bg_color) ? currentBiz.bg_color : '#1B1F3B';
+  var logoU = currentBiz && (currentBiz.wallet_logo_url || currentBiz.logo_url) || '';
+  var bannerU = (currentBiz && currentBiz.banner_url) || '';
+  var name = (currentBiz && currentBiz.name) || 'O teu negócio';
+  var reward = (currentBiz && currentBiz.reward_text) || 'Prémio de fidelidade';
+  var goal = (currentBiz && currentBiz.stamp_goal) || 10;
+  var cardLink = getCardLink();
+
+  el.innerHTML =
+    '<div class="grid-2b">' +
+      // Coluna esquerda: editor + link
+      '<div>' +
+        '<div class="card">' +
+          '<div class="card-h"><div class="card-title">Cartão & Branding</div></div>' +
+          '<div class="card-sub" style="margin-bottom:16px">Personaliza o cartão que os teus clientes veem na wallet. A pré-visualização à direita é igual ao que aparece no link e nas wallets.</div>' +
+          '<div class="field" style="margin-bottom:14px"><label>Logo (imagem quadrada)</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div style="width:52px;height:52px;border-radius:12px;background:' + bBg + ';display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + (logoU ? '<img id="prevmini-logo" src="' + logoU + '" style="width:100%;height:100%;object-fit:contain">' : '<span id="prevmini-logo" style="color:var(--text3)">—</span>') + '</div><input type="file" id="brand-logo-file" accept="image/png,image/jpeg,image/webp" onchange="onBrandFile(this,\'logo\')" style="font-size:13px"></div></div>' +
+          '<div class="field" style="margin-bottom:16px"><label>Banner / faixa (imagem larga)</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div style="width:110px;height:38px;border-radius:8px;background:' + bBg + ';display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + (bannerU ? '<img id="prevmini-banner" src="' + bannerU + '" style="width:100%;height:100%;object-fit:cover">' : '<span id="prevmini-banner" style="color:var(--text3);font-size:11px">sem banner</span>') + '</div><input type="file" id="brand-banner-file" accept="image/png,image/jpeg,image/webp" onchange="onBrandFile(this,\'banner\')" style="font-size:13px"></div></div>' +
+          '<div style="display:flex;gap:16px;margin-bottom:18px"><div class="field" style="flex:1"><label>Cor principal</label><input type="color" id="brand-color" value="' + bColor + '" oninput="updateCardPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div><div class="field" style="flex:1"><label>Cor de fundo</label><input type="color" id="brand-bg" value="' + bBg + '" oninput="updateCardPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div></div>' +
+          '<button class="btn-primary" id="brand-save-btn" onclick="saveBranding()">Guardar branding</button>' +
+        '</div>' +
+        '<div class="card" style="margin-top:16px">' +
+          '<div class="card-h"><div class="card-title">Link do teu cartão</div></div>' +
+          '<div class="card-sub" style="margin-bottom:14px">Partilha com os teus clientes para adicionarem o cartão à wallet.</div>' +
+          '<div style="display:flex;gap:8px;align-items:center"><input id="card-link-input" readonly value="' + cardLink + '" style="flex:1;min-width:0;padding:10px 12px;border:1px solid var(--bg3);border-radius:9px;font-size:13px;color:var(--text2);background:var(--bg2);overflow:hidden;text-overflow:ellipsis"><button class="btn-dark" style="padding:10px 14px;flex-shrink:0" onclick="copyCardLink()">Copiar</button></div>' +
+          '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn-ghost" style="display:flex;align-items:center;gap:6px;justify-content:center" onclick="window.open(getCardLink(),\'_blank\')">' + ICON('external', 16) + ' Abrir cartão</button></div>' +
+        '</div>' +
+      '</div>' +
+      // Coluna direita: pré-visualização
+      '<div><div class="card"><div class="card-h"><div class="card-title">Pré-visualização</div></div>' +
+        '<div style="display:flex;justify-content:center;padding:8px 0 4px">' + cardPreviewHTML() + '</div>' +
+        '<div style="text-align:center;font-size:12px;color:var(--text3);margin-top:10px">👆 É assim que o cliente vê o cartão na wallet</div>' +
+      '</div></div>' +
+    '</div>';
+}
+
+// HTML do cartão de pré-visualização (usa os valores atuais do formulário se existirem)
+function cardPreviewHTML() {
+  var g = function(id){ var e=document.getElementById(id); return e ? e.value : null; };
+  var bColor = g('brand-color') || (currentBiz && currentBiz.brand_color) || '#C6993B';
+  var bBg = g('brand-bg') || (currentBiz && currentBiz.bg_color) || '#1B1F3B';
+  var logoU = (window.__prevLogo) || (currentBiz && (currentBiz.wallet_logo_url || currentBiz.logo_url)) || '';
+  var bannerU = (window.__prevBanner) || (currentBiz && currentBiz.banner_url) || '';
+  var name = (currentBiz && currentBiz.name) || 'O teu negócio';
+  var reward = (currentBiz && currentBiz.reward_text) || 'Prémio de fidelidade';
+  var goal = (currentBiz && currentBiz.stamp_goal) || 10;
+  var initial = name.charAt(0).toUpperCase();
+  var stamps = '';
+  for (var i = 0; i < goal; i++) {
+    var on = i < 3;
+    stamps += '<div style="width:16px;height:16px;border-radius:50%;border:1.5px solid ' + (on ? bColor : 'rgba(255,255,255,.25)') + ';background:' + (on ? bColor : 'transparent') + '"></div>';
+  }
+  var logoInner = logoU ? '<img src="' + logoU + '" style="width:100%;height:100%;object-fit:contain">' : '<span style="font-family:var(--fh);font-weight:800;color:' + bBg + '">' + initial + '</span>';
+  var bannerBlock = bannerU ? '<div style="height:64px;background:#000;overflow:hidden"><img src="' + bannerU + '" style="width:100%;height:100%;object-fit:cover"></div>' : '';
+  return '' +
+    '<div id="card-preview" style="width:300px;border-radius:18px;overflow:hidden;background:' + bBg + ';box-shadow:0 12px 34px rgba(0,0,0,.25);font-family:var(--fb)">' +
+      bannerBlock +
+      '<div style="padding:16px">' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+          '<div style="width:40px;height:40px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">' + logoInner + '</div>' +
+          '<div style="flex:1;min-width:0"><div style="color:' + bColor + ';font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + name + '</div><div style="color:rgba(255,255,255,.5);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Carimbos</div></div>' +
+          '<div style="text-align:right"><div style="color:#fff;font-family:var(--fh);font-weight:800;font-size:16px">3/' + goal + '</div></div>' +
+        '</div>' +
+        '<div style="margin-top:14px"><div style="color:#fff;font-family:var(--fh);font-weight:800;font-size:17px">' + reward + '</div><div style="color:' + bColor + ';font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-top:2px">Prémio</div></div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px">' + stamps + '</div>' +
+        '<div style="margin-top:14px;background:#fff;border-radius:8px;height:54px;display:flex;align-items:center;justify-content:center;color:#999;font-size:10px">QR do cliente</div>' +
+      '</div>' +
+    '</div>';
+}
+
+// Ao escolher um ficheiro, mostra-o já na pré-visualização (antes de guardar)
+function onBrandFile(input, kind) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    if (kind === 'logo') window.__prevLogo = e.target.result;
+    else window.__prevBanner = e.target.result;
+    updateCardPreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+// Redesenha só o cartão de pré-visualização
+function updateCardPreview() {
+  var host = document.getElementById('card-preview');
+  if (host && host.parentElement) host.parentElement.innerHTML = cardPreviewHTML();
+}
 
 // Alterar password a partir das Definições (utilizador já autenticado)
 async function changePassword() {
