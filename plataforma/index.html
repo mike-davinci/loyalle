@@ -2013,6 +2013,23 @@ renderSettings = function() {
   _origRenderSettings();
   var sp = document.getElementById('page-settings');
   if (sp) {
+    // Card "Link do teu cartão" — para partilhar com os clientes
+    var linkDiv = document.createElement('div');
+    linkDiv.className = 'card';
+    linkDiv.style.marginTop = '16px';
+    var cardLink = getCardLink();
+    linkDiv.innerHTML =
+      '<div class="card-h"><div class="card-title">Link do teu cartão</div></div>' +
+      '<div class="card-sub" style="margin-bottom:14px">Partilha este link com os teus clientes para adicionarem o cartão à wallet.</div>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+        '<input id="card-link-input" readonly value="' + cardLink + '" style="flex:1;min-width:0;padding:10px 12px;border:1px solid var(--bg3);border-radius:9px;font-size:13px;color:var(--text2);background:var(--bg2);overflow:hidden;text-overflow:ellipsis">' +
+        '<button class="btn-dark" style="padding:10px 14px;flex-shrink:0" onclick="copyCardLink()">Copiar</button>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:8px">' +
+        '<button class="btn-ghost" style="display:flex;align-items:center;gap:6px;justify-content:center" onclick="window.open(getCardLink(),\'_blank\')">' + ICON('external', 16) + ' Abrir cartão</button>' +
+      '</div>';
+    sp.appendChild(linkDiv);
+
     var langDiv = document.createElement('div');
     langDiv.className = 'card';
     langDiv.style.marginTop = '16px';
