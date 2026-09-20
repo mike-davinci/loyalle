@@ -2089,7 +2089,7 @@ function renderCard() {
           '<div class="card-h"><div class="card-title">Link do teu cartão</div></div>' +
           '<div class="card-sub" style="margin-bottom:14px">Partilha com os teus clientes para adicionarem o cartão à wallet.</div>' +
           '<div style="display:flex;gap:8px;align-items:center"><input id="card-link-input" readonly value="' + cardLink + '" style="flex:1;min-width:0;padding:10px 12px;border:1px solid var(--bg3);border-radius:9px;font-size:13px;color:var(--text2);background:var(--bg2);overflow:hidden;text-overflow:ellipsis"><button class="btn-dark" style="padding:10px 14px;flex-shrink:0" onclick="copyCardLink()">Copiar</button></div>' +
-          '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn-ghost" style="display:flex;align-items:center;gap:6px;justify-content:center" onclick="window.open(getCardLink(),\'_blank\')">' + ICON('external', 16) + ' Abrir cartão</button></div>' +
+          '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn-ghost" style="flex:1;display:flex;align-items:center;gap:6px;justify-content:center" onclick="window.open(getCardLink(),\'_blank\')">' + ICON('external', 16) + ' Abrir cartão</button><button class="btn-dark" style="flex:1;display:flex;align-items:center;gap:6px;justify-content:center" onclick="openStoreDisplay()">' + ICON('target', 16) + ' Display para o balcão</button></div>' +
         '</div>' +
       '</div>' +
       // Coluna direita: pré-visualização
@@ -2151,6 +2151,49 @@ function onBrandFile(input, kind) {
 function updateCardPreview() {
   var host = document.getElementById('card-preview');
   if (host && host.parentElement) host.parentElement.innerHTML = cardPreviewHTML();
+}
+
+// Abre um cartaz de balcão (A5) pronto a imprimir, com o QR e os passos
+function openStoreDisplay() {
+  var name = (currentBiz && currentBiz.name) || 'A tua loja';
+  var reward = (currentBiz && currentBiz.reward_text) || 'um prémio';
+  var brand = (currentBiz && currentBiz.brand_color) || '#C6993B';
+  var logo = (currentBiz && (currentBiz.wallet_logo_url || currentBiz.logo_url)) || '';
+  var link = getCardLink();
+  var esc = function(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+  var w = window.open('', '_blank');
+  if (!w) { toast('Permite pop-ups para abrir o display.'); return; }
+  var logoHtml = logo
+    ? '<img src="' + esc(logo) + '" style="width:96px;height:96px;object-fit:contain;border-radius:20px">'
+    : '<div style="width:96px;height:96px;border-radius:20px;background:' + brand + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:46px;font-weight:800;font-family:Georgia,serif">' + esc(name.charAt(0).toUpperCase()) + '</div>';
+  var stepData = [['1','Aponta a câmara do telemóvel ao código'],['2','Toca no link que aparece'],['3','Adiciona o cartão à Apple ou Google Wallet']];
+  var steps = stepData.map(function(s){
+    return '<div style="display:flex;align-items:center;gap:14px;margin:0 auto;max-width:420px;text-align:left"><div style="width:34px;height:34px;flex-shrink:0;border-radius:50%;background:' + brand + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px">' + s[0] + '</div><div style="font-size:17px;color:#222">' + s[1] + '</div></div>';
+  }).join('<div style="height:14px"></div>');
+  var html = '<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Display — ' + esc(name) + '</title>' +
+    '<scr' + 'ipt src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></scr' + 'ipt>' +
+    '<style>@page{size:A5 portrait;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#eee;display:flex;flex-direction:column;align-items:center;padding:24px}' +
+    '.poster{width:148mm;min-height:210mm;background:#fff;padding:24mm 16mm;text-align:center;display:flex;flex-direction:column;align-items:center;box-shadow:0 10px 40px rgba(0,0,0,.15)}' +
+    '.hl{font-size:29px;font-weight:800;line-height:1.15;margin:16px 0 6px;color:#111}.rw{color:' + brand + '}' +
+    '.qr{margin:20px auto;padding:16px;border:3px solid ' + brand + ';border-radius:20px;display:inline-block;background:#fff}' +
+    '.no-print{margin-top:18px;padding:12px 26px;border:none;border-radius:10px;background:#111;color:#fff;font-size:15px;font-weight:600;cursor:pointer}' +
+    '@media print{body{background:#fff;padding:0}.poster{box-shadow:none;width:100%;min-height:100vh}.no-print{display:none}}</style></head>' +
+    '<body><div class="poster">' + logoHtml +
+      '<div style="font-family:Georgia,serif;font-size:20px;font-weight:700;margin-top:12px;color:#111">' + esc(name) + '</div>' +
+      '<div class="hl">Junta carimbos e ganha<br><span class="rw">' + esc(reward) + '</span></div>' +
+      '<div style="font-size:15px;color:#666;margin-top:4px">O teu cartão de fidelidade, no telemóvel — sem instalar apps.</div>' +
+      '<div class="qr"><div id="qr"></div></div>' +
+      '<div style="font-size:13px;color:#999;letter-spacing:.04em;text-transform:uppercase;font-weight:700;margin-bottom:22px">Aponta a câmara ao código</div>' +
+      steps +
+      '<div style="flex:1"></div>' +
+      '<div style="margin-top:26px;font-size:13px;color:#888">Funciona no iPhone e Android</div>' +
+      '<div style="margin-top:6px;font-family:Georgia,serif;font-weight:700;color:#111">loyalle<span style="color:' + brand + '">.</span></div>' +
+    '</div>' +
+    '<button class="no-print" onclick="window.print()">Imprimir</button>' +
+    '<scr' + 'ipt>window.onload=function(){new QRCode(document.getElementById("qr"),{text:' + JSON.stringify(link) + ',width:260,height:260,correctLevel:QRCode.CorrectLevel.M});};</scr' + 'ipt>' +
+    '</body></html>';
+  w.document.write(html);
+  w.document.close();
 }
 
 // Alterar password a partir das Definições (utilizador já autenticado)
