@@ -2097,7 +2097,141 @@ function renderCard() {
         '<div style="display:flex;justify-content:center;padding:8px 0 4px">' + cardPreviewHTML() + '</div>' +
         '<div style="text-align:center;font-size:12px;color:var(--text3);margin-top:10px">👆 É assim que o cliente vê o cartão na wallet</div>' +
       '</div></div>' +
+    '</div>' +
+    '<div style="height:16px"></div>' +
+    '<div class="grid-2b">' +
+      '<div>' + displayEditorHTML() + '</div>' +
+      '<div>' + displayPreviewCardHTML() + '</div>' +
     '</div>';
+}
+
+// ---- Editor do cartaz de balcão ----
+function displayEditorHTML() {
+  var cfg = getDisplayConfig();
+  var hasImg = cfg.bgType === 'image' && cfg.bgImage;
+  return '<div class="card">' +
+    '<div class="card-h"><div class="card-title">Cartaz de balcão</div></div>' +
+    '<div class="card-sub" style="margin-bottom:16px">Personaliza o cartaz A4 que pões no balcão — independente do cartão.</div>' +
+    '<div class="field" style="margin-bottom:14px"><label>Fundo</label><select id="disp-bgtype" onchange="updateDisplayPreview()" style="width:100%;padding:10px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px;background:#fff">' +
+      '<option value="color"' + (cfg.bgType !== 'image' ? ' selected' : '') + '>Cor sólida</option>' +
+      '<option value="image"' + (cfg.bgType === 'image' ? ' selected' : '') + '>Imagem</option>' +
+    '</select></div>' +
+    '<div style="display:flex;gap:16px;margin-bottom:14px">' +
+      '<div class="field" style="flex:1"><label>Cor de fundo</label><input type="color" id="disp-bgcolor" value="' + cfg.bgColor + '" oninput="updateDisplayPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div>' +
+      '<div class="field" style="flex:1"><label>Cor de destaque</label><input type="color" id="disp-accent" value="' + cfg.accent + '" oninput="updateDisplayPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div>' +
+    '</div>' +
+    '<div class="field" style="margin-bottom:14px"><label>Imagem de fundo (opcional)</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div style="width:72px;height:48px;border-radius:8px;background:var(--bg2);overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + (hasImg ? '<img src="' + cfg.bgImage + '" style="width:100%;height:100%;object-fit:cover">' : '') + '</div><input type="file" id="disp-bgimage-file" accept="image/png,image/jpeg,image/webp" onchange="onDispBgFile(this)" style="font-size:13px"></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Escolhe "Imagem" no Fundo para a usar. É escurecida automaticamente para o texto se ler.</div></div>' +
+    '<div class="field" style="margin-bottom:14px"><label>Título</label><input type="text" id="disp-headline" value="' + String(cfg.headline).replace(/"/g, '&quot;') + '" oninput="updateDisplayPreview()" style="width:100%;padding:11px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px"></div>' +
+    '<div class="field" style="margin-bottom:18px"><label>Subtítulo</label><input type="text" id="disp-subtitle" value="' + String(cfg.subtitle).replace(/"/g, '&quot;') + '" oninput="updateDisplayPreview()" style="width:100%;padding:11px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px"></div>' +
+    '<div style="display:flex;gap:8px"><button class="btn-primary" id="disp-save-btn" style="flex:1" onclick="saveDisplay()">Guardar display</button><button class="btn-dark" style="flex:1;display:flex;align-items:center;gap:6px;justify-content:center" onclick="openStoreDisplay()">' + ICON('external', 16) + ' Abrir / imprimir</button></div>' +
+  '</div>';
+}
+
+function displayPreviewCardHTML() {
+  return '<div class="card"><div class="card-h"><div class="card-title">Pré-visualização do cartaz</div></div>' +
+    '<div id="disp-preview" style="display:flex;justify-content:center;padding:6px 0">' + displayScaledHTML(currentDisplayCfg()) + '</div>' +
+    '<div style="text-align:center;font-size:12px;color:var(--text3);margin-top:8px">Formato A4 — pronto a imprimir</div>' +
+  '</div>';
+}
+
+// Poster reduzido para a pré-visualização (A4 escalado)
+function displayScaledHTML(cfg) {
+  var qrPlaceholder = '<div style="width:264px;height:264px;background:#f0f0f0;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:22px;font-weight:700">QR</div>';
+  return '<div style="width:220px;height:311px;overflow:hidden;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);flex-shrink:0">' +
+    '<div style="width:210mm;transform:scale(0.2775);transform-origin:top left">' + posterDivHTML(cfg, qrPlaceholder) + '</div>' +
+  '</div>';
+}
+
+function updateDisplayPreview() {
+  var host = document.getElementById('disp-preview');
+  if (host) host.innerHTML = displayScaledHTML(currentDisplayCfg());
+}
+
+function onDispBgFile(input) {
+  var file = input.files[0]; if (!file) return;
+  var r = new FileReader();
+  r.onload = function(e) { window.__dispBg = e.target.result; var sel = document.getElementById('disp-bgtype'); if (sel) sel.value = 'image'; updateDisplayPreview(); };
+  r.readAsDataURL(file);
+}
+
+// Config do display: guardada (para o cartaz final)
+function getDisplayConfig() {
+  var c = (currentBiz && currentBiz.display_config) || {};
+  return {
+    bgType: c.bgType || 'color',
+    bgColor: c.bgColor || (currentBiz && currentBiz.bg_color) || '#141B2E',
+    bgImage: c.bgImage || '',
+    accent: c.accent || (currentBiz && currentBiz.brand_color) || '#C6993B',
+    headline: (c.headline != null) ? c.headline : 'Junta carimbos e ganha',
+    subtitle: (c.subtitle != null) ? c.subtitle : 'O teu cartão no telemóvel — sem instalar nenhuma app.'
+  };
+}
+
+// Config do display a partir do formulário (para a pré-visualização ao vivo)
+function currentDisplayCfg() {
+  var g = function(id){ var e = document.getElementById(id); return e ? e.value : null; };
+  var saved = getDisplayConfig();
+  return {
+    bgType: g('disp-bgtype') || saved.bgType,
+    bgColor: g('disp-bgcolor') || saved.bgColor,
+    bgImage: window.__dispBg || saved.bgImage,
+    accent: g('disp-accent') || saved.accent,
+    headline: (g('disp-headline') != null) ? g('disp-headline') : saved.headline,
+    subtitle: (g('disp-subtitle') != null) ? g('disp-subtitle') : saved.subtitle
+  };
+}
+
+async function saveDisplay() {
+  if (!currentBiz || !currentBiz.id) { toast('Sessão não encontrada.'); return; }
+  var btn = document.getElementById('disp-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'A guardar...'; }
+  try {
+    var cfg = currentDisplayCfg();
+    var f = document.getElementById('disp-bgimage-file');
+    var file = f && f.files[0];
+    if (file) { var url = await uploadBrandingFile('display', file); if (url) cfg.bgImage = url; }
+    // se ficou um data: (não subiu), não guardar (só URLs)
+    if (cfg.bgImage && cfg.bgImage.indexOf('data:') === 0) cfg.bgImage = '';
+    var { error } = await db.from('businesses').update({ display_config: cfg }).eq('id', currentBiz.id);
+    if (error) { toast('Erro ao guardar: ' + error.message); return; }
+    currentBiz.display_config = cfg;
+    window.__dispBg = null;
+    toast('Cartaz atualizado');
+    renderCard();
+  } catch (e) { console.error('saveDisplay', e); toast('Algo correu mal ao guardar o cartaz.'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Guardar display'; } }
+}
+
+// HTML do poster (usado na pré-visualização e no cartaz final)
+function posterDivHTML(cfg, qrInner) {
+  var esc = function(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+  var name = (currentBiz && currentBiz.name) || 'A tua loja';
+  var reward = (currentBiz && currentBiz.reward_text) || 'um prémio';
+  var logo = (currentBiz && (currentBiz.wallet_logo_url || currentBiz.logo_url)) || '';
+  var accent = cfg.accent;
+  var bgStyle = (cfg.bgType === 'image' && cfg.bgImage)
+    ? "background:linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,.55)),url('" + esc(cfg.bgImage) + "') center/cover no-repeat"
+    : 'background:' + cfg.bgColor;
+  var logoHtml = logo
+    ? '<img src="' + esc(logo) + '" style="width:110px;height:110px;object-fit:contain;border-radius:24px;background:#fff;padding:8px">'
+    : '<div style="width:110px;height:110px;border-radius:24px;background:#fff;color:' + cfg.bgColor + ';display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:800;font-family:Georgia,serif">' + esc(name.charAt(0).toUpperCase()) + '</div>';
+  var stepData = [['1','Aponta a câmara do telemóvel ao código'],['2','Toca no link que aparece'],['3','Adiciona o cartão à Apple ou Google Wallet']];
+  var steps = stepData.map(function(s){
+    return '<div style="display:flex;align-items:center;gap:16px;width:100%;max-width:460px;text-align:left"><div style="width:40px;height:40px;flex-shrink:0;border-radius:50%;background:' + accent + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px">' + s[0] + '</div><div style="font-size:19px;color:rgba(255,255,255,.92)">' + s[1] + '</div></div>';
+  }).join('<div style="height:18px"></div>');
+  return '<div style="width:210mm;min-height:297mm;color:#fff;padding:22mm 22mm;display:flex;flex-direction:column;align-items:center;text-align:center;' + bgStyle + '">' +
+    logoHtml +
+    '<div style="font-size:14px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:' + accent + ';margin-top:20px">Cartão de fidelização</div>' +
+    '<div style="font-family:Georgia,serif;font-size:26px;font-weight:700;margin-top:6px">' + esc(name) + '</div>' +
+    '<div style="font-size:36px;font-weight:800;line-height:1.12;margin:22px 0 8px">' + esc(cfg.headline) + '<br><span style="color:' + accent + '">' + esc(reward) + '</span></div>' +
+    (cfg.subtitle ? '<div style="font-size:17px;color:rgba(255,255,255,.62);max-width:460px">' + esc(cfg.subtitle) + '</div>' : '') +
+    '<div style="margin:22px auto 10px;padding:18px;background:#fff;border-radius:22px;display:inline-block">' + qrInner + '</div>' +
+    '<div style="font-size:14px;color:rgba(255,255,255,.55);letter-spacing:.05em;text-transform:uppercase;font-weight:700;margin-bottom:26px">Aponta a câmara ao código</div>' +
+    '<div style="display:flex;flex-direction:column;align-items:center">' + steps + '</div>' +
+    '<div style="flex:1;min-height:24px"></div>' +
+    '<div style="font-size:15px;color:rgba(255,255,255,.55)">Funciona no iPhone e Android</div>' +
+    '<div style="margin-top:8px;font-family:Georgia,serif;font-weight:700;font-size:20px">loyalle<span style="color:' + accent + '">.</span></div>' +
+  '</div>';
 }
 
 // HTML do cartão de pré-visualização (usa os valores atuais do formulário se existirem)
@@ -2153,51 +2287,19 @@ function updateCardPreview() {
   if (host && host.parentElement) host.parentElement.innerHTML = cardPreviewHTML();
 }
 
-// Abre um cartaz de balcão (A4) pronto a imprimir, com o QR e os passos
+// Abre o cartaz de balcão (A4) pronto a imprimir, com o QR e os passos
 function openStoreDisplay() {
-  var name = (currentBiz && currentBiz.name) || 'A tua loja';
-  var reward = (currentBiz && currentBiz.reward_text) || 'um prémio';
-  var brand = (currentBiz && currentBiz.brand_color) || '#C6993B';
-  var bg = (currentBiz && currentBiz.bg_color) || '#141B2E';
-  var logo = (currentBiz && (currentBiz.wallet_logo_url || currentBiz.logo_url)) || '';
+  var cfg = getDisplayConfig();
   var link = getCardLink();
-  var esc = function(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
   var w = window.open('', '_blank');
   if (!w) { toast('Permite pop-ups para abrir o display.'); return; }
-  var logoHtml = logo
-    ? '<img src="' + esc(logo) + '" style="width:110px;height:110px;object-fit:contain;border-radius:24px;background:#fff;padding:8px">'
-    : '<div style="width:110px;height:110px;border-radius:24px;background:#fff;color:' + bg + ';display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:800;font-family:Georgia,serif">' + esc(name.charAt(0).toUpperCase()) + '</div>';
-  var stepData = [['1','Aponta a câmara do telemóvel ao código'],['2','Toca no link que aparece'],['3','Adiciona o cartão à Apple ou Google Wallet']];
-  var steps = stepData.map(function(s){
-    return '<div style="display:flex;align-items:center;gap:16px;width:100%;max-width:460px;text-align:left"><div style="width:40px;height:40px;flex-shrink:0;border-radius:50%;background:' + brand + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px">' + s[0] + '</div><div style="font-size:19px;color:rgba(255,255,255,.92)">' + s[1] + '</div></div>';
-  }).join('<div style="height:18px"></div>');
-  var html = '<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Display — ' + esc(name) + '</title>' +
+  var html = '<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Display</title>' +
     '<scr' + 'ipt src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></scr' + 'ipt>' +
     '<style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box;margin:0;padding:0}html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
     'body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#e9e9ec;display:flex;flex-direction:column;align-items:center;padding:20px}' +
-    '.poster{width:210mm;min-height:297mm;background:' + bg + ';color:#fff;padding:22mm 22mm;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:0 12px 50px rgba(0,0,0,.25)}' +
-    '.eyebrow{font-size:14px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:' + brand + ';margin-top:20px}' +
-    '.name{font-family:Georgia,\'Times New Roman\',serif;font-size:26px;font-weight:700;margin-top:6px}' +
-    '.hl{font-size:36px;font-weight:800;line-height:1.12;margin:22px 0 8px}.rw{color:' + brand + '}' +
-    '.sub{font-size:17px;color:rgba(255,255,255,.6);max-width:460px}' +
-    '.qr{margin:22px auto 10px;padding:18px;background:#fff;border-radius:22px;display:inline-block}' +
-    '.qrcap{font-size:14px;color:rgba(255,255,255,.55);letter-spacing:.05em;text-transform:uppercase;font-weight:700;margin-bottom:26px}' +
-    '.foot{font-size:15px;color:rgba(255,255,255,.55)}' +
-    '.wm{margin-top:8px;font-family:Georgia,serif;font-weight:700;font-size:20px}' +
     '.no-print{margin-top:18px;padding:13px 28px;border:none;border-radius:10px;background:#111;color:#fff;font-size:15px;font-weight:600;cursor:pointer}' +
-    '@media print{body{background:#fff;padding:0}.poster{box-shadow:none}.no-print{display:none}}</style></head>' +
-    '<body><div class="poster">' + logoHtml +
-      '<div class="eyebrow">Cartão de fidelização</div>' +
-      '<div class="name">' + esc(name) + '</div>' +
-      '<div class="hl">Junta carimbos e ganha<br><span class="rw">' + esc(reward) + '</span></div>' +
-      '<div class="sub">O teu cartão no telemóvel — sem instalar nenhuma app.</div>' +
-      '<div class="qr"><div id="qr"></div></div>' +
-      '<div class="qrcap">Aponta a câmara ao código</div>' +
-      '<div style="display:flex;flex-direction:column;align-items:center;gap:0">' + steps + '</div>' +
-      '<div style="flex:1"></div>' +
-      '<div class="foot">Funciona no iPhone e Android</div>' +
-      '<div class="wm">loyalle<span style="color:' + brand + '">.</span></div>' +
-    '</div>' +
+    '@media print{body{background:#fff;padding:0}.no-print{display:none}}</style></head>' +
+    '<body><div style="box-shadow:0 12px 50px rgba(0,0,0,.25)">' + posterDivHTML(cfg, '<div id="qr"></div>') + '</div>' +
     '<button class="no-print" onclick="window.print()">Imprimir</button>' +
     '<scr' + 'ipt>window.onload=function(){new QRCode(document.getElementById("qr"),{text:' + JSON.stringify(link) + ',width:264,height:264,correctLevel:QRCode.CorrectLevel.M});};</scr' + 'ipt>' +
     '</body></html>';
