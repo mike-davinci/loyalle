@@ -9,6 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 :root{
   --bg:#FAFAF7;--bg2:#F4F1EB;--bg3:#EAE5DA;--dark:#0C0A06;--dark2:#1A1610;--dark3:#2E2820;
@@ -1080,6 +1082,12 @@ function nav(page, el) {
   document.getElementById('sidebar').classList.remove('open');
   if (page === 'scan') initScanner();
   else stopScanner();
+  if (page === 'card') {
+    setTimeout(function(){
+      if (window.__geoMap) { try { window.__geoMap.invalidateSize(); } catch(e){} }
+      else initGeoMap();
+    }, 80);
+  }
 }
 
 // ---------- TOAST ----------
@@ -2179,7 +2187,105 @@ function renderCard() {
     '<div class="grid-2b">' +
       '<div>' + displayEditorHTML() + '</div>' +
       '<div>' + displayPreviewCardHTML() + '</div>' +
-    '</div>';
+    '</div>' +
+    '<div style="height:16px"></div>' +
+    geoEditorHTML();
+  setTimeout(initGeoMap, 60);
+}
+
+// ---- Notificação de proximidade (Apple Wallet — geofencing nativo) ----
+function getGeoConfig() {
+  var c = (currentBiz && currentBiz.geo_config) || {};
+  return {
+    enabled: !!c.enabled,
+    lat: (typeof c.lat === 'number') ? c.lat : null,
+    lng: (typeof c.lng === 'number') ? c.lng : null,
+    message: (c.message != null) ? c.message : 'Estás perto! Passa por cá e junta mais um carimbo 🎁'
+  };
+}
+
+function geoEditorHTML() {
+  var g = getGeoConfig();
+  var hasPin = g.lat != null && g.lng != null;
+  return '<div class="card">' +
+    '<div class="card-h" style="display:flex;align-items:center;justify-content:space-between">' +
+      '<div><div class="card-title">Notificação de proximidade</div></div>' +
+      '<div class="toggle' + (g.enabled ? ' on' : '') + '" id="geo-toggle" onclick="toggleGeo(this)"></div>' +
+    '</div>' +
+    '<div class="card-sub" style="margin-bottom:16px">Quando um cliente com iPhone passa perto da tua loja, o cartão reaparece no ecrã bloqueado dele com a tua mensagem. A localização fica no cartão e nunca sai do telemóvel do cliente (compatível com RGPD).</div>' +
+    '<div class="field" style="margin-bottom:12px"><label>Morada da loja</label>' +
+      '<div style="display:flex;gap:8px;margin-top:6px"><input type="text" id="geo-address" placeholder="Rua, número, cidade" onkeydown="if(event.key===\'Enter\'){event.preventDefault();geoSearch();}" style="flex:1;min-width:0;padding:11px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px"><button class="btn-dark" style="padding:10px 16px;flex-shrink:0" onclick="geoSearch()">Procurar</button></div>' +
+      '<div style="font-size:11px;color:var(--text3);margin-top:4px">Procura a morada e afina a posição arrastando o pino no mapa.</div>' +
+    '</div>' +
+    '<div id="geo-map" style="height:240px;border-radius:10px;overflow:hidden;border:1px solid var(--bg3);margin-bottom:6px;background:var(--bg2)"></div>' +
+    '<div id="geo-coords" style="font-size:12px;color:var(--text3);margin-bottom:14px">' + (hasPin ? ('Localização definida: ' + g.lat.toFixed(5) + ', ' + g.lng.toFixed(5)) : 'Sem localização definida ainda.') + '</div>' +
+    '<div class="field" style="margin-bottom:16px"><label>Mensagem no ecrã bloqueado</label><input type="text" id="geo-message" maxlength="60" value="' + String(g.message).replace(/"/g, '&quot;') + '" style="width:100%;padding:11px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px"><div style="font-size:11px;color:var(--text3);margin-top:4px">Curta e convidativa. Máx. 60 caracteres.</div></div>' +
+    '<button class="btn-primary" id="geo-save-btn" onclick="saveGeo()">Guardar notificação de proximidade</button>' +
+  '</div>';
+}
+
+function toggleGeo(el) { el.classList.toggle('on'); }
+
+function initGeoMap() {
+  if (typeof L === 'undefined') return;
+  var host = document.getElementById('geo-map');
+  if (!host) return;
+  var g = getGeoConfig();
+  var start = (g.lat != null && g.lng != null) ? [g.lat, g.lng] : [38.7223, -9.1393]; // default: Lisboa
+  var zoom = (g.lat != null) ? 16 : 11;
+  if (window.__geoMap) { try { window.__geoMap.remove(); } catch(e){} window.__geoMap = null; }
+  var map = L.map(host).setView(start, zoom);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '© OpenStreetMap'
+  }).addTo(map);
+  var marker = L.marker(start, { draggable: true }).addTo(map);
+  marker.on('dragend', function() { var p = marker.getLatLng(); setGeoCoords(p.lat, p.lng); });
+  map.on('click', function(e) { marker.setLatLng(e.latlng); setGeoCoords(e.latlng.lat, e.latlng.lng); });
+  window.__geoMap = map; window.__geoMarker = marker;
+  setTimeout(function(){ try { map.invalidateSize(); } catch(e){} }, 120);
+  if (g.lat != null) setGeoCoords(g.lat, g.lng);
+}
+
+function setGeoCoords(lat, lng) {
+  window.__geoLat = lat; window.__geoLng = lng;
+  var c = document.getElementById('geo-coords');
+  if (c) c.textContent = 'Localização definida: ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
+}
+
+async function geoSearch() {
+  var q = (document.getElementById('geo-address') || {}).value;
+  if (!q || !q.trim()) { toast('Escreve a morada primeiro.'); return; }
+  try {
+    var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q.trim());
+    var res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    var data = await res.json();
+    if (!data || !data.length) { toast('Morada não encontrada. Tenta ser mais específico.'); return; }
+    var lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+    if (window.__geoMap && window.__geoMarker) {
+      window.__geoMap.setView([lat, lng], 17);
+      window.__geoMarker.setLatLng([lat, lng]);
+    }
+    setGeoCoords(lat, lng);
+  } catch (e) { console.error('geoSearch', e); toast('Não consegui pesquisar a morada agora.'); }
+}
+
+async function saveGeo() {
+  if (!currentBiz || !currentBiz.id) { toast('Sessão não encontrada.'); return; }
+  var btn = document.getElementById('geo-save-btn');
+  var enabled = document.getElementById('geo-toggle').classList.contains('on');
+  var lat = (typeof window.__geoLat === 'number') ? window.__geoLat : getGeoConfig().lat;
+  var lng = (typeof window.__geoLng === 'number') ? window.__geoLng : getGeoConfig().lng;
+  var msg = (document.getElementById('geo-message') || {}).value || '';
+  if (enabled && (lat == null || lng == null)) { toast('Define a localização da loja no mapa antes de ativar.'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'A guardar...'; }
+  try {
+    var cfg = { enabled: enabled, lat: lat, lng: lng, message: msg.trim() };
+    var { error } = await db.from('businesses').update({ geo_config: cfg }).eq('id', currentBiz.id);
+    if (error) { toast('Erro ao guardar: ' + error.message); return; }
+    currentBiz.geo_config = cfg;
+    toast('Notificação de proximidade guardada');
+  } catch (e) { console.error('saveGeo', e); toast('Algo correu mal ao guardar.'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Guardar notificação de proximidade'; } }
 }
 
 // ---- Editor do cartaz de balcão ----
