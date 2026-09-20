@@ -2112,7 +2112,10 @@ function displayEditorHTML() {
   var hasImg = cfg.bgType === 'image' && cfg.bgImage;
   return '<div class="card">' +
     '<div class="card-h"><div class="card-title">Cartaz de balcão</div></div>' +
-    '<div class="card-sub" style="margin-bottom:16px">Personaliza o cartaz A4 que pões no balcão — independente do cartão.</div>' +
+    '<div class="card-sub" style="margin-bottom:16px">Personaliza o cartaz que pões no balcão — independente do cartão.</div>' +
+    '<div class="field" style="margin-bottom:14px"><label>Formato / tamanho</label><select id="disp-size" onchange="updateDisplayPreview()" style="width:100%;padding:10px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px;background:#fff">' +
+      ['A4|A4 — folha inteira (210 × 297 mm)','A5|A5 — meia folha (148 × 210 mm)','A6|A6 — postal (105 × 148 mm)'].map(function(o){ var p=o.split('|'); return '<option value="'+p[0]+'"'+(cfg.size===p[0]?' selected':'')+'>'+p[1]+'</option>'; }).join('') +
+    '</select></div>' +
     '<div class="field" style="margin-bottom:14px"><label>Fundo</label><select id="disp-bgtype" onchange="updateDisplayPreview()" style="width:100%;padding:10px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px;background:#fff">' +
       '<option value="color"' + (cfg.bgType !== 'image' ? ' selected' : '') + '>Cor sólida</option>' +
       '<option value="image"' + (cfg.bgType === 'image' ? ' selected' : '') + '>Imagem</option>' +
@@ -2121,7 +2124,7 @@ function displayEditorHTML() {
       '<div class="field" style="flex:1"><label>Cor de fundo</label><input type="color" id="disp-bgcolor" value="' + cfg.bgColor + '" oninput="updateDisplayPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div>' +
       '<div class="field" style="flex:1"><label>Cor de destaque</label><input type="color" id="disp-accent" value="' + cfg.accent + '" oninput="updateDisplayPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div>' +
     '</div>' +
-    '<div class="field" style="margin-bottom:14px"><label>Imagem de fundo (opcional)</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div style="width:72px;height:48px;border-radius:8px;background:var(--bg2);overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + (hasImg ? '<img src="' + cfg.bgImage + '" style="width:100%;height:100%;object-fit:cover">' : '') + '</div><input type="file" id="disp-bgimage-file" accept="image/png,image/jpeg,image/webp" onchange="onDispBgFile(this)" style="font-size:13px"></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Escolhe "Imagem" no Fundo para a usar.</div></div>' +
+    '<div class="field" style="margin-bottom:14px"><label>Imagem de fundo (opcional)</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div style="width:72px;height:48px;border-radius:8px;background:var(--bg2);overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + (hasImg ? '<img src="' + cfg.bgImage + '" style="width:100%;height:100%;object-fit:cover">' : '') + '</div><input type="file" id="disp-bgimage-file" accept="image/png,image/jpeg,image/webp" onchange="onDispBgFile(this)" style="font-size:13px"></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Escolhe "Imagem" no Fundo para a usar. <span id="disp-imgrec">Tamanho recomendado: ' + ((POSTER_SIZES[cfg.size]||POSTER_SIZES.A4).rec) + ' (' + cfg.size + ', retrato).</span></div></div>' +
     '<div style="display:flex;gap:16px;margin-bottom:14px">' +
       '<div class="field" style="flex:1"><label>Posição da imagem</label><select id="disp-imgpos" onchange="updateDisplayPreview()" style="width:100%;padding:10px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px;background:#fff">' +
         ['center|Centro','top|Topo','bottom|Fundo','left|Esquerda','right|Direita'].map(function(o){ var p=o.split('|'); return '<option value="'+p[0]+'"'+(cfg.bgImagePos===p[0]?' selected':'')+'>'+p[1]+'</option>'; }).join('') +
@@ -2141,21 +2144,32 @@ function displayEditorHTML() {
 function displayPreviewCardHTML() {
   return '<div class="card"><div class="card-h"><div class="card-title">Pré-visualização do cartaz</div></div>' +
     '<div id="disp-preview" style="display:flex;justify-content:center;padding:6px 0">' + displayScaledHTML(currentDisplayCfg()) + '</div>' +
-    '<div style="text-align:center;font-size:12px;color:var(--text3);margin-top:8px">Formato A4 — pronto a imprimir</div>' +
+    '<div id="disp-preview-fmt" style="text-align:center;font-size:12px;color:var(--text3);margin-top:8px">Formato ' + getDisplayConfig().size + ' — pronto a imprimir</div>' +
   '</div>';
 }
 
-// Poster reduzido para a pré-visualização (A4 escalado)
+// Poster reduzido para a pré-visualização (formato escolhido, escalado à mesma altura)
 function displayScaledHTML(cfg) {
-  var qrPlaceholder = '<div style="width:264px;height:264px;background:#f0f0f0;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:22px;font-weight:700">QR</div>';
-  return '<div style="width:220px;height:311px;overflow:hidden;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);flex-shrink:0">' +
-    '<div style="width:210mm;transform:scale(0.2775);transform-origin:top left">' + posterDivHTML(cfg, qrPlaceholder) + '</div>' +
+  var sz = POSTER_SIZES[cfg.size] || POSTER_SIZES.A4;
+  var PREVIEW_H = 311;                 // altura fixa da pré-visualização (px)
+  var mmToPx = 3.7795;                 // 96dpi
+  var scale = PREVIEW_H / (sz.h * mmToPx);
+  var boxW = Math.round(sz.w * mmToPx * scale);
+  var qs = Math.round(264 * sz.k);
+  var qrPlaceholder = '<div style="width:' + qs + 'px;height:' + qs + 'px;background:#f0f0f0;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:22px;font-weight:700">QR</div>';
+  return '<div style="width:' + boxW + 'px;height:' + PREVIEW_H + 'px;overflow:hidden;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);flex-shrink:0">' +
+    '<div style="width:' + sz.w + 'mm;transform:scale(' + scale.toFixed(4) + ');transform-origin:top left">' + posterDivHTML(cfg, qrPlaceholder) + '</div>' +
   '</div>';
 }
 
 function updateDisplayPreview() {
+  var cfg = currentDisplayCfg();
   var host = document.getElementById('disp-preview');
-  if (host) host.innerHTML = displayScaledHTML(currentDisplayCfg());
+  if (host) host.innerHTML = displayScaledHTML(cfg);
+  var rec = document.getElementById('disp-imgrec');
+  if (rec) rec.textContent = 'Tamanho recomendado: ' + ((POSTER_SIZES[cfg.size] || POSTER_SIZES.A4).rec) + ' (' + cfg.size + ', retrato).';
+  var lbl = document.getElementById('disp-preview-fmt');
+  if (lbl) lbl.textContent = 'Formato ' + cfg.size + ' — pronto a imprimir';
 }
 
 function onDispBgFile(input) {
@@ -2169,6 +2183,7 @@ function onDispBgFile(input) {
 function getDisplayConfig() {
   var c = (currentBiz && currentBiz.display_config) || {};
   return {
+    size: c.size || 'A4',
     bgType: c.bgType || 'color',
     bgColor: c.bgColor || (currentBiz && currentBiz.bg_color) || '#141B2E',
     bgImage: c.bgImage || '',
@@ -2186,6 +2201,7 @@ function currentDisplayCfg() {
   var g = function(id){ var e = document.getElementById(id); return e ? e.value : null; };
   var saved = getDisplayConfig();
   return {
+    size: g('disp-size') || saved.size,
     bgType: g('disp-bgtype') || saved.bgType,
     bgColor: g('disp-bgcolor') || saved.bgColor,
     bgImage: window.__dispBg || saved.bgImage,
@@ -2219,15 +2235,36 @@ async function saveDisplay() {
   finally { if (btn) { btn.disabled = false; btn.textContent = 'Guardar display'; } }
 }
 
+// Formatos de cartaz + tamanho recomendado da imagem (aprox. 150 dpi)
+var POSTER_SIZES = {
+  A4: { w: 210, h: 297, k: 1.00, rec: '1240 × 1754 px' },
+  A5: { w: 148, h: 210, k: 0.71, rec: '874 × 1240 px' },
+  A6: { w: 105, h: 148, k: 0.50, rec: '620 × 874 px' }
+};
+
+function _luminance(hex) {
+  var h = String(hex || '#141B2E').replace('#', '');
+  var r = parseInt(h.slice(0, 2), 16) || 0, g = parseInt(h.slice(2, 4), 16) || 0, b = parseInt(h.slice(4, 6), 16) || 0;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+
 // HTML do poster (usado na pré-visualização e no cartaz final)
 function posterDivHTML(cfg, qrInner) {
   var esc = function(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+  var sz = POSTER_SIZES[cfg.size] || POSTER_SIZES.A4;
+  var k = sz.k;
+  var px = function(v){ return Math.round(v * k) + 'px'; };
   var name = (currentBiz && currentBiz.name) || 'A tua loja';
   var reward = (currentBiz && currentBiz.reward_text) || 'um prémio';
   var logo = (currentBiz && (currentBiz.wallet_logo_url || currentBiz.logo_url)) || '';
   var accent = cfg.accent;
+  var isImg = cfg.bgType === 'image' && cfg.bgImage;
+  var light = !isImg && _luminance(cfg.bgColor) > 0.62;   // fundo claro → texto escuro
+  var txt = light ? '#141B2E' : '#fff';
+  var txtSoft = light ? 'rgba(20,27,46,.62)' : 'rgba(255,255,255,.62)';
+  var txtFaint = light ? 'rgba(20,27,46,.5)' : 'rgba(255,255,255,.55)';
   var bgStyle;
-  if (cfg.bgType === 'image' && cfg.bgImage) {
+  if (isImg) {
     var ov = (((cfg.bgOverlay != null ? cfg.bgOverlay : 50)) / 100).toFixed(2);
     var pos = cfg.bgImagePos || 'center';
     var fit = cfg.bgImageFit || 'cover';
@@ -2235,25 +2272,27 @@ function posterDivHTML(cfg, qrInner) {
   } else {
     bgStyle = 'background:' + cfg.bgColor;
   }
+  var ls = Math.round(110 * k);
   var logoHtml = logo
-    ? '<img src="' + esc(logo) + '" style="width:110px;height:110px;object-fit:contain;border-radius:24px;background:#fff;padding:8px">'
-    : '<div style="width:110px;height:110px;border-radius:24px;background:#fff;color:' + cfg.bgColor + ';display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:800;font-family:Georgia,serif">' + esc(name.charAt(0).toUpperCase()) + '</div>';
-  var stepData = [['1','Aponta a câmara do telemóvel ao código'],['2','Toca no link que aparece'],['3','Adiciona o cartão à Apple ou Google Wallet']];
+    ? '<img src="' + esc(logo) + '" style="width:' + ls + 'px;height:' + ls + 'px;object-fit:contain;border-radius:' + px(24) + ';background:#fff;padding:' + px(8) + '">'
+    : '<div style="width:' + ls + 'px;height:' + ls + 'px;border-radius:' + px(24) + ';background:#fff;color:' + cfg.bgColor + ';display:flex;align-items:center;justify-content:center;font-size:' + px(52) + ';font-weight:800;font-family:Georgia,serif">' + esc(name.charAt(0).toUpperCase()) + '</div>';
+  var stepData = [['1','Abre a câmara do telemóvel e aponta ao código'],['2','Toca na notificação/link que aparece'],['3','Adiciona o cartão à Apple ou Google Wallet']];
+  var cs = Math.round(40 * k);
   var steps = stepData.map(function(s){
-    return '<div style="display:flex;align-items:center;gap:16px;width:100%;max-width:460px;text-align:left"><div style="width:40px;height:40px;flex-shrink:0;border-radius:50%;background:' + accent + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px">' + s[0] + '</div><div style="font-size:19px;color:rgba(255,255,255,.92)">' + s[1] + '</div></div>';
-  }).join('<div style="height:18px"></div>');
-  return '<div style="width:210mm;min-height:297mm;color:#fff;padding:22mm 22mm;display:flex;flex-direction:column;align-items:center;text-align:center;' + bgStyle + '">' +
+    return '<div style="display:flex;align-items:center;gap:' + px(16) + ';width:100%;max-width:' + px(470) + ';text-align:left"><div style="width:' + cs + 'px;height:' + cs + 'px;flex-shrink:0;border-radius:50%;background:' + accent + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:' + px(19) + '">' + s[0] + '</div><div style="font-size:' + px(19) + ';color:' + txt + ';opacity:.92">' + s[1] + '</div></div>';
+  }).join('<div style="height:' + px(16) + '"></div>');
+  return '<div style="width:' + sz.w + 'mm;min-height:' + sz.h + 'mm;color:' + txt + ';padding:' + px(84) + ' ' + px(84) + ';display:flex;flex-direction:column;align-items:center;text-align:center;box-sizing:border-box;' + bgStyle + '">' +
     logoHtml +
-    '<div style="font-size:14px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:' + accent + ';margin-top:20px">Cartão de fidelização</div>' +
-    '<div style="font-family:Georgia,serif;font-size:26px;font-weight:700;margin-top:6px">' + esc(name) + '</div>' +
-    '<div style="font-size:36px;font-weight:800;line-height:1.12;margin:22px 0 8px">' + esc(cfg.headline) + '<br><span style="color:' + accent + '">' + esc(reward) + '</span></div>' +
-    (cfg.subtitle ? '<div style="font-size:17px;color:rgba(255,255,255,.62);max-width:460px">' + esc(cfg.subtitle) + '</div>' : '') +
-    '<div style="margin:22px auto 10px;padding:18px;background:#fff;border-radius:22px;display:inline-block">' + qrInner + '</div>' +
-    '<div style="font-size:14px;color:rgba(255,255,255,.55);letter-spacing:.05em;text-transform:uppercase;font-weight:700;margin-bottom:26px">Aponta a câmara ao código</div>' +
+    '<div style="font-size:' + px(14) + ';font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:' + accent + ';margin-top:' + px(20) + '">Cartão de fidelização</div>' +
+    '<div style="font-family:Georgia,serif;font-size:' + px(26) + ';font-weight:700;margin-top:' + px(6) + '">' + esc(name) + '</div>' +
+    '<div style="font-size:' + px(36) + ';font-weight:800;line-height:1.12;margin:' + px(20) + ' 0 ' + px(8) + '">' + esc(cfg.headline) + '<br><span style="color:' + accent + '">' + esc(reward) + '</span></div>' +
+    (cfg.subtitle ? '<div style="font-size:' + px(17) + ';color:' + txtSoft + ';max-width:' + px(470) + '">' + esc(cfg.subtitle) + '</div>' : '') +
+    '<div style="margin:' + px(20) + ' auto ' + px(10) + ';padding:' + px(16) + ';background:#fff;border-radius:' + px(20) + ';display:inline-block;line-height:0">' + qrInner + '</div>' +
+    '<div style="font-size:' + px(14) + ';color:' + txtFaint + ';letter-spacing:.05em;text-transform:uppercase;font-weight:700;margin-bottom:' + px(24) + '">Aponta a câmara ao código</div>' +
     '<div style="display:flex;flex-direction:column;align-items:center">' + steps + '</div>' +
-    '<div style="flex:1;min-height:24px"></div>' +
-    '<div style="font-size:15px;color:rgba(255,255,255,.55)">Funciona no iPhone e Android</div>' +
-    '<div style="margin-top:8px;font-family:Georgia,serif;font-weight:700;font-size:20px">loyalle<span style="color:' + accent + '">.</span></div>' +
+    '<div style="flex:1;min-height:' + px(20) + '"></div>' +
+    '<div style="font-size:' + px(15) + ';color:' + txtFaint + ';margin-bottom:' + px(12) + '">Funciona no iPhone e Android · sem instalar apps</div>' +
+    '<div style="display:inline-flex;align-items:center;gap:' + px(7) + ';background:rgba(0,0,0,.42);color:#fff;padding:' + px(7) + ' ' + px(15) + ';border-radius:100px;font-size:' + px(13) + ';font-weight:600">powered by <b style="font-family:Georgia,serif;font-weight:700">loyalle<span style="color:' + accent + '">.</span></b></div>' +
   '</div>';
 }
 
@@ -2313,18 +2352,22 @@ function updateCardPreview() {
 // Abre o cartaz de balcão (A4) pronto a imprimir, com o QR e os passos
 function openStoreDisplay() {
   var cfg = getDisplayConfig();
+  var sz = POSTER_SIZES[cfg.size] || POSTER_SIZES.A4;
+  var qs = Math.round(264 * sz.k);
   var link = getCardLink();
   var w = window.open('', '_blank');
   if (!w) { toast('Permite pop-ups para abrir o display.'); return; }
   var html = '<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Display</title>' +
     '<scr' + 'ipt src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></scr' + 'ipt>' +
-    '<style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box;margin:0;padding:0}html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    '<style>@page{size:' + cfg.size + ' portrait;margin:0}*{box-sizing:border-box;margin:0;padding:0}html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
     'body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#e9e9ec;display:flex;flex-direction:column;align-items:center;padding:20px}' +
     '.no-print{margin-top:18px;padding:13px 28px;border:none;border-radius:10px;background:#111;color:#fff;font-size:15px;font-weight:600;cursor:pointer}' +
-    '@media print{body{background:#fff;padding:0}.no-print{display:none}}</style></head>' +
+    '.hint{margin-top:12px;font-size:12px;color:#666;max-width:' + (sz.w * 3.7795) + 'px;text-align:center}' +
+    '@media print{body{background:#fff;padding:0}.no-print,.hint{display:none}}</style></head>' +
     '<body><div style="box-shadow:0 12px 50px rgba(0,0,0,.25)">' + posterDivHTML(cfg, '<div id="qr"></div>') + '</div>' +
-    '<button class="no-print" onclick="window.print()">Imprimir</button>' +
-    '<scr' + 'ipt>window.onload=function(){new QRCode(document.getElementById("qr"),{text:' + JSON.stringify(link) + ',width:264,height:264,correctLevel:QRCode.CorrectLevel.M});};</scr' + 'ipt>' +
+    '<button class="no-print" onclick="window.print()">Imprimir (' + cfg.size + ')</button>' +
+    '<div class="hint">Na janela de impressão escolhe <b>Margens: Nenhumas</b> e ativa <b>Gráficos de fundo</b> para o cartaz ocupar a página toda.</div>' +
+    '<scr' + 'ipt>window.onload=function(){new QRCode(document.getElementById("qr"),{text:' + JSON.stringify(link) + ',width:' + qs + ',height:' + qs + ',correctLevel:QRCode.CorrectLevel.M});};</scr' + 'ipt>' +
     '</body></html>';
   w.document.write(html);
   w.document.close();
