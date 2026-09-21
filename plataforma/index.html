@@ -2162,7 +2162,7 @@ function renderCard() {
       '<div>' +
         '<div class="card">' +
           '<div class="card-h"><div class="card-title">' + t('nav_card') + '</div></div>' +
-          '<div class="card-sub" style="margin-bottom:16px">' + t('br_sub') + '</div>' +
+          '<div class="card-sub" style="margin-bottom:16px;font-size:14px;color:var(--text2);line-height:1.7">' + t('br_sub') + '</div>' +
           '<div class="field" style="margin-bottom:14px"><label>' + t('f_logo') + '</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div style="width:52px;height:52px;border-radius:12px;background:' + bBg + ';display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + (logoU ? '<img id="prevmini-logo" src="' + logoU + '" style="width:100%;height:100%;object-fit:contain">' : '<span id="prevmini-logo" style="color:var(--text3)">—</span>') + '</div><label for="brand-logo-file" class="file-btn">' + t('file_choose') + '</label><input type="file" id="brand-logo-file" accept="image/png,image/jpeg,image/webp" onchange="onBrandFile(this,\'logo\')" style="display:none"></div></div>' +
           '<div class="field" style="margin-bottom:16px"><label>' + t('f_banner') + '</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div style="width:110px;height:38px;border-radius:8px;background:' + bBg + ';display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + (bannerU ? '<img id="prevmini-banner" src="' + bannerU + '" style="width:100%;height:100%;object-fit:cover">' : '<span id="prevmini-banner" style="color:var(--text3);font-size:11px">sem banner</span>') + '</div><label for="brand-banner-file" class="file-btn">' + t('file_choose') + '</label><input type="file" id="brand-banner-file" accept="image/png,image/jpeg,image/webp" onchange="onBrandFile(this,\'banner\')" style="display:none"></div></div>' +
           '<div style="display:flex;gap:16px;margin-bottom:16px"><div class="field" style="flex:1"><label>' + t('f_color_main') + '</label><input type="color" id="brand-color" value="' + bColor + '" oninput="updateCardPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div><div class="field" style="flex:1"><label>' + t('f_color_bg') + '</label><input type="color" id="brand-bg" value="' + bBg + '" oninput="updateCardPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div></div>' +
@@ -2172,7 +2172,7 @@ function renderCard() {
         '</div>' +
         '<div class="card" style="margin-top:16px">' +
           '<div class="card-h"><div class="card-title">' + t('dash_card_link') + '</div></div>' +
-          '<div class="card-sub" style="margin-bottom:14px">' + t('br_share') + '</div>' +
+          '<div class="card-sub" style="margin-bottom:14px;font-size:14px;color:var(--text2);line-height:1.7">' + t('br_share') + '</div>' +
           '<div style="display:flex;gap:8px;align-items:center"><input id="card-link-input" readonly value="' + cardLink + '" style="flex:1;min-width:0;padding:10px 12px;border:1px solid var(--bg3);border-radius:9px;font-size:13px;color:var(--text2);background:var(--bg2);overflow:hidden;text-overflow:ellipsis"><button class="btn-dark" style="padding:10px 14px;flex-shrink:0" onclick="copyCardLink()">Copiar</button></div>' +
           '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn-ghost" style="flex:1;display:flex;align-items:center;gap:6px;justify-content:center" onclick="window.open(getCardLink(),\'_blank\')">' + ICON('external', 16) + ' Abrir cartão</button></div>' +
         '</div>' +
@@ -2212,14 +2212,14 @@ function geoEditorHTML() {
       '<div><div class="card-title">' + t('geo_title') + '</div></div>' +
       '<div class="toggle' + (g.enabled ? ' on' : '') + '" id="geo-toggle" onclick="toggleGeo(this)"></div>' +
     '</div>' +
-    '<div class="card-sub" style="margin-bottom:16px">' + t('geo_sub') + '</div>' +
+    '<div class="card-sub" style="margin-bottom:16px;font-size:14px;color:var(--text2);line-height:1.7">' + t('geo_sub') + '</div>' +
     '<div class="field" style="margin-bottom:12px"><label>' + t('geo_addr') + '</label>' +
       '<div style="display:flex;gap:8px;margin-top:6px"><input type="text" id="geo-address" placeholder="' + t('geo_addr_ph') + '" onkeydown="if(event.key===\'Enter\'){event.preventDefault();geoSearch();}" style="flex:1;min-width:0;padding:11px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px"><button class="btn-dark" style="padding:10px 16px;flex-shrink:0" onclick="geoSearch()">' + t('geo_search') + '</button></div>' +
-      '<div style="font-size:11px;color:var(--text3);margin-top:4px">' + t('geo_hint') + '</div>' +
+      '<div style="font-size:14px;color:var(--text2);margin-top:4px;line-height:1.7">' + t('geo_hint') + '</div>' +
     '</div>' +
     '<div id="geo-map" style="height:240px;border-radius:10px;overflow:hidden;border:1px solid var(--bg3);margin-bottom:6px;background:var(--bg2)"></div>' +
-    '<div id="geo-coords" style="font-size:12px;color:var(--text3);margin-bottom:14px">' + (hasPin ? (t('geo_locset') + ' ' + g.lat.toFixed(5) + ', ' + g.lng.toFixed(5)) : t('geo_noloc')) + '</div>' +
-    '<div class="field" style="margin-bottom:16px"><label>' + t('geo_msg') + '</label><input type="text" id="geo-message" maxlength="60" value="' + String(g.message).replace(/"/g, '&quot;') + '" style="width:100%;padding:11px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px"><div style="font-size:11px;color:var(--text3);margin-top:4px">' + t('geo_msg_hint') + '</div></div>' +
+    '<div id="geo-coords" style="font-size:14px;color:var(--text2);margin-bottom:14px;line-height:1.7">' + (hasPin ? (t('geo_locset') + ' ' + g.lat.toFixed(5) + ', ' + g.lng.toFixed(5)) : t('geo_noloc')) + '</div>' +
+    '<div class="field" style="margin-bottom:16px"><label>' + t('geo_msg') + '</label><input type="text" id="geo-message" maxlength="60" value="' + String(g.message).replace(/"/g, '&quot;') + '" style="width:100%;padding:11px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px"><div style="font-size:14px;color:var(--text2);margin-top:4px;line-height:1.7">' + t('geo_msg_hint') + '</div></div>' +
     '<button class="btn-primary" id="geo-save-btn" onclick="saveGeo()">' + t('geo_save') + '</button>' +
   '</div>';
 }
@@ -2294,7 +2294,7 @@ function displayEditorHTML() {
   var hasImg = cfg.bgType === 'image' && cfg.bgImage;
   return '<div class="card">' +
     '<div class="card-h"><div class="card-title">Cartaz de balcão</div></div>' +
-    '<div class="card-sub" style="margin-bottom:16px">' + t('poster_a4_sub') + '</div>' +
+    '<div class="card-sub" style="margin-bottom:16px;font-size:14px;color:var(--text2);line-height:1.7">' + t('poster_a4_sub') + '</div>' +
     '<div class="field" style="margin-bottom:14px"><label>Formato / tamanho</label><select id="disp-size" onchange="updateDisplayPreview()" style="width:100%;padding:10px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px;background:#fff">' +
       ['A4|A4 — folha inteira (210 × 297 mm)','A5|A5 — meia folha (148 × 210 mm)','A6|A6 — postal (105 × 148 mm)'].map(function(o){ var p=o.split('|'); return '<option value="'+p[0]+'"'+(cfg.size===p[0]?' selected':'')+'>'+p[1]+'</option>'; }).join('') +
     '</select></div>' +
@@ -2306,7 +2306,7 @@ function displayEditorHTML() {
       '<div class="field" style="flex:1"><label>' + t('f_color_bg') + '</label><input type="color" id="disp-bgcolor" value="' + cfg.bgColor + '" oninput="updateDisplayPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div>' +
       '<div class="field" style="flex:1"><label>' + t('f_color_accent') + '</label><input type="color" id="disp-accent" value="' + cfg.accent + '" oninput="updateDisplayPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div>' +
     '</div>' +
-    '<div class="field" style="margin-bottom:14px"><label>' + t('br_bg_image_opt') + '</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div style="width:72px;height:48px;border-radius:8px;background:var(--bg2);overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + (hasImg ? '<img src="' + cfg.bgImage + '" style="width:100%;height:100%;object-fit:cover">' : '') + '</div><label for="disp-bgimage-file" class="file-btn">' + t('file_choose') + '</label><input type="file" id="disp-bgimage-file" accept="image/png,image/jpeg,image/webp" onchange="onDispBgFile(this)" style="display:none"></div><div style="font-size:11px;color:var(--text3);margin-top:4px">' + t('br_choose_image') + ' <span id="disp-imgrec">Tamanho recomendado: ' + ((POSTER_SIZES[cfg.size]||POSTER_SIZES.A4).rec) + ' (' + cfg.size + ', retrato).</span></div></div>' +
+    '<div class="field" style="margin-bottom:14px"><label>' + t('br_bg_image_opt') + '</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div style="width:72px;height:48px;border-radius:8px;background:var(--bg2);overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + (hasImg ? '<img src="' + cfg.bgImage + '" style="width:100%;height:100%;object-fit:cover">' : '') + '</div><label for="disp-bgimage-file" class="file-btn">' + t('file_choose') + '</label><input type="file" id="disp-bgimage-file" accept="image/png,image/jpeg,image/webp" onchange="onDispBgFile(this)" style="display:none"></div><div style="font-size:14px;color:var(--text2);margin-top:4px;line-height:1.7">' + t('br_choose_image') + ' <span id="disp-imgrec">Tamanho recomendado: ' + ((POSTER_SIZES[cfg.size]||POSTER_SIZES.A4).rec) + ' (' + cfg.size + ', retrato).</span></div></div>' +
     '<div style="display:flex;gap:16px;margin-bottom:14px">' +
       '<div class="field" style="flex:1"><label>Posição da imagem</label><select id="disp-imgpos" onchange="updateDisplayPreview()" style="width:100%;padding:10px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px;background:#fff">' +
         ['center|Centro','top|Topo','bottom|Fundo','left|Esquerda','right|Direita'].map(function(o){ var p=o.split('|'); return '<option value="'+p[0]+'"'+(cfg.bgImagePos===p[0]?' selected':'')+'>'+p[1]+'</option>'; }).join('') +
