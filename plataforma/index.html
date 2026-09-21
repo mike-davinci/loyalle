@@ -2445,16 +2445,7 @@ function displayEditorHTML() {
       '<div class="field" style="flex:1"><label>' + t('f_color_bg') + '</label><input type="color" id="disp-bgcolor" value="' + cfg.bgColor + '" oninput="updateDisplayPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div>' +
       '<div class="field" style="flex:1"><label>' + t('f_color_accent') + '</label><input type="color" id="disp-accent" value="' + cfg.accent + '" oninput="updateDisplayPreview()" style="width:100%;height:42px;border:1px solid var(--bg3);border-radius:8px;background:#fff;cursor:pointer"></div>' +
     '</div>' +
-    '<div class="field" style="margin-bottom:14px"><label>' + t('br_bg_image_opt') + '</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div style="width:72px;height:48px;border-radius:8px;background:var(--bg2);overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + (hasImg ? '<img src="' + cfg.bgImage + '" style="width:100%;height:100%;object-fit:cover">' : '') + '</div><label for="disp-bgimage-file" class="file-btn">' + t('file_choose') + '</label><input type="file" id="disp-bgimage-file" accept="image/png,image/jpeg,image/webp" onchange="onDispBgFile(this)" style="display:none"></div><div style="font-size:14px;color:var(--text2);margin-top:4px;line-height:1.7">' + t('br_choose_image') + ' <span id="disp-imgrec">Tamanho recomendado: ' + ((POSTER_SIZES[cfg.size]||POSTER_SIZES.A4).rec) + ' (' + cfg.size + ', retrato).</span></div></div>' +
-    '<div style="display:flex;gap:16px;margin-bottom:14px">' +
-      '<div class="field" style="flex:1"><label>Posição da imagem</label><select id="disp-imgpos" onchange="updateDisplayPreview()" style="width:100%;padding:10px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px;background:#fff">' +
-        ['center|Centro','top|Topo','bottom|Fundo','left|Esquerda','right|Direita'].map(function(o){ var p=o.split('|'); return '<option value="'+p[0]+'"'+(cfg.bgImagePos===p[0]?' selected':'')+'>'+p[1]+'</option>'; }).join('') +
-      '</select></div>' +
-      '<div class="field" style="flex:1"><label>Ajuste</label><select id="disp-imgfit" onchange="updateDisplayPreview()" style="width:100%;padding:10px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px;background:#fff">' +
-        '<option value="cover"' + (cfg.bgImageFit !== 'contain' ? ' selected' : '') + '>Preencher (corta)</option>' +
-        '<option value="contain"' + (cfg.bgImageFit === 'contain' ? ' selected' : '') + '>' + t('br_view_full') + '</option>' +
-      '</select></div>' +
-    '</div>' +
+    '<div class="field" style="margin-bottom:14px"><label>' + t('br_bg_image_opt') + '</label><div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div id="disp-bg-thumb" style="width:72px;height:48px;border-radius:8px;background:var(--bg2);overflow:hidden;border:1px solid var(--bg3);flex-shrink:0">' + (hasImg ? '<img src="' + cfg.bgImage + '" style="width:100%;height:100%;object-fit:cover">' : '') + '</div><label for="disp-bgimage-file" class="file-btn">' + t('file_choose') + '</label><input type="file" id="disp-bgimage-file" accept="image/png,image/jpeg,image/webp" onchange="onDispBgFile(this)" style="display:none"></div><div style="font-size:14px;color:var(--text2);margin-top:4px;line-height:1.7">' + t('br_choose_image') + ' Ao escolher, podes recortar e enquadrar a imagem no formato do cartaz. <span id="disp-imgrec">Tamanho recomendado: ' + ((POSTER_SIZES[cfg.size]||POSTER_SIZES.A4).rec) + ' (' + cfg.size + ', retrato).</span></div></div>' +
     '<div class="field" style="margin-bottom:14px"><label>Escurecer imagem para o texto se ler</label><input type="range" id="disp-overlay" min="0" max="80" value="' + cfg.bgOverlay + '" oninput="updateDisplayPreview()" style="width:100%;margin-top:6px"></div>' +
     '<div class="field" style="margin-bottom:14px"><label>Título</label><input type="text" id="disp-headline" value="' + String(cfg.headline).replace(/"/g, '&quot;') + '" oninput="updateDisplayPreview()" style="width:100%;padding:11px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px"></div>' +
     '<div class="field" style="margin-bottom:18px"><label>Subtítulo</label><input type="text" id="disp-subtitle" value="' + String(cfg.subtitle).replace(/"/g, '&quot;') + '" oninput="updateDisplayPreview()" style="width:100%;padding:11px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px"></div>' +
@@ -2496,8 +2487,9 @@ function updateDisplayPreview() {
 function onDispBgFile(input) {
   var file = input.files[0]; if (!file) return;
   var r = new FileReader();
-  r.onload = function(e) { window.__dispBg = e.target.result; var sel = document.getElementById('disp-bgtype'); if (sel) sel.value = 'image'; updateDisplayPreview(); };
+  r.onload = function(e) { openCropper('dispbg', e.target.result); };
   r.readAsDataURL(file);
+  input.value = '';
 }
 
 // Config do display: guardada (para o cartaz final)
@@ -2541,15 +2533,15 @@ async function saveDisplay() {
   if (btn) { btn.disabled = true; btn.textContent = 'A guardar...'; }
   try {
     var cfg = currentDisplayCfg();
-    var f = document.getElementById('disp-bgimage-file');
-    var file = f && f.files[0];
+    // usa a imagem recortada (blob) se existir; senão o ficheiro original
+    var file = window.__dispBgBlob || (document.getElementById('disp-bgimage-file') || {}).files && document.getElementById('disp-bgimage-file').files[0];
     if (file) { var url = await uploadBrandingFile('display', file); if (url) cfg.bgImage = url; }
     // se ficou um data: (não subiu), não guardar (só URLs)
     if (cfg.bgImage && cfg.bgImage.indexOf('data:') === 0) cfg.bgImage = '';
     var { error } = await db.from('businesses').update({ display_config: cfg }).eq('id', currentBiz.id);
     if (error) { toast('Erro ao guardar: ' + error.message); return; }
     currentBiz.display_config = cfg;
-    window.__dispBg = null;
+    window.__dispBg = null; window.__dispBgBlob = null;
     toast('Cartaz atualizado');
     renderCard();
   } catch (e) { console.error('saveDisplay', e); toast('Algo correu mal ao guardar o cartaz.'); }
@@ -2587,9 +2579,8 @@ function posterDivHTML(cfg, qrInner) {
   var bgStyle;
   if (isImg) {
     var ov = (((cfg.bgOverlay != null ? cfg.bgOverlay : 50)) / 100).toFixed(2);
-    var pos = cfg.bgImagePos || 'center';
-    var fit = cfg.bgImageFit || 'cover';
-    bgStyle = "background:linear-gradient(rgba(0,0,0," + ov + "),rgba(0,0,0," + ov + ")),url('" + esc(cfg.bgImage) + "') " + pos + "/" + fit + " no-repeat," + cfg.bgColor;
+    // A imagem já vem recortada no formato do cartaz → centro + preencher
+    bgStyle = "background:linear-gradient(rgba(0,0,0," + ov + "),rgba(0,0,0," + ov + ")),url('" + esc(cfg.bgImage) + "') center/cover no-repeat," + cfg.bgColor;
   } else {
     bgStyle = 'background:' + cfg.bgColor;
   }
@@ -2667,11 +2658,17 @@ function onBrandFile(input, kind) {
 
 // ---- Recorte/zoom de imagens (logo e banner) ----
 var __cropper = null;
+// rácios e nomes por tipo de imagem
+var CROP_CFG = {
+  logo:   { aspect: 1,        w: 512,  h: 512,  nome: 'logo',   moldura: 'quadrada' },
+  banner: { aspect: 3,        w: 1200, h: 400,  nome: 'banner', moldura: 'panorâmica' },
+  dispbg: { aspect: 210/297,  w: 1240, h: 1754, nome: 'imagem de fundo', moldura: 'do cartaz (retrato)' }
+};
 function openCropper(kind, src) {
-  var isLogo = kind === 'logo';
+  var cfg = CROP_CFG[kind] || CROP_CFG.logo;
   openModal(
-    '<div class="modal-h">Ajustar ' + (isLogo ? 'logo' : 'banner') + '</div>' +
-    '<div class="modal-sub">Arrasta a imagem e usa o zoom para a enquadrares na moldura ' + (isLogo ? 'quadrada' : 'panorâmica') + '.</div>' +
+    '<div class="modal-h">Ajustar ' + cfg.nome + '</div>' +
+    '<div class="modal-sub">Arrasta a imagem e usa o zoom para a enquadrares na moldura ' + cfg.moldura + '.</div>' +
     '<div style="background:#111;border-radius:10px;overflow:hidden;margin:14px 0;height:320px;display:flex;align-items:center;justify-content:center"><img id="crop-img" src="' + src + '" style="max-width:100%;display:block"></div>' +
     '<div style="display:flex;gap:8px;margin-bottom:14px">' +
       '<button class="btn-ghost" style="flex:1" onclick="cropZoom(0.1)">＋ Aproximar</button>' +
@@ -2693,24 +2690,41 @@ function cropRotate() { if (__cropper) __cropper.rotate(90); }
 function closeCropper() { if (__cropper) { try { __cropper.destroy(); } catch (e) {} __cropper = null; } closeModal(); }
 function applyCrop(kind) {
   if (!__cropper) return;
-  var isLogo = kind === 'logo';
-  var w = isLogo ? 512 : 1200, h = isLogo ? 512 : 400;
-  var canvas = __cropper.getCroppedCanvas({ width: w, height: h, imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
+  var cfg = CROP_CFG[kind] || CROP_CFG.logo;
+  var canvas = __cropper.getCroppedCanvas({ width: cfg.w, height: cfg.h, imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
   if (!canvas) { toast('Não consegui recortar a imagem.'); return; }
   var dataUrl = canvas.toDataURL('image/png');
   canvas.toBlob(function(blob) {
-    if (isLogo) { window.__logoBlob = blob; window.__prevLogo = dataUrl; }
-    else { window.__bannerBlob = blob; window.__prevBanner = dataUrl; }
-    var id = isLogo ? 'prevmini-logo' : 'prevmini-banner';
-    var mini = document.getElementById(id);
-    if (mini) {
-      var html = '<img id="' + id + '" src="' + dataUrl + '" style="width:100%;height:100%;object-fit:' + (isLogo ? 'contain' : 'cover') + '">';
-      if (mini.tagName === 'IMG') mini.src = dataUrl; else mini.outerHTML = html;
+    if (kind === 'logo') {
+      window.__logoBlob = blob; window.__prevLogo = dataUrl;
+      setMiniThumb('prevmini-logo', dataUrl, 'contain');
+      updateCardPreview();
+      toast('Imagem enquadrada. Carrega em "Guardar branding" para confirmar.');
+    } else if (kind === 'banner') {
+      window.__bannerBlob = blob; window.__prevBanner = dataUrl;
+      setMiniThumb('prevmini-banner', dataUrl, 'cover');
+      updateCardPreview();
+      toast('Imagem enquadrada. Carrega em "Guardar branding" para confirmar.');
+    } else { // dispbg — imagem de fundo do cartaz
+      window.__dispBgBlob = blob; window.__dispBg = dataUrl;
+      var sel = document.getElementById('disp-bgtype'); if (sel) sel.value = 'image';
+      setMiniThumb('disp-bg-thumb', dataUrl, 'cover');
+      updateDisplayPreview();
+      toast('Imagem enquadrada. Carrega em "Guardar display" para confirmar.');
     }
-    updateCardPreview();
     closeCropper();
-    toast('Imagem enquadrada. Carrega em "Guardar branding" para confirmar.');
   }, 'image/png');
+}
+function setMiniThumb(id, dataUrl, fit) {
+  var mini = document.getElementById(id);
+  if (!mini) return;
+  if (id === 'disp-bg-thumb') { // container — mete a imagem dentro
+    mini.innerHTML = '<img src="' + dataUrl + '" style="width:100%;height:100%;object-fit:' + fit + '">';
+    return;
+  }
+  // prevmini-logo / prevmini-banner — o próprio elemento passa a ser a imagem
+  if (mini.tagName === 'IMG') { mini.src = dataUrl; return; }
+  mini.outerHTML = '<img id="' + id + '" src="' + dataUrl + '" style="width:100%;height:100%;object-fit:' + fit + '">';
 }
 
 // Redesenha só o cartão de pré-visualização
