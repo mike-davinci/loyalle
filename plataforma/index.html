@@ -992,6 +992,40 @@ async function enterApp(biz, opts) {
   document.getElementById('app').classList.add('active');
   setPlatformUser(biz);
   await renderAll();
+  maybeShowWelcome();
+}
+
+// Boas-vindas no primeiro login: aponta para o guia "Como funciona" (mostrado só uma vez)
+function maybeShowWelcome() {
+  if (!currentBiz || !currentBiz.id) return;
+  var key = 'loyalle_welcomed_' + currentBiz.id;
+  try { if (localStorage.getItem(key)) return; } catch (e) {}
+  try { localStorage.setItem(key, '1'); } catch (e) {}
+  var first = ((currentBiz.owner_name || '').trim().split(' ')[0]) || '';
+  var steps = [
+    [t('hw_s1_t'), t('hw_s1_d')],
+    [t('hw_s2_t'), t('hw_s2_d')],
+    [t('hw_s3_t'), t('hw_s3_d')]
+  ];
+  var stepsHTML = steps.map(function(s, i) {
+    return '<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:14px">' +
+      '<div style="width:26px;height:26px;flex-shrink:0;border-radius:50%;background:var(--acc);color:#17140E;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center">' + (i + 1) + '</div>' +
+      '<div><div style="font-weight:700;font-size:14px;color:var(--dark);margin-bottom:2px">' + s[0] + '</div><div style="font-size:12.5px;line-height:1.5;color:var(--text2)">' + s[1] + '</div></div>' +
+    '</div>';
+  }).join('');
+  openModal(
+    '<div class="modal-h">' + (first ? ('Bem-vindo, ' + first + '!') : 'Bem-vindo à Loyalle') + '</div>' +
+    '<div class="modal-sub" style="margin-bottom:16px">A tua conta está pronta. Aqui ficam os primeiros passos para começares — tens o guia completo no separador "' + t('nav_howto') + '" a qualquer momento.</div>' +
+    stepsHTML +
+    '<div class="modal-btns" style="margin-top:18px"><button class="btn-ghost" onclick="closeModal()">' + t('btn_cancel') + '</button><button class="btn-primary" onclick="gotoHowto()">' + t('nav_howto') + ' →</button></div>'
+  );
+}
+// Fecha o modal e abre o separador "Como funciona", destacando-o na barra lateral
+function gotoHowto() {
+  closeModal();
+  var el = null;
+  document.querySelectorAll('.sb-item').forEach(function(i){ if (i.getAttribute('onclick') && i.getAttribute('onclick').indexOf("'howto'") !== -1) el = i; });
+  nav('howto', el);
 }
 
 // Gera um slug (URL do cartão) a partir do nome, quando o negócio ainda não tem.
