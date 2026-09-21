@@ -2017,6 +2017,20 @@ API.addStamp = async function(id) {
     // Primeira entrada depois de confirmar o email: criar o negócio a partir dos metadados
     if (!biz) { biz = await ensureBusiness(data.session.user); justCreated = !!biz; }
     if (biz) await enterApp(biz, { welcome: justCreated });
+    // Regresso do Stripe Checkout
+    try {
+      var bl = new URLSearchParams(window.location.search).get('billing');
+      if (bl === 'success') {
+        toast('Pagamento recebido! O teu plano vai atualizar em instantes.');
+        setTimeout(async function() {
+          var r = await db.from('businesses').select('*').eq('id', currentBiz.id).single();
+          if (r.data) { currentBiz = r.data; setPlatformUser(currentBiz); renderSettings(); }
+        }, 4000);
+      } else if (bl === 'cancel') {
+        toast('Pagamento cancelado. Continuas no teu plano atual.');
+      }
+      if (bl) history.replaceState({}, '', window.location.pathname);
+    } catch (e) {}
     return;
   }
   // Sem sessão: se vier ?plan= da landing, abre o registo já com o plano escolhido
@@ -2744,13 +2758,46 @@ async function resetPassword() {
 
 
 
+var upCycle = 'monthly';
+var UP_PRICES = { Starter: { monthly: '35', annual: '28' }, Pro: { monthly: '69', annual: '55' } };
 function openUpgrade() {
+  upCycle = 'monthly';
   openModal(
-    '<div class="modal-h">' + t('usage_modal_t') + '</div>' +
-    '<div class="modal-sub">' + t('usage_modal_d') + '</div>' +
-    '<div class="modal-btns"><button class="btn-ghost" onclick="closeModal()">' + t('redeem_cancel') + '</button>' +
-    '<a class="btn-primary" href="mailto:team@loyalle.pt?subject=Upgrade%20de%20plano" style="text-decoration:none;text-align:center">' + t('usage_modal_btn') + '</a></div>'
+    '<div class="modal-h">Escolhe o teu plano</div>' +
+    '<div class="modal-sub">Ativa a subscrição para continuar com tudo desbloqueado. Cancela quando quiseres.</div>' +
+    '<div style="display:flex;gap:8px;margin:16px 0 14px">' +
+      '<button id="up-m" class="filter-chip active" onclick="setUpCycle(\'monthly\')">Mensal</button>' +
+      '<button id="up-a" class="filter-chip" onclick="setUpCycle(\'annual\')">Anual · -20%</button>' +
+    '</div>' +
+    '<div style="display:flex;flex-direction:column;gap:10px">' +
+      '<button class="btn-ghost" style="justify-content:space-between;display:flex;align-items:center" onclick="startCheckout(\'Starter\')"><span>Starter</span><span id="up-p-starter" style="font-weight:700">€35/mês</span></button>' +
+      '<button class="btn-primary" style="justify-content:space-between;display:flex;align-items:center" onclick="startCheckout(\'Pro\')"><span>Pro</span><span id="up-p-pro" style="font-weight:700">€69/mês</span></button>' +
+    '</div>' +
+    '<div style="text-align:center;margin-top:14px"><a href="mailto:team@loyalle.pt?subject=Plano%20Business" style="font-size:13px;color:var(--text3);text-decoration:none">Precisas do plano Business? Fala connosco →</a></div>'
   );
+}
+function setUpCycle(c) {
+  upCycle = c;
+  var m = document.getElementById('up-m'), a = document.getElementById('up-a');
+  if (m) m.className = 'filter-chip' + (c === 'monthly' ? ' active' : '');
+  if (a) a.className = 'filter-chip' + (c === 'annual' ? ' active' : '');
+  var ps = document.getElementById('up-p-starter'), pp = document.getElementById('up-p-pro');
+  var suffix = c === 'annual' ? '/mês (anual)' : '/mês';
+  if (ps) ps.textContent = '€' + UP_PRICES.Starter[c] + suffix;
+  if (pp) pp.textContent = '€' + UP_PRICES.Pro[c] + suffix;
+}
+async function startCheckout(plan) {
+  if (!currentBiz || !currentBiz.id) { toast('Sessão não encontrada. Volta a entrar.'); return; }
+  toast('A abrir o pagamento seguro...');
+  try {
+    var res = await fetch(WALLET_BACKEND_URL + '/billing/checkout', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ businessId: currentBiz.id, plan: plan, cycle: upCycle })
+    });
+    var data = await res.json();
+    if (data && data.url) { window.location.href = data.url; }
+    else { toast(data && data.error ? data.error : 'Não foi possível abrir o pagamento.'); }
+  } catch (e) { console.error('startCheckout', e); toast('Erro ao abrir o pagamento. Tenta de novo.'); }
 }
 
 </script>
