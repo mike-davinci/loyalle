@@ -2002,7 +2002,18 @@ API.addStamp = async function(id) {
     // Primeira entrada depois de confirmar o email: criar o negócio a partir dos metadados
     if (!biz) { biz = await ensureBusiness(data.session.user); justCreated = !!biz; }
     if (biz) await enterApp(biz, { welcome: justCreated });
+    return;
   }
+  // Sem sessão: se vier ?plan= da landing, abre o registo já com o plano escolhido
+  try {
+    var pl = new URLSearchParams(window.location.search).get('plan');
+    if (pl && (pl === 'Starter' || pl === 'Pro' || pl === 'Business')) {
+      switchAuth('signup');
+      document.querySelectorAll('.plan-opt').forEach(function(o) {
+        if ((o.getAttribute('onclick') || '').indexOf("'" + pl + "'") !== -1) pickPlan(o, pl);
+      });
+    }
+  } catch (e) {}
 })();
 
 
