@@ -298,7 +298,7 @@ body{padding:32px 16px 56px}
     Não precisas de instalar nenhuma app. A Wallet já vem no teu iPhone ou Android — o cartão entra com um toque e atualiza-se sozinho a cada visita.
   </div>
 
-  <div class="foot-brand">Cartão criado com <b>loyalle.</b></div>
+  <div class="foot-brand" id="foot-brand">Cartão criado com <b>loyalle.</b></div>
 </div>
 </div>
 
@@ -524,7 +524,7 @@ async function addWallet(type) {
 
   try {
     var res = await db.from('businesses')
-      .select('id,name,slug,tagline,mechanic,stamp_goal,reward_text,brand_color,bg_color,color_text,logo_url,wallet_logo_url,logo_initial,status')
+      .select('id,name,slug,tagline,mechanic,stamp_goal,reward_text,brand_color,bg_color,color_text,logo_url,wallet_logo_url,logo_initial,status,plan')
       .eq('slug', BUSINESS_SLUG)
       .single();
 
@@ -542,6 +542,11 @@ async function addWallet(type) {
 
     GOAL = BIZ.stamp_goal || 10;
     applyBranding(BIZ);
+    // White-label: o plano Business esconde a marca Loyalle
+    if (String(BIZ.plan || '').toLowerCase().indexOf('business') !== -1) {
+      var fb = document.getElementById('foot-brand');
+      if (fb) fb.style.display = 'none';
+    }
 
     // Cliente já existente no URL?
     var params = new URLSearchParams(window.location.search);
