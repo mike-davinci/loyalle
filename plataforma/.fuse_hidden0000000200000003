@@ -1027,8 +1027,8 @@ function maybeShowWelcome() {
     '</div>';
   }).join('');
   openModal(
-    '<div class="modal-h">' + (first ? (t('welcome_hi') + ', ' + first + '!') : t('welcome_hi_gen')) + '</div>' +
-    '<div class="modal-sub" style="margin-bottom:16px">' + t('welcome_sub') + '</div>' +
+    '<div class="modal-h">' + (first ? ('Bem-vindo, ' + first + '!') : 'Bem-vindo à Loyalle') + '</div>' +
+    '<div class="modal-sub" style="margin-bottom:16px">A tua conta está pronta. Aqui ficam os primeiros passos para começares — tens o guia completo no separador "' + t('nav_howto') + '" a qualquer momento.</div>' +
     stepsHTML +
     '<div class="modal-btns" style="margin-top:18px"><button class="btn-ghost" onclick="closeModal()">' + t('btn_cancel') + '</button><button class="btn-primary" onclick="gotoHowto()">' + t('nav_howto') + ' →</button></div>'
   );
@@ -1609,9 +1609,9 @@ function renderScan() {
       </div>
       <div>
         <div class="card" style="margin-bottom:16px">
-          <div class="card-h"><div class="card-title">${t('scan_manual')}</div></div>
+          <div class="card-h"><div class="card-title">Registo manual</div></div>
           <div class="card-sub" style="margin-bottom:14px">${t('scan_noqr')}</div>
-          <div class="search-box" style="margin-bottom:12px"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input type="text" id="scan-search" placeholder="${t('scan_search')}" oninput="renderScanResults(this.value)"></div>
+          <div class="search-box" style="margin-bottom:12px"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input type="text" id="scan-search" placeholder="Procurar cliente..." oninput="renderScanResults(this.value)"></div>
           <div id="scan-results"></div>
         </div>
         <div class="card">
@@ -2699,18 +2699,18 @@ function applyCrop(kind) {
       window.__logoBlob = blob; window.__prevLogo = dataUrl;
       setMiniThumb('prevmini-logo', dataUrl, 'contain');
       updateCardPreview();
-      toast(t('crop_done'));
+      toast('Imagem enquadrada. Carrega em "Guardar branding" para confirmar.');
     } else if (kind === 'banner') {
       window.__bannerBlob = blob; window.__prevBanner = dataUrl;
       setMiniThumb('prevmini-banner', dataUrl, 'cover');
       updateCardPreview();
-      toast(t('crop_done'));
+      toast('Imagem enquadrada. Carrega em "Guardar branding" para confirmar.');
     } else { // dispbg — imagem de fundo do cartaz
       window.__dispBgBlob = blob; window.__dispBg = dataUrl;
       var sel = document.getElementById('disp-bgtype'); if (sel) sel.value = 'image';
       setMiniThumb('disp-bg-thumb', dataUrl, 'cover');
       updateDisplayPreview();
-      toast(t('crop_done'));
+      toast('Imagem enquadrada. Carrega em "Guardar display" para confirmar.');
     }
     closeCropper();
   }, 'image/png');
@@ -2828,17 +2828,17 @@ var UP_PRICES = { Starter: { monthly: '35', annual: '28' }, Pro: { monthly: '69'
 function openUpgrade() {
   upCycle = 'monthly';
   openModal(
-    '<div class="modal-h">' + t('up_title') + '</div>' +
-    '<div class="modal-sub">' + t('up_sub') + '</div>' +
+    '<div class="modal-h">Escolhe o teu plano</div>' +
+    '<div class="modal-sub">Ativa a subscrição para continuar com tudo desbloqueado. Cancela quando quiseres.</div>' +
     '<div style="display:flex;gap:8px;margin:16px 0 14px">' +
-      '<button id="up-m" class="filter-chip active" onclick="setUpCycle(\'monthly\')">' + t('up_monthly') + '</button>' +
-      '<button id="up-a" class="filter-chip" onclick="setUpCycle(\'annual\')">' + t('up_annual') + '</button>' +
+      '<button id="up-m" class="filter-chip active" onclick="setUpCycle(\'monthly\')">Mensal</button>' +
+      '<button id="up-a" class="filter-chip" onclick="setUpCycle(\'annual\')">Anual · -20%</button>' +
     '</div>' +
     '<div style="display:flex;flex-direction:column;gap:10px">' +
       '<button class="btn-ghost" style="justify-content:space-between;display:flex;align-items:center" onclick="startCheckout(\'Starter\')"><span>Starter</span><span id="up-p-starter" style="font-weight:700">€35/mês</span></button>' +
       '<button class="btn-primary" style="justify-content:space-between;display:flex;align-items:center" onclick="startCheckout(\'Pro\')"><span>Pro</span><span id="up-p-pro" style="font-weight:700">€69/mês</span></button>' +
     '</div>' +
-    '<div style="text-align:center;margin-top:14px"><a href="mailto:team@loyalle.pt?subject=Plano%20Business" style="font-size:13px;color:var(--text3);text-decoration:none">' + t('up_business') + '</a></div>'
+    '<div style="text-align:center;margin-top:14px"><a href="mailto:team@loyalle.pt?subject=Plano%20Business" style="font-size:13px;color:var(--text3);text-decoration:none">Precisas do plano Business? Fala connosco →</a></div>'
   );
 }
 function setUpCycle(c) {
@@ -2853,7 +2853,7 @@ function setUpCycle(c) {
 }
 async function startCheckout(plan) {
   if (!currentBiz || !currentBiz.id) { toast('Sessão não encontrada. Volta a entrar.'); return; }
-  toast(t('up_opening'));
+  toast('A abrir o pagamento seguro...');
   try {
     var res = await fetch(WALLET_BACKEND_URL + '/billing/checkout', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
