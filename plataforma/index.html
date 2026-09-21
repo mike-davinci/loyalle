@@ -11,6 +11,8 @@
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 <style>
 :root{
   --bg:#FAFAF7;--bg2:#F4F1EB;--bg3:#EAE5DA;--dark:#0C0A06;--dark2:#1A1610;--dark3:#2E2820;
@@ -1911,9 +1913,11 @@ async function saveAccount() {
 async function uploadBrandingFile(kind, file) {
   if (!file) return null;
   if (file.size > 3 * 1024 * 1024) { toast('Imagem demasiado grande (máx. 3 MB)'); return null; }
-  var ext = (file.name.split('.').pop() || 'png').toLowerCase();
+  // Aceita File (com nome) ou Blob recortado (sem nome) — deriva a extensão do tipo
+  var type = file.type || 'image/png';
+  var ext = type.indexOf('png') >= 0 ? 'png' : type.indexOf('webp') >= 0 ? 'webp' : (type.indexOf('jpeg') >= 0 || type.indexOf('jpg') >= 0) ? 'jpg' : 'png';
   var path = currentBiz.id + '/' + kind + '_' + Date.now() + '.' + ext;
-  var up = await db.storage.from('branding').upload(path, file, { upsert: true, cacheControl: '3600', contentType: file.type });
+  var up = await db.storage.from('branding').upload(path, file, { upsert: true, cacheControl: '3600', contentType: type });
   if (up.error) { console.error('upload', up.error); toast('Erro no upload: ' + up.error.message); return null; }
   var pub = db.storage.from('branding').getPublicUrl(path);
   return pub.data.publicUrl;
@@ -1933,14 +1937,16 @@ async function saveBranding() {
     if (rw && rw.value.trim()) update.reward_text = rw.value.trim();
     var gl = document.getElementById('brand-goal');
     if (gl) { var glv = parseInt(gl.value, 10); if (glv >= 1) update.stamp_goal = glv; }
-    var logoFile = document.getElementById('brand-logo-file').files[0];
-    var bannerFile = document.getElementById('brand-banner-file').files[0];
+    // Usa a imagem recortada (blob) se existir; senão o ficheiro original
+    var logoFile = window.__logoBlob || document.getElementById('brand-logo-file').files[0];
+    var bannerFile = window.__bannerBlob || document.getElementById('brand-banner-file').files[0];
     if (logoFile) { var u = await uploadBrandingFile('logo', logoFile); if (u) { update.logo_url = u; update.wallet_logo_url = u; } }
     if (bannerFile) { var b = await uploadBrandingFile('banner', bannerFile); if (b) { update.banner_url = b; } }
     var { error } = await db.from('businesses').update(update).eq('id', currentBiz.id);
     if (error) { toast('Erro ao guardar: ' + error.message); return; }
     Object.assign(currentBiz, update);
     window.__prevLogo = null; window.__prevBanner = null;
+    window.__logoBlob = null; window.__bannerBlob = null;
     toast('Branding atualizado');
     renderCard();
   } catch (e) {
@@ -2654,12 +2660,57 @@ function onBrandFile(input, kind) {
   var file = input.files[0];
   if (!file) return;
   var reader = new FileReader();
-  reader.onload = function(e) {
-    if (kind === 'logo') window.__prevLogo = e.target.result;
-    else window.__prevBanner = e.target.result;
-    updateCardPreview();
-  };
+  reader.onload = function(e) { openCropper(kind, e.target.result); };
   reader.readAsDataURL(file);
+  input.value = ''; // permite voltar a escolher o mesmo ficheiro
+}
+
+// ---- Recorte/zoom de imagens (logo e banner) ----
+var __cropper = null;
+function openCropper(kind, src) {
+  var isLogo = kind === 'logo';
+  openModal(
+    '<div class="modal-h">Ajustar ' + (isLogo ? 'logo' : 'banner') + '</div>' +
+    '<div class="modal-sub">Arrasta a imagem e usa o zoom para a enquadrares na moldura ' + (isLogo ? 'quadrada' : 'panorâmica') + '.</div>' +
+    '<div style="background:#111;border-radius:10px;overflow:hidden;margin:14px 0;height:320px;display:flex;align-items:center;justify-content:center"><img id="crop-img" src="' + src + '" style="max-width:100%;display:block"></div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:14px">' +
+      '<button class="btn-ghost" style="flex:1" onclick="cropZoom(0.1)">＋ Aproximar</button>' +
+      '<button class="btn-ghost" style="flex:1" onclick="cropZoom(-0.1)">－ Afastar</button>' +
+      '<button class="btn-ghost" style="flex:1;display:flex;align-items:center;gap:5px;justify-content:center" onclick="cropRotate()">' + ICON('refresh', 15) + ' Rodar</button>' +
+    '</div>' +
+    '<div class="modal-btns"><button class="btn-ghost" onclick="closeCropper()">Cancelar</button><button class="btn-primary" onclick="applyCrop(\'' + kind + '\')">Aplicar</button></div>'
+  );
+  setTimeout(function() {
+    if (typeof Cropper === 'undefined') { toast('Editor de imagem a carregar, tenta de novo.'); return; }
+    var img = document.getElementById('crop-img');
+    if (!img) return;
+    if (__cropper) { try { __cropper.destroy(); } catch (e) {} }
+    __cropper = new Cropper(img, { aspectRatio: isLogo ? 1 : 3, viewMode: 1, autoCropArea: 1, dragMode: 'move', background: false, movable: true, zoomable: true });
+  }, 90);
+}
+function cropZoom(d) { if (__cropper) __cropper.zoom(d); }
+function cropRotate() { if (__cropper) __cropper.rotate(90); }
+function closeCropper() { if (__cropper) { try { __cropper.destroy(); } catch (e) {} __cropper = null; } closeModal(); }
+function applyCrop(kind) {
+  if (!__cropper) return;
+  var isLogo = kind === 'logo';
+  var w = isLogo ? 512 : 1200, h = isLogo ? 512 : 400;
+  var canvas = __cropper.getCroppedCanvas({ width: w, height: h, imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
+  if (!canvas) { toast('Não consegui recortar a imagem.'); return; }
+  var dataUrl = canvas.toDataURL('image/png');
+  canvas.toBlob(function(blob) {
+    if (isLogo) { window.__logoBlob = blob; window.__prevLogo = dataUrl; }
+    else { window.__bannerBlob = blob; window.__prevBanner = dataUrl; }
+    var id = isLogo ? 'prevmini-logo' : 'prevmini-banner';
+    var mini = document.getElementById(id);
+    if (mini) {
+      var html = '<img id="' + id + '" src="' + dataUrl + '" style="width:100%;height:100%;object-fit:' + (isLogo ? 'contain' : 'cover') + '">';
+      if (mini.tagName === 'IMG') mini.src = dataUrl; else mini.outerHTML = html;
+    }
+    updateCardPreview();
+    closeCropper();
+    toast('Imagem enquadrada. Carrega em "Guardar branding" para confirmar.');
+  }, 'image/png');
 }
 
 // Redesenha só o cartão de pré-visualização
