@@ -2682,7 +2682,7 @@ function openCropper(kind, src) {
     var img = document.getElementById('crop-img');
     if (!img) return;
     if (__cropper) { try { __cropper.destroy(); } catch (e) {} }
-    __cropper = new Cropper(img, { aspectRatio: isLogo ? 1 : 3, viewMode: 1, autoCropArea: 1, dragMode: 'move', background: false, movable: true, zoomable: true });
+    __cropper = new Cropper(img, { aspectRatio: cfg.aspect, viewMode: 1, autoCropArea: 1, dragMode: 'move', background: false, movable: true, zoomable: true });
   }, 90);
 }
 function cropZoom(d) { if (__cropper) __cropper.zoom(d); }
