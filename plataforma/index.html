@@ -1494,12 +1494,12 @@ function walletClicked(tipo) {
 }
 function openAddCustomer() {
   openModal(`
-    <div class="modal-h">' + t('ac_title') + '</div>
-    <div class="modal-sub">' + t('ac_sub') + '</div>
-    <div class="field"><label>' + t('f_fullname') + '</label><input type="text" id="nc-name" placeholder="' + t('ph_custname') + '"></div>
-    <div class="field"><label>' + t('f_email') + '</label><input type="email" id="nc-email" placeholder="' + t('ph_emailex') + '"></div>
-    <div class="field"><label>' + t('f_phone_opt') + '</label><input type="tel" id="nc-phone" placeholder="912 345 678"></div>
-    <div class="modal-btns"><button class="btn-ghost" onclick="closeModal()">' + t('btn_cancel') + '</button><button class="btn-primary" onclick="submitCustomer()">' + t('ac_add') + '</button></div>`);
+    <div class="modal-h">${t('ac_title')}</div>
+    <div class="modal-sub">${t('ac_sub')}</div>
+    <div class="field"><label>${t('f_fullname')}</label><input type="text" id="nc-name" placeholder="${t('ph_custname')}"></div>
+    <div class="field"><label>${t('f_email')}</label><input type="email" id="nc-email" placeholder="${t('ph_emailex')}"></div>
+    <div class="field"><label>${t('f_phone_opt')}</label><input type="tel" id="nc-phone" placeholder="912 345 678"></div>
+    <div class="modal-btns"><button class="btn-ghost" onclick="closeModal()">${t('btn_cancel')}</button><button class="btn-primary" onclick="submitCustomer()">${t('ac_add')}</button></div>`);
 }
 async function submitCustomer() {
   const name = document.getElementById('nc-name').value.trim();
@@ -1527,7 +1527,7 @@ function renderScan() {
           <div class="scan-frame"></div>
           <div style="font-weight:600">Pronto para ler</div>
           <div style="font-size:13px;color:rgba(255,255,255,.5);max-width:240px">${t('scan_aim')}</div>
-          <button class="btn-acc" onclick="startScan()" style="margin-top:8px">' + t('scan_activate') + '</button>
+          <button class="btn-acc" onclick="startScan()" style="margin-top:8px">${t('scan_activate')}</button>
         </div>
       </div>
       <div>
