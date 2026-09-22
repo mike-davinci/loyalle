@@ -782,9 +782,14 @@ const API = {
   // GET estatísticas calculadas a partir dos dados reais
   async getStats() {
     const { data: custs } = await db.from('customers')
-      .select('status, visits').eq('business_id', currentBiz.id);
-    const total = custs ? custs.length : 0;
-    const active = custs ? custs.filter(c => c.status === 'active' || c.status === 'vip').length : 0;
+      .select('status, visits, last_visit, created_at').eq('business_id', currentBiz.id);
+    const list = custs || [];
+    const total = list.length;
+    // Estado real calculado pela última visita (consistente com as Análises)
+    const active = list.filter(function(c) {
+      var s = computeCustStatus(c.last_visit, c.created_at, c.status);
+      return s === 'active' || s === 'vip';
+    }).length;
     const retention = total ? Math.round((active / total) * 100) : 0;
     const { count: rewardsGiven } = await db.from('transactions')
       .select('*', { count: 'exact', head: true })
@@ -806,7 +811,7 @@ const API = {
     const curCust = (await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', bid).gte('created_at', thisWeek)).count || 0;
     const prevCust = (await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', bid).gte('created_at', lastWeek).lt('created_at', thisWeek)).count || 0;
     return {
-      activeCustomers: total, retention: retention,
+      activeCustomers: active, totalCustomers: total, retention: retention,
       rewardsGiven: rewardsGiven || 0, visitsWeek: visitsWeek || 0,
       trendCustomers: prevCust > 0 ? Math.round(((curCust - prevCust) / prevCust) * 100) : (curCust > 0 ? 100 : 0),
       trendRetention: null,
@@ -2385,11 +2390,13 @@ async function exportCustomers(fmt) {
   var L = RT();
   var rows = [L.colsCustomers.slice()];
   data.forEach(function(c) {
-    rows.push([c.name || '', c.email || '', c.phone || '', c.stamps || 0, c.goal || 10, c.points || 0, c.visits || 0, RTstatus(c.status)]);
+    var st = computeCustStatus(c.last_visit, c.created_at, c.status);
+    rows.push([c.name || '', c.email || '', c.phone || '', c.stamps || 0, c.goal || 10, c.points || 0, c.visits || 0, RTstatus(st)]);
   });
   var d = new Date().toISOString().slice(0,10);
   var fn = currentBiz.slug + '_' + L.fnCustomers + '_' + d;
-  var summary = [[L.sumTotalCust, data.length], [L.sumActive, data.filter(function(c){return c.status==='active'||c.status==='vip'}).length], [L.sumInactive, data.filter(function(c){return c.status==='inactive'}).length]];
+  var cs = function(c){ return computeCustStatus(c.last_visit, c.created_at, c.status); };
+  var summary = [[L.sumTotalCust, data.length], [L.sumActive, data.filter(function(c){var s=cs(c);return s==='active'||s==='vip'}).length], [L.sumInactive, data.filter(function(c){return cs(c)==='inactive'}).length]];
   if (fmt === 'excel') downloadExcel(fn + '.xlsx', rows, L.sheetCustomers);
   else if (fmt === 'pdf') downloadPDF(fn + '.pdf', L.titleCustomers, rows, summary);
   else downloadCSV(fn + '.csv', rows);
@@ -2414,11 +2421,11 @@ async function exportTransactions(fmt) {
 
 async function exportResumo(fmt) {
   var s = await API.getStats();
-  var { data: custs } = await db.from('customers').select('stamps, goal, visits, status').eq('business_id', currentBiz.id);
+  var { data: custs } = await db.from('customers').select('stamps, goal, visits, status, last_visit, created_at').eq('business_id', currentBiz.id);
   var all = custs || [];
   var completed = all.filter(function(c) { return c.stamps >= (c.goal || 10); }).length;
-  var active = all.filter(function(c) { return c.status === 'active' || c.status === 'vip'; }).length;
-  var inactive = all.filter(function(c) { return c.status === 'inactive'; }).length;
+  var active = all.filter(function(c) { var st = computeCustStatus(c.last_visit, c.created_at, c.status); return st === 'active' || st === 'vip'; }).length;
+  var inactive = all.filter(function(c) { return computeCustStatus(c.last_visit, c.created_at, c.status) === 'inactive'; }).length;
   var totalVisits = all.reduce(function(s, c) { return s + (c.visits || 0); }, 0);
   var L = RT();
   var rows = [
