@@ -788,7 +788,7 @@ const API = {
     const retention = total ? Math.round((active / total) * 100) : 0;
     const { count: rewardsGiven } = await db.from('transactions')
       .select('*', { count: 'exact', head: true })
-      .eq('business_id', currentBiz.id).eq('type', 'reward');
+      .eq('business_id', currentBiz.id).in('type', ['redeem', 'reward']);
     const weekAgo = new Date(Date.now() - 7*864e5).toISOString();
     const { count: visitsWeek } = await db.from('transactions')
       .select('*', { count: 'exact', head: true })
@@ -798,8 +798,9 @@ const API = {
     const lastWeek = new Date(Date.now() - 14*864e5).toISOString();
     const bid = currentBiz.id;
     const wowTxn = async (type) => {
-      const cur = (await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).eq('type', type).gte('created_at', thisWeek)).count || 0;
-      const prev = (await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).eq('type', type).gte('created_at', lastWeek).lt('created_at', thisWeek)).count || 0;
+      const types = Array.isArray(type) ? type : [type];
+      const cur = (await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).in('type', types).gte('created_at', thisWeek)).count || 0;
+      const prev = (await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).in('type', types).gte('created_at', lastWeek).lt('created_at', thisWeek)).count || 0;
       return prev > 0 ? Math.round(((cur - prev) / prev) * 100) : (cur > 0 ? 100 : 0);
     };
     const curCust = (await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', bid).gte('created_at', thisWeek)).count || 0;
@@ -809,7 +810,7 @@ const API = {
       rewardsGiven: rewardsGiven || 0, visitsWeek: visitsWeek || 0,
       trendCustomers: prevCust > 0 ? Math.round(((curCust - prevCust) / prevCust) * 100) : (curCust > 0 ? 100 : 0),
       trendRetention: null,
-      trendRewards: await wowTxn('reward'),
+      trendRewards: await wowTxn(['redeem', 'reward']),
       trendVisits: await wowTxn('stamp')
     };
   },
@@ -1687,7 +1688,7 @@ async function loadScanToday() {
   const iso = start.toISOString();
   const bid = currentBiz.id;
   const v = await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).eq('type', 'stamp').gte('created_at', iso);
-  const r = await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).eq('type', 'reward').gte('created_at', iso);
+  const r = await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).in('type', ['redeem', 'reward']).gte('created_at', iso);
   const n = await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', bid).gte('created_at', iso);
   const set = function(id, val) { const el = document.getElementById(id); if (el) el.textContent = (val || 0); };
   set('scan-visits', v.count);
@@ -2084,13 +2085,8 @@ quickStamp = async function(id) {
 
 async function confirmRedeem(id) {
   closeModal();
-  // Gravar a transação de resgate no Supabase (para as métricas de prémios)
-  try {
-    await db.from('transactions').insert({
-      business_id: currentBiz.id, customer_id: id, type: 'redeem', amount: 1
-    });
-  } catch(e) { console.warn('Redeem transaction:', e); }
-  // Notificar o backend (reinicia carimbos + push da wallet)
+  // O backend grava a transação de resgate (com service key), reinicia os
+  // carimbos e envia o push da wallet — o frontend só dispara a ação.
   try {
     await fetch(WALLET_BACKEND_URL + '/' + currentBiz.slug + '/redeem/' + id, { method: 'POST' });
   } catch(e) { console.warn('Redeem endpoint:', e); }
