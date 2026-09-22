@@ -368,6 +368,13 @@ tbody tr:hover{background:var(--bg)}
   function t(k){return (i18n[currentLang]||{})[k]||i18n.pt[k]||k}
   function setLang(lang){
     currentLang=lang;localStorage.setItem(LANG_KEY,lang);
+    // Guardar o idioma na conta para os emails saírem no idioma escolhido
+    try {
+      if (typeof currentBiz !== 'undefined' && currentBiz && currentBiz.id && typeof db !== 'undefined') {
+        currentBiz.lang = lang;
+        db.from('businesses').update({ lang: lang }).eq('id', currentBiz.id).then(function(){}, function(){});
+      }
+    } catch(e) {}
     // Update static [data-i18n] elements
     document.querySelectorAll('[data-i18n]').forEach(function(el){
       var k=el.getAttribute('data-i18n');
@@ -955,6 +962,17 @@ async function doLogin() {
     return;
   }
   currentBiz = biz;
+  // Semear o idioma da conta (para os emails) se ainda não estiver definido
+  try {
+    if (!biz.lang) {
+      var _lg = localStorage.getItem('loyalle_lang') || 'pt';
+      biz.lang = _lg;
+      db.from('businesses').update({ lang: _lg }).eq('id', biz.id).then(function(){}, function(){});
+    } else if (biz.lang !== localStorage.getItem('loyalle_lang')) {
+      // A conta já tem idioma guardado → aplicar na plataforma
+      setLang(biz.lang);
+    }
+  } catch(e) {}
   chosenPlan = biz.plan;
   document.getElementById('sb-plan').textContent = 'Plano ' + biz.plan;
   document.getElementById('auth').style.display = 'none';
