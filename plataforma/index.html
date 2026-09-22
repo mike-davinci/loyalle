@@ -1778,7 +1778,9 @@ async function renderAnalytics() {
   const activeThisMonth = all.filter(c => c.status === 'active' || c.status === 'vip').length;
   const freq = activeThisMonth > 0 && stampsThisMonth > 0 ? (30 / (stampsThisMonth / activeThisMonth)).toFixed(1) : '—';
   const completed = all.filter(c => c.stamps >= (c.goal || 10)).length;
-  const completionRate = all.length ? Math.round((completed / all.length) * 100) : 0;
+  // Cartões completados = quem está a 10/10 agora + prémios já resgatados (cartões que reiniciaram)
+  const totalCompleted = completed + redeems.length;
+  const completionRate = all.length ? Math.round((totalCompleted / all.length) * 100) : 0;
   const recurring = all.filter(c => (c.visits || 0) >= 3).length;
   const recurringPct = all.length ? Math.round((recurring / all.length) * 100) : 0;
 
@@ -2064,6 +2066,13 @@ quickStamp = async function(id) {
 
 async function confirmRedeem(id) {
   closeModal();
+  // Gravar a transação de resgate no Supabase (para as métricas de prémios)
+  try {
+    await db.from('transactions').insert({
+      business_id: currentBiz.id, customer_id: id, type: 'redeem', amount: 1
+    });
+  } catch(e) { console.warn('Redeem transaction:', e); }
+  // Notificar o backend (reinicia carimbos + push da wallet)
   try {
     await fetch(WALLET_BACKEND_URL + '/' + currentBiz.slug + '/redeem/' + id, { method: 'POST' });
   } catch(e) { console.warn('Redeem endpoint:', e); }
@@ -2076,6 +2085,17 @@ async function confirmRedeem(id) {
 const _origAddStamp = API.addStamp.bind(API);
 API.addStamp = async function(id) {
   const result = await _origAddStamp(id);
+  // Remendo frontend: garantir que visits e last_visit são incrementados
+  // (enquanto o trigger do backend não o faz). Idempotente e seguro.
+  try {
+    if (result) {
+      await db.from('customers').update({
+        visits: (result.visits || 0) + 1,
+        last_visit: new Date().toISOString()
+      }).eq('id', id);
+      result.visits = (result.visits || 0) + 1;
+    }
+  } catch(e) { console.warn('visits bump:', e); }
   // Fire-and-forget: não bloqueia a UI enquanto atualiza a wallet
   fetch(WALLET_BACKEND_URL + '/' + currentBiz.slug + '/update-pass/' + id, { method: 'POST' }).catch(() => {});
   return result;
