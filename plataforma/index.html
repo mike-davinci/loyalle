@@ -2220,7 +2220,7 @@ async function sendPasswordReset() {
 // ---- Traduções dos relatórios (Excel/PDF/CSV) nos 5 idiomas ----
 var REPORTS_I18N = {
   pt: {
-    colsCustomers:['Nome','Email','Telefone','Carimbos','Objetivo','Pontos','Visitas','Estado'],
+    colsCustomers:['Nome','Email','Telefone','Carimbos','Objetivo','Pontos','Visitas','Estado','Data de adesão','Última visita'],
     colsTxn:['Data','Cliente','Tipo','Quantidade'], colsSummary:['Métrica','Valor'],
     types:{ stamp:'Carimbo', redeem:'Resgate', reward:'Prémio', points:'Pontos', signup:'Registo' },
     status:{ active:'Ativo', vip:'VIP', risk:'Em risco', inactive:'Inativo' },
@@ -2241,7 +2241,7 @@ var REPORTS_I18N = {
     expPeriod:'Período', expAll:'Tudo', expWeek:'Esta semana', expMonth:'Este mês', expYear:'Este ano', expCustom:'Personalizado', expFrom:'De', expTo:'Até'
   },
   en: {
-    colsCustomers:['Name','Email','Phone','Stamps','Goal','Points','Visits','Status'],
+    colsCustomers:['Name','Email','Phone','Stamps','Goal','Points','Visits','Status','Joined','Last visit'],
     colsTxn:['Date','Customer','Type','Amount'], colsSummary:['Metric','Value'],
     types:{ stamp:'Stamp', redeem:'Redemption', reward:'Reward', points:'Points', signup:'Signup' },
     status:{ active:'Active', vip:'VIP', risk:'At risk', inactive:'Inactive' },
@@ -2262,7 +2262,7 @@ var REPORTS_I18N = {
     expPeriod:'Period', expAll:'All', expWeek:'This week', expMonth:'This month', expYear:'This year', expCustom:'Custom', expFrom:'From', expTo:'To'
   },
   es: {
-    colsCustomers:['Nombre','Email','Teléfono','Sellos','Objetivo','Puntos','Visitas','Estado'],
+    colsCustomers:['Nombre','Email','Teléfono','Sellos','Objetivo','Puntos','Visitas','Estado','Fecha de alta','Última visita'],
     colsTxn:['Fecha','Cliente','Tipo','Cantidad'], colsSummary:['Métrica','Valor'],
     types:{ stamp:'Sello', redeem:'Canje', reward:'Premio', points:'Puntos', signup:'Registro' },
     status:{ active:'Activo', vip:'VIP', risk:'En riesgo', inactive:'Inactivo' },
@@ -2283,7 +2283,7 @@ var REPORTS_I18N = {
     expPeriod:'Período', expAll:'Todo', expWeek:'Esta semana', expMonth:'Este mes', expYear:'Este año', expCustom:'Personalizado', expFrom:'Desde', expTo:'Hasta'
   },
   fr: {
-    colsCustomers:['Nom','Email','Téléphone','Tampons','Objectif','Points','Visites','Statut'],
+    colsCustomers:['Nom','Email','Téléphone','Tampons','Objectif','Points','Visites','Statut','Inscription','Dernière visite'],
     colsTxn:['Date','Client','Type','Quantité'], colsSummary:['Indicateur','Valeur'],
     types:{ stamp:'Tampon', redeem:'Échange', reward:'Récompense', points:'Points', signup:'Inscription' },
     status:{ active:'Actif', vip:'VIP', risk:'À risque', inactive:'Inactif' },
@@ -2304,7 +2304,7 @@ var REPORTS_I18N = {
     expPeriod:'Période', expAll:'Tout', expWeek:'Cette semaine', expMonth:'Ce mois', expYear:'Cette année', expCustom:'Personnalisé', expFrom:'Du', expTo:'Au'
   },
   de: {
-    colsCustomers:['Name','E-Mail','Telefon','Stempel','Ziel','Punkte','Besuche','Status'],
+    colsCustomers:['Name','E-Mail','Telefon','Stempel','Ziel','Punkte','Besuche','Status','Beitritt','Letzter Besuch'],
     colsTxn:['Datum','Kunde','Typ','Menge'], colsSummary:['Kennzahl','Wert'],
     types:{ stamp:'Stempel', redeem:'Einlösung', reward:'Prämie', points:'Punkte', signup:'Anmeldung' },
     status:{ active:'Aktiv', vip:'VIP', risk:'Gefährdet', inactive:'Inaktiv' },
@@ -2338,8 +2338,9 @@ var UX_I18N = {
 };
 function ux(k) { var l = (localStorage.getItem('loyalle_lang') || 'pt'); return (UX_I18N[l] || UX_I18N.pt)[k]; }
 
-function downloadCSV(filename, rows) {
-  var csv = rows.map(function(r) { return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
+function downloadCSV(filename, rows, period) {
+  var all = period ? [[RT().expPeriod + ': ' + period], []].concat(rows) : rows;
+  var csv = all.map(function(r) { return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
   var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   var link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
@@ -2348,12 +2349,14 @@ function downloadCSV(filename, rows) {
   toast(RT().toastExported + ' ' + filename);
 }
 
-function downloadExcel(filename, rows, sheetName) {
-  var ws = XLSX.utils.aoa_to_sheet(rows);
+function downloadExcel(filename, rows, sheetName, period) {
+  var aoa = period ? [[RT().expPeriod + ': ' + period], []].concat(rows) : rows;
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Dados');  // sheetName já vem traduzido
-  // Ajustar largura das colunas
-  ws['!cols'] = rows[0].map(function(h, i) {
+  // Larguras das colunas a partir da linha de cabeçalho real
+  var header = rows[0] || [];
+  ws['!cols'] = header.map(function(h, i) {
     var max = rows.reduce(function(m, r) { return Math.max(m, String(r[i] || '').length); }, String(h).length);
     return { wch: Math.min(max + 2, 40) };
   });
@@ -2361,7 +2364,7 @@ function downloadExcel(filename, rows, sheetName) {
   toast(RT().toastExcel + ' ' + filename);
 }
 
-function downloadPDF(filename, title, rows, summary) {
+function downloadPDF(filename, title, rows, summary, period) {
   var doc = new jspdf.jsPDF();
   // Header com marca Loyalle
   doc.setFillColor(12, 10, 6);
@@ -2376,6 +2379,7 @@ function downloadPDF(filename, title, rows, summary) {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.text(title + ' — ' + new Date().toLocaleDateString(RT().locale), 60, 20);
+  if (period) { doc.setFontSize(8); doc.text(RT().expPeriod + ': ' + period, 60, 25); doc.setFontSize(9); }
   // Resumo KPIs se existir
   var startY = 36;
   if (summary && summary.length) {
@@ -2499,17 +2503,20 @@ async function exportCustomers(fmt) {
   if (!data || !data.length) { toast(t('ts_no_export')); return; }
   var L = RT();
   var rows = [L.colsCustomers.slice()];
+  var fmtDate = function(v) { return v ? new Date(v).toLocaleDateString(L.locale) : '—'; };
   data.forEach(function(c) {
     var st = computeCustStatus(c.last_visit, c.created_at, c.status);
-    rows.push([c.name || '', c.email || '', c.phone || '', c.stamps || 0, c.goal || 10, c.points || 0, c.visits || 0, RTstatus(st)]);
+    var lv = (c.last_visit && c.last_visit !== '1970-01-01') ? c.last_visit : null;
+    rows.push([c.name || '', c.email || '', c.phone || '', c.stamps || 0, c.goal || 10, c.points || 0, c.visits || 0, RTstatus(st), fmtDate(c.created_at), fmtDate(lv)]);
   });
   var d = new Date().toISOString().slice(0,10);
   var fn = currentBiz.slug + '_' + L.fnCustomers + '_' + d;
   var cs = function(c){ return computeCustStatus(c.last_visit, c.created_at, c.status); };
   var summary = [[L.sumTotalCust, data.length], [L.sumActive, data.filter(function(c){var s=cs(c);return s==='active'||s==='vip'}).length], [L.sumInactive, data.filter(function(c){return cs(c)==='inactive'}).length]];
-  if (fmt === 'excel') downloadExcel(fn + '.xlsx', rows, L.sheetCustomers);
-  else if (fmt === 'pdf') downloadPDF(fn + '.pdf', L.titleCustomers, rows, summary);
-  else downloadCSV(fn + '.csv', rows);
+  var pstr = rangeText(L);
+  if (fmt === 'excel') downloadExcel(fn + '.xlsx', rows, L.sheetCustomers, pstr);
+  else if (fmt === 'pdf') downloadPDF(fn + '.pdf', L.titleCustomers, rows, summary, pstr);
+  else downloadCSV(fn + '.csv', rows, pstr);
 }
 
 async function exportTransactions(fmt) {
@@ -2525,9 +2532,10 @@ async function exportTransactions(fmt) {
   var d = new Date().toISOString().slice(0,10);
   var fn = currentBiz.slug + '_' + L.fnTxn + '_' + d;
   var summary = [[L.sumTotalTxn, data.length], [L.sumStamps, data.filter(function(t){return t.type==='stamp'}).length], [L.sumRedeems, data.filter(function(t){return t.type==='redeem'||t.type==='reward'}).length]];
-  if (fmt === 'excel') downloadExcel(fn + '.xlsx', rows, L.sheetTxn);
-  else if (fmt === 'pdf') downloadPDF(fn + '.pdf', L.titleTxn, rows, summary);
-  else downloadCSV(fn + '.csv', rows);
+  var pstr = rangeText(L);
+  if (fmt === 'excel') downloadExcel(fn + '.xlsx', rows, L.sheetTxn, pstr);
+  else if (fmt === 'pdf') downloadPDF(fn + '.pdf', L.titleTxn, rows, summary, pstr);
+  else downloadCSV(fn + '.csv', rows, pstr);
 }
 
 function rangeText(L) {
