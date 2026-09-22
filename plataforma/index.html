@@ -2530,6 +2530,13 @@ async function saveGeo() {
     if (error) { toast('Erro ao guardar: ' + error.message); return; }
     currentBiz.geo_config = cfg;
     toast(t('ts_geo_saved'));
+    // Refresca os passes já instalados para atualizarem a mensagem/localização
+    try {
+      if (currentBiz.slug) {
+        fetch(WALLET_BACKEND_URL + '/' + currentBiz.slug + '/refresh-passes', { method: 'POST' })
+          .then(function(){}, function(){});
+      }
+    } catch (e) {}
   } catch (e) { console.error('saveGeo', e); toast(t('ts_save_err')); }
   finally { if (btn) { btn.disabled = false; btn.textContent = 'Guardar notificação de proximidade'; } }
 }
