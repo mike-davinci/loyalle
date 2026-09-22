@@ -438,8 +438,8 @@ tbody tr:hover{background:var(--bg)}
       <div id="form-login">
         <div class="auth-h" data-i18n="login_welcome">Bem-vindo de volta</div>
         <div class="auth-sub" data-i18n="login_sub">Entra na tua conta para gerir o teu programa.</div>
-        <div class="field"><label data-i18n="f_email">Email</label><input type="email" id="login-email" placeholder="nome@negocio.pt"></div>
-        <div class="field"><label data-i18n="f_password">Palavra-passe</label><div class="pw-wrap"><input type="password" id="login-pass" placeholder="••••••••"><button type="button" class="pw-eye" onclick="togglePw(this)" aria-label="Mostrar palavra-passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+        <div class="field"><label data-i18n="f_email">Email</label><input type="email" id="login-email" placeholder="nome@negocio.pt" onkeydown="if(event.key==='Enter'){event.preventDefault();doLogin();}"></div>
+        <div class="field"><label data-i18n="f_password">Palavra-passe</label><div class="pw-wrap"><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter'){event.preventDefault();doLogin();}"><button type="button" class="pw-eye" onclick="togglePw(this)" aria-label="Mostrar palavra-passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
         <button class="btn-primary" onclick="doLogin()" data-i18n="login_btn">Entrar →</button>
         <div class="auth-alt"><span data-i18n="login_no_account">Ainda não tens conta?</span> <a onclick="switchAuth('signup')" data-i18n="login_create">Criar uma conta</a></div>
         <div style="text-align:center;margin-top:6px"><a href="#" onclick="showForgotPassword();return false" style="font-size:13px;color:#C6993B;text-decoration:none" data-i18n="login_forgot">Esqueci a password</a></div>
@@ -450,11 +450,11 @@ tbody tr:hover{background:var(--bg)}
         <div class="auth-h" data-i18n="signup_title">Cria a tua conta</div>
         <div class="auth-sub" id="signup-sub">Começa hoje. Cancela quando quiseres.</div>
         <div class="field-row">
-          <div class="field"><label data-i18n="f_name">Nome</label><input type="text" data-i18n-ph="ph_yourname" placeholder="O teu nome"></div>
-          <div class="field"><label data-i18n="f_business">Negócio</label><input type="text" data-i18n-ph="ph_storename" placeholder="Nome da loja"></div>
+          <div class="field"><label data-i18n="f_name">Nome</label><input type="text" data-i18n-ph="ph_yourname" placeholder="O teu nome" onkeydown="if(event.key==='Enter'){event.preventDefault();doSignup();}"></div>
+          <div class="field"><label data-i18n="f_business">Negócio</label><input type="text" data-i18n-ph="ph_storename" placeholder="Nome da loja" onkeydown="if(event.key==='Enter'){event.preventDefault();doSignup();}"></div>
         </div>
-        <div class="field"><label data-i18n="f_email">Email</label><input type="email" placeholder="nome@negocio.pt"></div>
-        <div class="field"><label data-i18n="f_password">Palavra-passe</label><div class="pw-wrap"><input type="password" data-i18n-ph="ph_min8" placeholder="Mínimo 8 caracteres"><button type="button" class="pw-eye" onclick="togglePw(this)" aria-label="Mostrar palavra-passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+        <div class="field"><label data-i18n="f_email">Email</label><input type="email" placeholder="nome@negocio.pt" onkeydown="if(event.key==='Enter'){event.preventDefault();doSignup();}"></div>
+        <div class="field"><label data-i18n="f_password">Palavra-passe</label><div class="pw-wrap"><input type="password" data-i18n-ph="ph_min8" placeholder="Mínimo 8 caracteres" onkeydown="if(event.key==='Enter'){event.preventDefault();doSignup();}"><button type="button" class="pw-eye" onclick="togglePw(this)" aria-label="Mostrar palavra-passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
         <label style="display:block;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px" data-i18n="signup_choose_plan">Escolhe o teu plano</label>
         <div class="plan-cycle">
           <span class="pc-lbl act" id="pc-m" onclick="setBilling(false)">Mensal</span>
@@ -2113,7 +2113,7 @@ function showForgotPassword() {
   openModal(
     '<div class="modal-h">' + t('fp_modal_t') + '</div>' +
     '<div class="modal-sub">' + t('fp_modal_d') + '</div>' +
-    '<div class="field"><label>' + t('f_email') + '</label><input type="email" id="fp-email" placeholder="' + t('ph_emailex') + '"></div>' +
+    '<div class="field"><label>' + t('f_email') + '</label><input type="email" id="fp-email" placeholder="' + t('ph_emailex') + '" onkeydown="if(event.key===&#39;Enter&#39;){event.preventDefault();sendPasswordReset();}"></div>' +
     '<div class="modal-btns"><button class="btn-ghost" onclick="closeModal()">' + t('btn_cancel') + '</button><button class="btn-primary" onclick="sendPasswordReset()">' + t('fp_btn') + '</button></div>'
   );
 }
