@@ -1588,7 +1588,7 @@ async function openCustomerDetail(id) {
       </div>
       <div style="flex:1;text-align:center;background:var(--bg2);border-radius:12px;padding:14px">
         <div style="font-family:var(--fh);font-size:22px;font-weight:700">${c.points}</div>
-        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Pontos</div>
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${ux('points')}</div>
       </div>
       <div style="flex:1;text-align:center;background:var(--bg2);border-radius:12px;padding:14px">
         <div style="font-family:var(--fh);font-size:22px;font-weight:700">${c.visits}</div>
@@ -1659,7 +1659,7 @@ function renderScan() {
         <div class="scan-placeholder" id="scan-ph">
           <div class="scan-icon-big" style="color:var(--acc)">${ICON('scan',38)}</div>
           <div class="scan-frame"></div>
-          <div style="font-weight:600">Pronto para ler</div>
+          <div style="font-weight:600">${ux('scanReady')}</div>
           <div style="font-size:13px;color:rgba(255,255,255,.5);max-width:240px">${t('scan_aim')}</div>
           <button class="btn-acc" onclick="startScan()" style="margin-top:8px">${t('scan_activate')}</button>
         </div>
@@ -1672,12 +1672,12 @@ function renderScan() {
           <div id="scan-results"></div>
         </div>
         <div class="card">
-          <div class="card-h"><div class="card-title">Hoje</div></div>
+          <div class="card-h"><div class="card-title">${ux('today')}</div></div>
           <div class="kpi-v" style="font-size:36px" id="scan-visits">0</div>
-          <div class="kpi-l">visitas registadas hoje</div>
+          <div class="kpi-l">${ux('visitsToday')}</div>
           <div style="display:flex;gap:20px;margin-top:16px">
-            <div><div style="font-family:var(--fh);font-weight:800;font-size:20px" id="scan-rewards">0</div><div style="font-size:12px;color:var(--text3)">prémios dados</div></div>
-            <div><div style="font-family:var(--fh);font-weight:800;font-size:20px" id="scan-newcust">0</div><div style="font-size:12px;color:var(--text3)">novos clientes</div></div>
+            <div><div style="font-family:var(--fh);font-weight:800;font-size:20px" id="scan-rewards">0</div><div style="font-size:12px;color:var(--text3)">${ux('rewardsToday')}</div></div>
+            <div><div style="font-family:var(--fh);font-weight:800;font-size:20px" id="scan-newcust">0</div><div style="font-size:12px;color:var(--text3)">${ux('newToday')}</div></div>
           </div>
         </div>
       </div>
@@ -1705,7 +1705,7 @@ function renderScanResults(q) {
   const list = custCache.filter(c => !q || c.name.toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q)).slice(0, 5);
   document.getElementById('scan-results').innerHTML = list.map(c => {
     const initials = c.name.split(' ').map(n => n[0]).slice(0, 2).join('');
-    return `<div class="act-item"><div class="cust-avatar" style="background:${c.color}">${initials}</div><div class="act-txt"><b>${c.name}</b><div style="color:var(--text3);font-size:12px">${c.stamps}/${c.goal} carimbos · ${c.points} pts</div></div><button class="row-action" onclick="quickStamp('${c.id}');renderScanResults(document.getElementById('scan-search').value)">+ Carimbo</button></div>`;
+    return `<div class="act-item"><div class="cust-avatar" style="background:${c.color}">${initials}</div><div class="act-txt"><b>${c.name}</b><div style="color:var(--text3);font-size:12px">${c.stamps}/${c.goal} ${ux('stampsWord')} · ${c.points} pts</div></div><button class="row-action" onclick="quickStamp('${c.id}');renderScanResults(document.getElementById('scan-search').value)">${ux('btnStamp')}</button></div>`;
   }).join('') || ('<div style="color:var(--text3);font-size:13px;padding:8px 0">' + t('cust_none') + '</div>');
 }
 function initScanner() { /* lazy — only on activate */ }
@@ -1867,12 +1867,12 @@ function renderRewards() {
       <div class="card">
         <div class="card-h"><div><div class="card-title">${t('rw_stamps_title')}</div><div class="card-sub">${t('rw_stamps_sub')}</div></div><div style="display:flex;align-items:center;gap:8px"><span class="tag active">${t('rw_active')}</span><button class="btn-ghost" style="padding:6px 12px;font-size:13px;display:flex;align-items:center;gap:6px" onclick="openStampEditor()">${ICON('target',15)} ${t('rw_edit')}</button></div></div>
         <div style="font-size:14px;color:var(--text2);line-height:1.7">${t('rw_stamps_desc').replace('10', (currentBiz && currentBiz.stamp_goal) ? currentBiz.stamp_goal : 10)}</div>
-        <div style="background:var(--accBg);border:1px solid var(--accBg2);border-radius:12px;padding:16px;margin-top:14px;display:flex;align-items:center;gap:12px"><span style="color:var(--acc);flex-shrink:0;display:flex">${ICON('gift',22)}</span><div><div style="font-family:var(--fh);font-weight:700;font-size:16px">${(currentBiz && currentBiz.reward_text) ? currentBiz.reward_text : 'Prémio de fidelidade'}</div><div style="font-size:13px;color:var(--text2);margin-top:4px">Ao completar <b>${(currentBiz && currentBiz.stamp_goal) ? currentBiz.stamp_goal : 10}</b> carimbos · ${t('rw_auto_notif')}</div></div></div>
+        <div style="background:var(--accBg);border:1px solid var(--accBg2);border-radius:12px;padding:16px;margin-top:14px;display:flex;align-items:center;gap:12px"><span style="color:var(--acc);flex-shrink:0;display:flex">${ICON('gift',22)}</span><div><div style="font-family:var(--fh);font-weight:700;font-size:16px">${(currentBiz && currentBiz.reward_text) ? currentBiz.reward_text : 'Prémio de fidelidade'}</div><div style="font-size:13px;color:var(--text2);margin-top:4px">${ux('onCompleting')} <b>${(currentBiz && currentBiz.stamp_goal) ? currentBiz.stamp_goal : 10}</b> ${ux('stampsWord')} · ${t('rw_auto_notif')}</div></div></div>
       </div>
       <div class="card" style="opacity:.72">
         <div class="card-h"><div><div class="card-title">${t('rw_points_title')}</div><div class="card-sub">${t('rw_soon')}</div></div><span class="tag">${t('rw_soon')}</span></div>
         <div style="font-size:14px;color:var(--text2);line-height:1.7">${t('rw_points_desc')}</div>
-        <div style="margin-top:14px;padding:16px;background:var(--bg2);border:1px dashed var(--bg3);border-radius:12px;text-align:center;color:var(--text3);font-size:13px;line-height:1.6">Vais poder criar prémios por pontos (ex.: um prémio aos 200 pontos, um desconto aos 500) e definir os teus próprios valores. <b>Em breve.</b></div>
+        <div style="margin-top:14px;padding:16px;background:var(--bg2);border:1px dashed var(--bg3);border-radius:12px;text-align:center;color:var(--text3);font-size:13px;line-height:1.6">${ux('pointsSoon')}</div>
       </div>
     </div>`;
 }
@@ -1932,7 +1932,7 @@ function renderSettings() {
       <div class="card">
         <div class="card-h"><div class="card-title">${t('sec_account')}</div></div>
         <div class="field"><label>${t('f_name')}</label><input type="text" id="set-name" value="${currentBiz?.owner_name || ''}"></div>
-        <div class="field"><label>${t('f_email')}</label><input type="email" id="set-email" value="${currentBiz?.email || ''}" readonly style="opacity:.6;cursor:not-allowed"><div style="font-size:12px;color:var(--text3);margin-top:4px">O email de acesso não pode ser alterado aqui. Fala connosco para o mudar.</div></div>
+        <div class="field"><label>${t('f_email')}</label><input type="email" id="set-email" value="${currentBiz?.email || ''}" readonly style="opacity:.6;cursor:not-allowed"><div style="font-size:12px;color:var(--text3);margin-top:4px">${ux('emailNotice')}</div></div>
         <div class="field"><label>${t('f_business')}</label><input type="text" id="set-biz" value="${currentBiz?.name || ''}"></div>
         <button class="btn-primary" onclick="saveAccount()">${t('btn_save_changes')}</button>
       </div>
@@ -2288,6 +2288,16 @@ var REPORTS_I18N = {
 };
 function RT() { var l = (localStorage.getItem('loyalle_lang') || 'pt'); return REPORTS_I18N[l] || REPORTS_I18N.pt; }
 function RTstatus(s) { var L = RT(); return (L.status && L.status[s]) || s || ''; }
+
+// ---- Strings de UI que faltavam traduzir (scan, recompensas, definições) ----
+var UX_I18N = {
+  pt: { points:'Pontos', reward:'Prémio', scanReady:'Pronto para ler', today:'Hoje', visitsToday:'visitas registadas hoje', rewardsToday:'prémios dados', newToday:'novos clientes', stampsWord:'carimbos', btnStamp:'+ Carimbo', onCompleting:'Ao completar', pointsSoon:'Vais poder criar prémios por pontos (ex.: um prémio aos 200 pontos, um desconto aos 500) e definir os teus próprios valores. <b>Em breve.</b>', emailNotice:'O email de acesso não pode ser alterado aqui. Fala connosco para o mudar.' },
+  en: { points:'Points', reward:'Reward', scanReady:'Ready to scan', today:'Today', visitsToday:'visits today', rewardsToday:'rewards given', newToday:'new customers', stampsWord:'stamps', btnStamp:'+ Stamp', onCompleting:'On completing', pointsSoon:"You'll be able to create points-based rewards (e.g. a reward at 200 points, a discount at 500) and set your own values. <b>Coming soon.</b>", emailNotice:"Your login email can't be changed here. Contact us to change it." },
+  es: { points:'Puntos', reward:'Premio', scanReady:'Listo para leer', today:'Hoy', visitsToday:'visitas hoy', rewardsToday:'premios dados', newToday:'nuevos clientes', stampsWord:'sellos', btnStamp:'+ Sello', onCompleting:'Al completar', pointsSoon:'Podrás crear premios por puntos (p. ej. un premio a los 200 puntos, un descuento a los 500) y definir tus propios valores. <b>Muy pronto.</b>', emailNotice:'El email de acceso no se puede cambiar aquí. Contáctanos para cambiarlo.' },
+  fr: { points:'Points', reward:'Récompense', scanReady:'Prêt à scanner', today:"Aujourd'hui", visitsToday:"visites aujourd'hui", rewardsToday:'récompenses données', newToday:'nouveaux clients', stampsWord:'tampons', btnStamp:'+ Tampon', onCompleting:'En complétant', pointsSoon:'Tu pourras créer des récompenses par points (ex. une récompense à 200 points, une remise à 500) et définir tes propres valeurs. <b>Bientôt.</b>', emailNotice:"L'email de connexion ne peut pas être modifié ici. Contacte-nous pour le changer." },
+  de: { points:'Punkte', reward:'Prämie', scanReady:'Bereit zum Scannen', today:'Heute', visitsToday:'Besuche heute', rewardsToday:'vergebene Prämien', newToday:'neue Kunden', stampsWord:'Stempel', btnStamp:'+ Stempel', onCompleting:'Beim Abschluss von', pointsSoon:'Du kannst punktebasierte Prämien erstellen (z. B. eine Prämie bei 200 Punkten, ein Rabatt bei 500) und eigene Werte festlegen. <b>Demnächst.</b>', emailNotice:'Die Login-E-Mail kann hier nicht geändert werden. Kontaktiere uns dafür.' }
+};
+function ux(k) { var l = (localStorage.getItem('loyalle_lang') || 'pt'); return (UX_I18N[l] || UX_I18N.pt)[k]; }
 
 function downloadCSV(filename, rows) {
   var csv = rows.map(function(r) { return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
@@ -2862,10 +2872,10 @@ function cardPreviewHTML() {
       '<div style="padding:16px">' +
         '<div style="display:flex;align-items:center;gap:10px">' +
           '<div style="width:40px;height:40px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">' + logoInner + '</div>' +
-          '<div style="flex:1;min-width:0"><div style="color:' + bColor + ';font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + name + '</div><div style="color:rgba(255,255,255,.5);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Carimbos</div></div>' +
+          '<div style="flex:1;min-width:0"><div style="color:' + bColor + ';font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + name + '</div><div style="color:rgba(255,255,255,.5);font-size:10px;text-transform:uppercase;letter-spacing:.06em">' + ux('stampsWord') + '</div></div>' +
           '<div style="text-align:right"><div style="color:#fff;font-family:var(--fh);font-weight:800;font-size:16px">3/' + goal + '</div></div>' +
         '</div>' +
-        '<div style="margin-top:14px"><div style="color:#fff;font-family:var(--fh);font-weight:800;font-size:17px">' + reward + '</div><div style="color:' + bColor + ';font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-top:2px">Prémio</div></div>' +
+        '<div style="margin-top:14px"><div style="color:#fff;font-family:var(--fh);font-weight:800;font-size:17px">' + reward + '</div><div style="color:' + bColor + ';font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-top:2px">' + ux('reward') + '</div></div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px">' + stamps + '</div>' +
         '<div style="margin-top:14px;background:#fff;border-radius:8px;height:54px;display:flex;align-items:center;justify-content:center;color:#999;font-size:10px">QR do cliente</div>' +
       '</div>' +
