@@ -780,7 +780,9 @@ const API = {
     return mapCustomer(nc);
   },
   // GET estatísticas calculadas a partir dos dados reais
-  async getStats() {
+  async getStats(period) {
+    period = period || ((typeof dashPeriod !== 'undefined') ? dashPeriod : 'week');
+    const windowDays = period === 'year' ? 365 : (period === 'month' ? 30 : 7);
     const { data: custs } = await db.from('customers')
       .select('status, visits, last_visit, created_at').eq('business_id', currentBiz.id);
     const list = custs || [];
@@ -791,28 +793,24 @@ const API = {
       return s === 'active' || s === 'vip';
     }).length;
     const retention = total ? Math.round((active / total) * 100) : 0;
-    const { count: rewardsGiven } = await db.from('transactions')
-      .select('*', { count: 'exact', head: true })
-      .eq('business_id', currentBiz.id).in('type', ['redeem', 'reward']);
-    const weekAgo = new Date(Date.now() - 7*864e5).toISOString();
-    const { count: visitsWeek } = await db.from('transactions')
-      .select('*', { count: 'exact', head: true })
-      .eq('business_id', currentBiz.id).eq('type', 'stamp').gte('created_at', weekAgo);
-    // Tendência real: esta semana vs semana anterior
-    const thisWeek = new Date(Date.now() - 7*864e5).toISOString();
-    const lastWeek = new Date(Date.now() - 14*864e5).toISOString();
     const bid = currentBiz.id;
+    // Janelas do período selecionado (atual vs. anterior, do mesmo tamanho)
+    const thisStart = new Date(Date.now() - windowDays*864e5).toISOString();
+    const lastStart = new Date(Date.now() - 2*windowDays*864e5).toISOString();
+    // Prémios e visitas DENTRO do período
+    const rewardsGiven = (await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).in('type', ['redeem', 'reward']).gte('created_at', thisStart)).count || 0;
+    const visitsWeek = (await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).eq('type', 'stamp').gte('created_at', thisStart)).count || 0;
     const wowTxn = async (type) => {
       const types = Array.isArray(type) ? type : [type];
-      const cur = (await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).in('type', types).gte('created_at', thisWeek)).count || 0;
-      const prev = (await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).in('type', types).gte('created_at', lastWeek).lt('created_at', thisWeek)).count || 0;
+      const cur = (await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).in('type', types).gte('created_at', thisStart)).count || 0;
+      const prev = (await db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).in('type', types).gte('created_at', lastStart).lt('created_at', thisStart)).count || 0;
       return prev > 0 ? Math.round(((cur - prev) / prev) * 100) : (cur > 0 ? 100 : 0);
     };
-    const curCust = (await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', bid).gte('created_at', thisWeek)).count || 0;
-    const prevCust = (await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', bid).gte('created_at', lastWeek).lt('created_at', thisWeek)).count || 0;
+    const curCust = (await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', bid).gte('created_at', thisStart)).count || 0;
+    const prevCust = (await db.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', bid).gte('created_at', lastStart).lt('created_at', thisStart)).count || 0;
     return {
       activeCustomers: active, totalCustomers: total, retention: retention,
-      rewardsGiven: rewardsGiven || 0, visitsWeek: visitsWeek || 0,
+      rewardsGiven: rewardsGiven, visitsWeek: visitsWeek, period: period,
       trendCustomers: prevCust > 0 ? Math.round(((curCust - prevCust) / prevCust) * 100) : (curCust > 0 ? 100 : 0),
       trendRetention: null,
       trendRewards: await wowTxn(['redeem', 'reward']),
@@ -844,6 +842,26 @@ const API = {
     const { data } = await db.from('transactions')
       .select('created_at').eq('business_id', currentBiz.id)
       .eq('type','stamp').gte('created_at', sixAgo);
+    (data || []).forEach(t => {
+      const dt = new Date(t.created_at);
+      const b = buckets.find(x => x.y === dt.getFullYear() && x.m === dt.getMonth());
+      if (b) b.v++;
+    });
+    return buckets.map(b => ({ d: b.d, v: b.v }));
+  },
+  // GET visitas dos últimos 12 meses (agrupadas por mês) para a vista anual
+  async getYearData() {
+    const mLabels = (typeof RT === 'function') ? RT().months : ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const now = new Date();
+    const buckets = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      buckets.push({ y: d.getFullYear(), m: d.getMonth(), d: mLabels[d.getMonth()], v: 0 });
+    }
+    const yearAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString();
+    const { data } = await db.from('transactions')
+      .select('created_at').eq('business_id', currentBiz.id)
+      .eq('type','stamp').gte('created_at', yearAgo);
     (data || []).forEach(t => {
       const dt = new Date(t.created_at);
       const b = buckets.find(x => x.y === dt.getFullYear() && x.m === dt.getMonth());
@@ -1307,10 +1325,10 @@ function trendBadge(v) {
 async function renderDashboard() {
   const cardLink = getCardLink();
   const s = await API.getStats();
-  const weekData = await API.getWeekData();
+  const chartData = dashPeriod === 'year' ? await API.getYearData() : (dashPeriod === 'month' ? await API.getMonthData() : await API.getWeekData());
   const activity = await API.getActivity();
-  const maxV = Math.max(...weekData.map(d => d.v), 1);
-  const bars = weekData.map((d, i) => {
+  const maxV = Math.max(...chartData.map(d => d.v), 1);
+  const bars = chartData.map((d, i) => {
     const h = Math.round((d.v / maxV) * 100);
     const hi = d.v === maxV && d.v > 0 ? 'hi' : '';
     return `<div class="chart-col"><div class="chart-bar ${hi}" style="height:${h}%"><span class="chart-val">${d.v}</span></div><span class="chart-lbl">${d.d}</span></div>`;
@@ -1375,16 +1393,28 @@ async function renderDashboard() {
       '</div>';
   }
 
-  document.getElementById('page-dashboard').innerHTML = usageHTML + `
+  // Rótulos do período (Semana/Mês/Ano) nos 5 idiomas
+  var _dlang = (function(){ try { var l = localStorage.getItem('loyalle_lang') || 'pt'; return ['pt','en','es','fr','de'].indexOf(l) >= 0 ? l : 'pt'; } catch(e){ return 'pt'; } })();
+  var PL = {
+    pt:{week:'Semana',month:'Mês',year:'Ano',subW:'Últimos 7 dias',subM:'Últimos 6 meses',subY:'Últimos 12 meses',vW:'Visitas (semana)',vM:'Visitas (mês)',vY:'Visitas (ano)'},
+    en:{week:'Week',month:'Month',year:'Year',subW:'Last 7 days',subM:'Last 6 months',subY:'Last 12 months',vW:'Visits (week)',vM:'Visits (month)',vY:'Visits (year)'},
+    es:{week:'Semana',month:'Mes',year:'Año',subW:'Últimos 7 días',subM:'Últimos 6 meses',subY:'Últimos 12 meses',vW:'Visitas (semana)',vM:'Visitas (mes)',vY:'Visitas (año)'},
+    fr:{week:'Semaine',month:'Mois',year:'Année',subW:'7 derniers jours',subM:'6 derniers mois',subY:'12 derniers mois',vW:'Visites (semaine)',vM:'Visites (mois)',vY:'Visites (année)'},
+    de:{week:'Woche',month:'Monat',year:'Jahr',subW:'Letzte 7 Tage',subM:'Letzte 6 Monate',subY:'Letzte 12 Monate',vW:'Besuche (Woche)',vM:'Besuche (Monat)',vY:'Besuche (Jahr)'}
+  }[_dlang];
+  var chartSub = dashPeriod === 'week' ? PL.subW : (dashPeriod === 'month' ? PL.subM : PL.subY);
+  var visitsKpiLbl = dashPeriod === 'week' ? PL.vW : (dashPeriod === 'month' ? PL.vM : PL.vY);
+  var segCtl = '<div style="display:flex;gap:6px;margin-bottom:18px">' + ['week','month','year'].map(function(p){ var on = dashPeriod === p; return '<button class="filter-chip" onclick="setDashPeriod(\'' + p + '\')" style="cursor:pointer;' + (on ? 'background:var(--dark);color:#fff;border-color:var(--dark)' : '') + '">' + PL[p] + '</button>'; }).join('') + '</div>';
+  document.getElementById('page-dashboard').innerHTML = usageHTML + segCtl + `
     <div class="kpi-grid">
       <div class="kpi"><div class="kpi-top"><div class="kpi-ic gold">${ICON('users')}</div>${trendBadge(s.trendCustomers)}</div><div class="kpi-v">${s.activeCustomers}</div><div class="kpi-l">${t('dash_active')}</div></div>
       <div class="kpi"><div class="kpi-top"><div class="kpi-ic green">${ICON('refresh')}</div>${trendBadge(s.trendRetention)}</div><div class="kpi-v">${s.retention}%</div><div class="kpi-l">${t('dash_retention')}</div></div>
       <div class="kpi"><div class="kpi-top"><div class="kpi-ic blue">${ICON('gift')}</div>${trendBadge(s.trendRewards)}</div><div class="kpi-v">${s.rewardsGiven}</div><div class="kpi-l">${t('dash_rewards')}</div></div>
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic dark">${ICON('trend')}</div>${trendBadge(s.trendVisits)}</div><div class="kpi-v">${s.visitsWeek.toLocaleString(RT().locale)}</div><div class="kpi-l">${t('dash_visits_month')}</div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic dark">${ICON('trend')}</div>${trendBadge(s.trendVisits)}</div><div class="kpi-v">${s.visitsWeek.toLocaleString(RT().locale)}</div><div class="kpi-l">${visitsKpiLbl}</div></div>
     </div>
     <div class="grid-2">
       <div class="card">
-        <div class="card-h"><div><div class="card-title">${t('dash_visits_day')}</div><div class="card-sub" id="visits-sub">${t('dash_last_week')}</div></div><button class="filter-chip" id="visits-chip" onclick="toggleVisitsPeriod()" style="cursor:pointer">${t('dash_week')} ▾</button></div>
+        <div class="card-h"><div><div class="card-title">${t('dash_visits_day')}</div><div class="card-sub" id="visits-sub">${chartSub}</div></div><span class="filter-chip" id="visits-chip">${PL[dashPeriod]}</span></div>
         <div class="chart-bars" id="visits-chart">${bars}</div>
       </div>
       <div class="card">
@@ -1420,7 +1450,7 @@ async function renderDashboard() {
             <input readonly value="${getCardLink()}" style="flex:1;min-width:0;padding:9px 11px;border:1px solid var(--bg3);border-radius:9px;font-size:12px;color:var(--text2);background:var(--bg2);overflow:hidden;text-overflow:ellipsis">
             <button class="btn-dark" style="padding:9px 13px;flex-shrink:0" onclick="copyCardLink()">${t('dash_copy')}</button>
           </div>
-          <button class="btn-ghost" style="width:100%;margin-top:8px;display:flex;align-items:center;gap:6px;justify-content:center" onclick="openStoreDisplay()">${ICON('target',16)} Display para o balcão</button>
+          <button class="btn-ghost" style="width:100%;margin-top:8px;display:flex;align-items:center;gap:6px;justify-content:center" onclick="openStoreDisplay()">${ICON('target',16)} ${ux('counterDisplay')}</button>
         </div>
       </div>
     </div>`;
@@ -1429,9 +1459,13 @@ async function renderDashboard() {
 
 // Seletor Semana / Mês do gráfico de visitas
 let dashPeriod = 'week';
-function toggleVisitsPeriod() {
-  dashPeriod = dashPeriod === 'week' ? 'month' : 'week';
-  renderVisitsChart();
+function setDashPeriod(p) {
+  dashPeriod = p;
+  renderDashboard();   // recalcula KPIs + gráfico para o período escolhido
+}
+function toggleVisitsPeriod() {  // mantido por compatibilidade
+  dashPeriod = dashPeriod === 'week' ? 'month' : (dashPeriod === 'month' ? 'year' : 'week');
+  renderDashboard();
 }
 async function renderVisitsChart() {
   const chart = document.getElementById('visits-chart');
@@ -2203,7 +2237,8 @@ var REPORTS_I18N = {
     toastExported:'Relatório exportado:', toastExcel:'Excel exportado:', toastPdf:'PDF exportado:',
     optExcel:'Excel — formatado com colunas', optPdf:'PDF — relatório profissional',
     months:['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'], locale:'pt-PT',
-    openCard:'Abrir cartão', print:'Imprimir'
+    openCard:'Abrir cartão', print:'Imprimir',
+    expPeriod:'Período', expAll:'Tudo', expWeek:'Esta semana', expMonth:'Este mês', expYear:'Este ano', expCustom:'Personalizado', expFrom:'De', expTo:'Até'
   },
   en: {
     colsCustomers:['Name','Email','Phone','Stamps','Goal','Points','Visits','Status'],
@@ -2223,7 +2258,8 @@ var REPORTS_I18N = {
     toastExported:'Report exported:', toastExcel:'Excel exported:', toastPdf:'PDF exported:',
     optExcel:'Excel — formatted columns', optPdf:'PDF — professional report',
     months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], locale:'en-GB',
-    openCard:'Open card', print:'Print'
+    openCard:'Open card', print:'Print',
+    expPeriod:'Period', expAll:'All', expWeek:'This week', expMonth:'This month', expYear:'This year', expCustom:'Custom', expFrom:'From', expTo:'To'
   },
   es: {
     colsCustomers:['Nombre','Email','Teléfono','Sellos','Objetivo','Puntos','Visitas','Estado'],
@@ -2243,7 +2279,8 @@ var REPORTS_I18N = {
     toastExported:'Informe exportado:', toastExcel:'Excel exportado:', toastPdf:'PDF exportado:',
     optExcel:'Excel — con columnas', optPdf:'PDF — informe profesional',
     months:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'], locale:'es-ES',
-    openCard:'Abrir tarjeta', print:'Imprimir'
+    openCard:'Abrir tarjeta', print:'Imprimir',
+    expPeriod:'Período', expAll:'Todo', expWeek:'Esta semana', expMonth:'Este mes', expYear:'Este año', expCustom:'Personalizado', expFrom:'Desde', expTo:'Hasta'
   },
   fr: {
     colsCustomers:['Nom','Email','Téléphone','Tampons','Objectif','Points','Visites','Statut'],
@@ -2263,7 +2300,8 @@ var REPORTS_I18N = {
     toastExported:'Rapport exporté :', toastExcel:'Excel exporté :', toastPdf:'PDF exporté :',
     optExcel:'Excel — colonnes formatées', optPdf:'PDF — rapport professionnel',
     months:['Janv','Févr','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'], locale:'fr-FR',
-    openCard:'Ouvrir la carte', print:'Imprimer'
+    openCard:'Ouvrir la carte', print:'Imprimer',
+    expPeriod:'Période', expAll:'Tout', expWeek:'Cette semaine', expMonth:'Ce mois', expYear:'Cette année', expCustom:'Personnalisé', expFrom:'Du', expTo:'Au'
   },
   de: {
     colsCustomers:['Name','E-Mail','Telefon','Stempel','Ziel','Punkte','Besuche','Status'],
@@ -2283,7 +2321,8 @@ var REPORTS_I18N = {
     toastExported:'Bericht exportiert:', toastExcel:'Excel exportiert:', toastPdf:'PDF exportiert:',
     optExcel:'Excel — formatierte Spalten', optPdf:'PDF — professioneller Bericht',
     months:['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'], locale:'de-DE',
-    openCard:'Karte öffnen', print:'Drucken'
+    openCard:'Karte öffnen', print:'Drucken',
+    expPeriod:'Zeitraum', expAll:'Alles', expWeek:'Diese Woche', expMonth:'Dieser Monat', expYear:'Dieses Jahr', expCustom:'Benutzerdefiniert', expFrom:'Von', expTo:'Bis'
   }
 };
 function RT() { var l = (localStorage.getItem('loyalle_lang') || 'pt'); return REPORTS_I18N[l] || REPORTS_I18N.pt; }
@@ -2291,11 +2330,11 @@ function RTstatus(s) { var L = RT(); return (L.status && L.status[s]) || s || ''
 
 // ---- Strings de UI que faltavam traduzir (scan, recompensas, definições) ----
 var UX_I18N = {
-  pt: { points:'Pontos', reward:'Prémio', scanReady:'Pronto para ler', today:'Hoje', visitsToday:'visitas registadas hoje', rewardsToday:'prémios dados', newToday:'novos clientes', stampsWord:'carimbos', btnStamp:'+ Carimbo', onCompleting:'Ao completar', pointsSoon:'Vais poder criar prémios por pontos (ex.: um prémio aos 200 pontos, um desconto aos 500) e definir os teus próprios valores. <b>Em breve.</b>', emailNotice:'O email de acesso não pode ser alterado aqui. Fala connosco para o mudar.' },
-  en: { points:'Points', reward:'Reward', scanReady:'Ready to scan', today:'Today', visitsToday:'visits today', rewardsToday:'rewards given', newToday:'new customers', stampsWord:'stamps', btnStamp:'+ Stamp', onCompleting:'On completing', pointsSoon:"You'll be able to create points-based rewards (e.g. a reward at 200 points, a discount at 500) and set your own values. <b>Coming soon.</b>", emailNotice:"Your login email can't be changed here. Contact us to change it." },
-  es: { points:'Puntos', reward:'Premio', scanReady:'Listo para leer', today:'Hoy', visitsToday:'visitas hoy', rewardsToday:'premios dados', newToday:'nuevos clientes', stampsWord:'sellos', btnStamp:'+ Sello', onCompleting:'Al completar', pointsSoon:'Podrás crear premios por puntos (p. ej. un premio a los 200 puntos, un descuento a los 500) y definir tus propios valores. <b>Muy pronto.</b>', emailNotice:'El email de acceso no se puede cambiar aquí. Contáctanos para cambiarlo.' },
-  fr: { points:'Points', reward:'Récompense', scanReady:'Prêt à scanner', today:"Aujourd'hui", visitsToday:"visites aujourd'hui", rewardsToday:'récompenses données', newToday:'nouveaux clients', stampsWord:'tampons', btnStamp:'+ Tampon', onCompleting:'En complétant', pointsSoon:'Tu pourras créer des récompenses par points (ex. une récompense à 200 points, une remise à 500) et définir tes propres valeurs. <b>Bientôt.</b>', emailNotice:"L'email de connexion ne peut pas être modifié ici. Contacte-nous pour le changer." },
-  de: { points:'Punkte', reward:'Prämie', scanReady:'Bereit zum Scannen', today:'Heute', visitsToday:'Besuche heute', rewardsToday:'vergebene Prämien', newToday:'neue Kunden', stampsWord:'Stempel', btnStamp:'+ Stempel', onCompleting:'Beim Abschluss von', pointsSoon:'Du kannst punktebasierte Prämien erstellen (z. B. eine Prämie bei 200 Punkten, ein Rabatt bei 500) und eigene Werte festlegen. <b>Demnächst.</b>', emailNotice:'Die Login-E-Mail kann hier nicht geändert werden. Kontaktiere uns dafür.' }
+  pt: { points:'Pontos', reward:'Prémio', counterDisplay:'Display para o balcão', scanReady:'Pronto para ler', today:'Hoje', visitsToday:'visitas registadas hoje', rewardsToday:'prémios dados', newToday:'novos clientes', stampsWord:'carimbos', btnStamp:'+ Carimbo', onCompleting:'Ao completar', pointsSoon:'Vais poder criar prémios por pontos (ex.: um prémio aos 200 pontos, um desconto aos 500) e definir os teus próprios valores. <b>Em breve.</b>', emailNotice:'O email de acesso não pode ser alterado aqui. Fala connosco para o mudar.' },
+  en: { points:'Points', reward:'Reward', counterDisplay:'Counter display', scanReady:'Ready to scan', today:'Today', visitsToday:'visits today', rewardsToday:'rewards given', newToday:'new customers', stampsWord:'stamps', btnStamp:'+ Stamp', onCompleting:'On completing', pointsSoon:"You'll be able to create points-based rewards (e.g. a reward at 200 points, a discount at 500) and set your own values. <b>Coming soon.</b>", emailNotice:"Your login email can't be changed here. Contact us to change it." },
+  es: { points:'Puntos', reward:'Premio', counterDisplay:'Display para el mostrador', scanReady:'Listo para leer', today:'Hoy', visitsToday:'visitas hoy', rewardsToday:'premios dados', newToday:'nuevos clientes', stampsWord:'sellos', btnStamp:'+ Sello', onCompleting:'Al completar', pointsSoon:'Podrás crear premios por puntos (p. ej. un premio a los 200 puntos, un descuento a los 500) y definir tus propios valores. <b>Muy pronto.</b>', emailNotice:'El email de acceso no se puede cambiar aquí. Contáctanos para cambiarlo.' },
+  fr: { points:'Points', reward:'Récompense', counterDisplay:'Affichage comptoir', scanReady:'Prêt à scanner', today:"Aujourd'hui", visitsToday:"visites aujourd'hui", rewardsToday:'récompenses données', newToday:'nouveaux clients', stampsWord:'tampons', btnStamp:'+ Tampon', onCompleting:'En complétant', pointsSoon:'Tu pourras créer des récompenses par points (ex. une récompense à 200 points, une remise à 500) et définir tes propres valeurs. <b>Bientôt.</b>', emailNotice:"L'email de connexion ne peut pas être modifié ici. Contacte-nous pour le changer." },
+  de: { points:'Punkte', reward:'Prämie', counterDisplay:'Theken-Display', scanReady:'Bereit zum Scannen', today:'Heute', visitsToday:'Besuche heute', rewardsToday:'vergebene Prämien', newToday:'neue Kunden', stampsWord:'Stempel', btnStamp:'+ Stempel', onCompleting:'Beim Abschluss von', pointsSoon:'Du kannst punktebasierte Prämien erstellen (z. B. eine Prämie bei 200 Punkten, ein Rabatt bei 500) und eigene Werte festlegen. <b>Demnächst.</b>', emailNotice:'Die Login-E-Mail kann hier nicht geändert werden. Kontaktiere uns dafür.' }
 };
 function ux(k) { var l = (localStorage.getItem('loyalle_lang') || 'pt'); return (UX_I18N[l] || UX_I18N.pt)[k]; }
 
@@ -2383,19 +2422,80 @@ function downloadPDF(filename, title, rows, summary) {
   toast(RT().toastPdf + ' ' + filename);
 }
 
+var exportPreset = 'all';
+var exportRangeSel = { from: null, to: null };
+
+function setExportPreset(k) {
+  exportPreset = k;
+  var custom = document.getElementById('exp-custom');
+  if (custom) custom.style.display = (k === 'custom') ? 'flex' : 'none';
+  var chips = document.querySelectorAll('#exp-presets [data-preset]');
+  for (var i = 0; i < chips.length; i++) {
+    var on = chips[i].getAttribute('data-preset') === k;
+    chips[i].style.background = on ? 'var(--dark)' : '';
+    chips[i].style.color = on ? '#fff' : '';
+    chips[i].style.borderColor = on ? 'var(--dark)' : '';
+  }
+}
+
+// Calcula o intervalo {from,to} ISO a partir do preset/datas escolhidas
+function computeExportRange() {
+  var now = Date.now();
+  if (exportPreset === 'week') return { from: new Date(now - 7*864e5).toISOString(), to: null };
+  if (exportPreset === 'month') return { from: new Date(now - 30*864e5).toISOString(), to: null };
+  if (exportPreset === 'year') return { from: new Date(now - 365*864e5).toISOString(), to: null };
+  if (exportPreset === 'custom') {
+    var f = (document.getElementById('exp-from') || {}).value;
+    var tt = (document.getElementById('exp-to') || {}).value;
+    return {
+      from: f ? new Date(f).toISOString() : null,
+      to: tt ? new Date(new Date(tt).getTime() + 864e5).toISOString() : null   // inclui o dia final
+    };
+  }
+  return { from: null, to: null };
+}
+
+// Aplica os filtros de data a uma query do Supabase
+function applyRange(q, range) {
+  if (range && range.from) q = q.gte('created_at', range.from);
+  if (range && range.to) q = q.lt('created_at', range.to);
+  return q;
+}
+
+// Lê o intervalo, fecha o modal e dispara o export do tipo/formato
+function doExport(type, fmt) {
+  exportRangeSel = computeExportRange();
+  closeModal();
+  var fn = window['export' + type.charAt(0).toUpperCase() + type.slice(1)];
+  if (typeof fn === 'function') fn(fmt);
+}
+
 function showExportModal(type) {
+  exportPreset = 'all';
+  var L = RT();
+  var chip = function(k, label) { return '<button class="filter-chip" data-preset="' + k + '" onclick="setExportPreset(\'' + k + '\')" style="cursor:pointer">' + label + '</button>'; };
   openModal(
     '<div class="modal-h">' + t('an_title_export') + ' ' + (type === 'customers' ? t('exp_w_customers') : type === 'transactions' ? t('exp_w_txns') : t('exp_w_summary')) + '</div>' +
-    '<div class="modal-sub">' + t('exp_format') + '</div>' +
-    '<div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">' +
-      '<button class="btn-ghost" style="justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="closeModal();export' + type.charAt(0).toUpperCase() + type.slice(1) + '(\'excel\')">' + ICON('sheet',16) + ' ' + RT().optExcel + '</button>' +
-      '<button class="btn-ghost" style="justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="closeModal();export' + type.charAt(0).toUpperCase() + type.slice(1) + '(\'pdf\')">' + ICON('file',16) + ' ' + RT().optPdf + '</button>' +
+    '<div class="modal-sub">' + L.expPeriod + '</div>' +
+    '<div id="exp-presets" style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px">' +
+      chip('all', L.expAll) + chip('week', L.expWeek) + chip('month', L.expMonth) + chip('year', L.expYear) + chip('custom', L.expCustom) +
+    '</div>' +
+    '<div id="exp-custom" style="display:none;align-items:center;gap:8px;margin:8px 0 4px;flex-wrap:wrap">' +
+      '<span style="font-size:13px;color:var(--text3)">' + L.expFrom + '</span><input type="date" id="exp-from" style="padding:8px 10px;border:1px solid var(--bg3);border-radius:8px;font-size:13px">' +
+      '<span style="font-size:13px;color:var(--text3)">' + L.expTo + '</span><input type="date" id="exp-to" style="padding:8px 10px;border:1px solid var(--bg3);border-radius:8px;font-size:13px">' +
+    '</div>' +
+    '<div class="modal-sub" style="margin-top:12px">' + t('exp_format') + '</div>' +
+    '<div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">' +
+      '<button class="btn-ghost" style="justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="doExport(\'' + type + '\',\'excel\')">' + ICON('sheet',16) + ' ' + L.optExcel + '</button>' +
+      '<button class="btn-ghost" style="justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="doExport(\'' + type + '\',\'pdf\')">' + ICON('file',16) + ' ' + L.optPdf + '</button>' +
     '</div>'
   );
+  setExportPreset('all');
 }
 
 async function exportCustomers(fmt) {
-  var { data } = await db.from('customers').select('*').eq('business_id', currentBiz.id).order('name');
+  var _q = db.from('customers').select('*').eq('business_id', currentBiz.id).order('name');
+  var { data } = await applyRange(_q, exportRangeSel);   // filtra por data de adesão
   if (!data || !data.length) { toast(t('ts_no_export')); return; }
   var L = RT();
   var rows = [L.colsCustomers.slice()];
@@ -2413,7 +2513,8 @@ async function exportCustomers(fmt) {
 }
 
 async function exportTransactions(fmt) {
-  var { data } = await db.from('transactions').select('type, amount, created_at, customers(name)').eq('business_id', currentBiz.id).order('created_at', { ascending: false });
+  var _q = db.from('transactions').select('type, amount, created_at, customers(name)').eq('business_id', currentBiz.id).order('created_at', { ascending: false });
+  var { data } = await applyRange(_q, exportRangeSel);
   if (!data || !data.length) { toast(t('ts_no_export')); return; }
   var L = RT();
   var tipos = L.types;
@@ -2429,9 +2530,26 @@ async function exportTransactions(fmt) {
   else downloadCSV(fn + '.csv', rows);
 }
 
+function rangeText(L) {
+  if (exportPreset === 'week') return L.expWeek;
+  if (exportPreset === 'month') return L.expMonth;
+  if (exportPreset === 'year') return L.expYear;
+  if (exportPreset === 'custom') {
+    var f = exportRangeSel.from ? new Date(exportRangeSel.from).toLocaleDateString(L.locale) : '…';
+    var tt = exportRangeSel.to ? new Date(new Date(exportRangeSel.to).getTime() - 864e5).toLocaleDateString(L.locale) : '…';
+    return f + ' – ' + tt;
+  }
+  return L.expAll;
+}
+
 async function exportResumo(fmt) {
-  var s = await API.getStats();
-  var { data: custs } = await db.from('customers').select('stamps, goal, visits, status, last_visit, created_at').eq('business_id', currentBiz.id);
+  var bid = currentBiz.id;
+  var range = exportRangeSel;
+  // Métricas DENTRO do período selecionado
+  var stampsCnt = (await applyRange(db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).eq('type', 'stamp'), range)).count || 0;
+  var rewardsCnt = (await applyRange(db.from('transactions').select('*', { count: 'exact', head: true }).eq('business_id', bid).in('type', ['reward', 'redeem']), range)).count || 0;
+  // Estado atual (snapshot) — base total de clientes
+  var { data: custs } = await db.from('customers').select('stamps, goal, visits, status, last_visit, created_at').eq('business_id', bid);
   var all = custs || [];
   var completed = all.filter(function(c) { return c.stamps >= (c.goal || 10); }).length;
   var active = all.filter(function(c) { var st = computeCustStatus(c.last_visit, c.created_at, c.status); return st === 'active' || st === 'vip'; }).length;
@@ -2440,15 +2558,16 @@ async function exportResumo(fmt) {
   var L = RT();
   var rows = [
     L.colsSummary.slice(),
+    [L.expPeriod, rangeText(L)],
+    [L.sumStamps, stampsCnt],
+    [L.mRewards, rewardsCnt],
     [L.mTotalCust, all.length],
     [L.mActive, active],
     [L.mInactive, inactive],
-    [L.mRetention, s.retention + '%'],
+    [L.mRetention, all.length ? Math.round((active / all.length) * 100) + '%' : '0%'],
     [L.mCompletedCards, completed],
     [L.mCompletion, all.length ? Math.round((completed / all.length) * 100) + '%' : '0%'],
     [L.mTotalVisits, totalVisits],
-    [L.mVisitsWeek, s.visitsWeek],
-    [L.mRewards, s.rewardsGiven],
     [L.mAvgVisits, all.length ? (totalVisits / all.length).toFixed(1) : '0'],
     [L.mBusiness, currentBiz.name],
     [L.mReportDate, new Date().toLocaleString(L.locale)]
