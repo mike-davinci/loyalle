@@ -828,7 +828,7 @@ const API = {
   },
   // GET visitas dos últimos 6 meses (agrupadas por mês) para o gráfico
   async getMonthData() {
-    const mLabels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const mLabels = (typeof RT === 'function') ? RT().months : ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     const now = new Date();
     const buckets = [];
     for (let i = 5; i >= 0; i--) {
@@ -1361,8 +1361,8 @@ async function renderDashboard() {
         '<div class="usage-body">' +
           '<div class="usage-t">' + (over ? t('usage_over_t') : t('usage_warn_t')) + '</div>' +
           '<div class="usage-d">' + t('usage_d')
-              .replace('{used}', used.toLocaleString('pt-PT'))
-              .replace('{cap}', planCap.toLocaleString('pt-PT'))
+              .replace('{used}', used.toLocaleString(RT().locale))
+              .replace('{cap}', planCap.toLocaleString(RT().locale))
               .replace('{plan}', planName) + '</div>' +
           '<div class="usage-track"><div class="usage-fill" style="width:' + Math.min(pct, 100) + '%"></div></div>' +
         '</div>' +
@@ -1375,7 +1375,7 @@ async function renderDashboard() {
       <div class="kpi"><div class="kpi-top"><div class="kpi-ic gold">${ICON('users')}</div>${trendBadge(s.trendCustomers)}</div><div class="kpi-v">${s.activeCustomers}</div><div class="kpi-l">${t('dash_active')}</div></div>
       <div class="kpi"><div class="kpi-top"><div class="kpi-ic green">${ICON('refresh')}</div>${trendBadge(s.trendRetention)}</div><div class="kpi-v">${s.retention}%</div><div class="kpi-l">${t('dash_retention')}</div></div>
       <div class="kpi"><div class="kpi-top"><div class="kpi-ic blue">${ICON('gift')}</div>${trendBadge(s.trendRewards)}</div><div class="kpi-v">${s.rewardsGiven}</div><div class="kpi-l">${t('dash_rewards')}</div></div>
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic dark">${ICON('trend')}</div>${trendBadge(s.trendVisits)}</div><div class="kpi-v">${s.visitsWeek.toLocaleString('pt-PT')}</div><div class="kpi-l">${t('dash_visits_month')}</div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic dark">${ICON('trend')}</div>${trendBadge(s.trendVisits)}</div><div class="kpi-v">${s.visitsWeek.toLocaleString(RT().locale)}</div><div class="kpi-l">${t('dash_visits_month')}</div></div>
     </div>
     <div class="grid-2">
       <div class="card">
@@ -1804,7 +1804,7 @@ async function renderAnalytics() {
   const recurringPct = all.length ? Math.round((recurring / all.length) * 100) : 0;
 
   // Grafico mensal (ultimos 6 meses)
-  const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const monthNames = RT().months;
   const monthData = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(); d.setMonth(d.getMonth() - i);
@@ -2178,6 +2178,112 @@ async function sendPasswordReset() {
 
 
 // ---- EXPORTAR RELATÓRIOS ----
+// ---- Traduções dos relatórios (Excel/PDF/CSV) nos 5 idiomas ----
+var REPORTS_I18N = {
+  pt: {
+    colsCustomers:['Nome','Email','Telefone','Carimbos','Objetivo','Pontos','Visitas','Estado'],
+    colsTxn:['Data','Cliente','Tipo','Quantidade'], colsSummary:['Métrica','Valor'],
+    types:{ stamp:'Carimbo', redeem:'Resgate', reward:'Prémio', points:'Pontos', signup:'Registo' },
+    status:{ active:'Ativo', vip:'VIP', risk:'Em risco', inactive:'Inativo' },
+    titleCustomers:'Lista de Clientes', titleTxn:'Histórico de Transações', titleSummary:'Resumo do Programa',
+    sheetCustomers:'Clientes', sheetTxn:'Transações', sheetSummary:'Resumo',
+    fnCustomers:'clientes', fnTxn:'transacoes', fnSummary:'resumo',
+    sumTotalCust:'Total de clientes', sumActive:'Ativos', sumInactive:'Inativos',
+    sumTotalTxn:'Total de transações', sumStamps:'Carimbos', sumRedeems:'Resgates',
+    mActive:'Clientes ativos', mInactive:'Clientes inativos', mRetention:'Taxa de retenção',
+    mCompletedCards:'Cartões completos', mCompletion:'Taxa de conclusão', mTotalVisits:'Total de visitas',
+    mVisitsWeek:'Visitas esta semana', mRewards:'Prémios resgatados', mAvgVisits:'Visitas médias / cliente',
+    mBusiness:'Negócio', mReportDate:'Data do relatório', mTotalCust:'Total de clientes',
+    pdfSummary:'Resumo', pdfFooter:'Gerado por Loyalle — loyalle.pt', pdfPage:'Página',
+    toastExported:'Relatório exportado:', toastExcel:'Excel exportado:', toastPdf:'PDF exportado:',
+    optExcel:'Excel — formatado com colunas', optPdf:'PDF — relatório profissional',
+    months:['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'], locale:'pt-PT',
+    openCard:'Abrir cartão', print:'Imprimir'
+  },
+  en: {
+    colsCustomers:['Name','Email','Phone','Stamps','Goal','Points','Visits','Status'],
+    colsTxn:['Date','Customer','Type','Amount'], colsSummary:['Metric','Value'],
+    types:{ stamp:'Stamp', redeem:'Redemption', reward:'Reward', points:'Points', signup:'Signup' },
+    status:{ active:'Active', vip:'VIP', risk:'At risk', inactive:'Inactive' },
+    titleCustomers:'Customer List', titleTxn:'Transaction History', titleSummary:'Program Summary',
+    sheetCustomers:'Customers', sheetTxn:'Transactions', sheetSummary:'Summary',
+    fnCustomers:'customers', fnTxn:'transactions', fnSummary:'summary',
+    sumTotalCust:'Total customers', sumActive:'Active', sumInactive:'Inactive',
+    sumTotalTxn:'Total transactions', sumStamps:'Stamps', sumRedeems:'Redemptions',
+    mActive:'Active customers', mInactive:'Inactive customers', mRetention:'Retention rate',
+    mCompletedCards:'Completed cards', mCompletion:'Completion rate', mTotalVisits:'Total visits',
+    mVisitsWeek:'Visits this week', mRewards:'Rewards redeemed', mAvgVisits:'Avg visits / customer',
+    mBusiness:'Business', mReportDate:'Report date', mTotalCust:'Total customers',
+    pdfSummary:'Summary', pdfFooter:'Generated by Loyalle — loyalle.pt', pdfPage:'Page',
+    toastExported:'Report exported:', toastExcel:'Excel exported:', toastPdf:'PDF exported:',
+    optExcel:'Excel — formatted columns', optPdf:'PDF — professional report',
+    months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], locale:'en-GB',
+    openCard:'Open card', print:'Print'
+  },
+  es: {
+    colsCustomers:['Nombre','Email','Teléfono','Sellos','Objetivo','Puntos','Visitas','Estado'],
+    colsTxn:['Fecha','Cliente','Tipo','Cantidad'], colsSummary:['Métrica','Valor'],
+    types:{ stamp:'Sello', redeem:'Canje', reward:'Premio', points:'Puntos', signup:'Registro' },
+    status:{ active:'Activo', vip:'VIP', risk:'En riesgo', inactive:'Inactivo' },
+    titleCustomers:'Lista de Clientes', titleTxn:'Historial de Transacciones', titleSummary:'Resumen del Programa',
+    sheetCustomers:'Clientes', sheetTxn:'Transacciones', sheetSummary:'Resumen',
+    fnCustomers:'clientes', fnTxn:'transacciones', fnSummary:'resumen',
+    sumTotalCust:'Total de clientes', sumActive:'Activos', sumInactive:'Inactivos',
+    sumTotalTxn:'Total de transacciones', sumStamps:'Sellos', sumRedeems:'Canjes',
+    mActive:'Clientes activos', mInactive:'Clientes inactivos', mRetention:'Tasa de retención',
+    mCompletedCards:'Tarjetas completas', mCompletion:'Tasa de finalización', mTotalVisits:'Total de visitas',
+    mVisitsWeek:'Visitas esta semana', mRewards:'Premios canjeados', mAvgVisits:'Visitas medias / cliente',
+    mBusiness:'Negocio', mReportDate:'Fecha del informe', mTotalCust:'Total de clientes',
+    pdfSummary:'Resumen', pdfFooter:'Generado por Loyalle — loyalle.pt', pdfPage:'Página',
+    toastExported:'Informe exportado:', toastExcel:'Excel exportado:', toastPdf:'PDF exportado:',
+    optExcel:'Excel — con columnas', optPdf:'PDF — informe profesional',
+    months:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'], locale:'es-ES',
+    openCard:'Abrir tarjeta', print:'Imprimir'
+  },
+  fr: {
+    colsCustomers:['Nom','Email','Téléphone','Tampons','Objectif','Points','Visites','Statut'],
+    colsTxn:['Date','Client','Type','Quantité'], colsSummary:['Indicateur','Valeur'],
+    types:{ stamp:'Tampon', redeem:'Échange', reward:'Récompense', points:'Points', signup:'Inscription' },
+    status:{ active:'Actif', vip:'VIP', risk:'À risque', inactive:'Inactif' },
+    titleCustomers:'Liste des clients', titleTxn:'Historique des transactions', titleSummary:'Résumé du programme',
+    sheetCustomers:'Clients', sheetTxn:'Transactions', sheetSummary:'Résumé',
+    fnCustomers:'clients', fnTxn:'transactions', fnSummary:'resume',
+    sumTotalCust:'Total clients', sumActive:'Actifs', sumInactive:'Inactifs',
+    sumTotalTxn:'Total transactions', sumStamps:'Tampons', sumRedeems:'Échanges',
+    mActive:'Clients actifs', mInactive:'Clients inactifs', mRetention:'Taux de rétention',
+    mCompletedCards:'Cartes complétées', mCompletion:'Taux de complétion', mTotalVisits:'Total des visites',
+    mVisitsWeek:'Visites cette semaine', mRewards:'Récompenses utilisées', mAvgVisits:'Visites moy. / client',
+    mBusiness:'Établissement', mReportDate:'Date du rapport', mTotalCust:'Total clients',
+    pdfSummary:'Résumé', pdfFooter:'Généré par Loyalle — loyalle.pt', pdfPage:'Page',
+    toastExported:'Rapport exporté :', toastExcel:'Excel exporté :', toastPdf:'PDF exporté :',
+    optExcel:'Excel — colonnes formatées', optPdf:'PDF — rapport professionnel',
+    months:['Janv','Févr','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'], locale:'fr-FR',
+    openCard:'Ouvrir la carte', print:'Imprimer'
+  },
+  de: {
+    colsCustomers:['Name','E-Mail','Telefon','Stempel','Ziel','Punkte','Besuche','Status'],
+    colsTxn:['Datum','Kunde','Typ','Menge'], colsSummary:['Kennzahl','Wert'],
+    types:{ stamp:'Stempel', redeem:'Einlösung', reward:'Prämie', points:'Punkte', signup:'Anmeldung' },
+    status:{ active:'Aktiv', vip:'VIP', risk:'Gefährdet', inactive:'Inaktiv' },
+    titleCustomers:'Kundenliste', titleTxn:'Transaktionsverlauf', titleSummary:'Programmübersicht',
+    sheetCustomers:'Kunden', sheetTxn:'Transaktionen', sheetSummary:'Übersicht',
+    fnCustomers:'kunden', fnTxn:'transaktionen', fnSummary:'uebersicht',
+    sumTotalCust:'Kunden gesamt', sumActive:'Aktiv', sumInactive:'Inaktiv',
+    sumTotalTxn:'Transaktionen gesamt', sumStamps:'Stempel', sumRedeems:'Einlösungen',
+    mActive:'Aktive Kunden', mInactive:'Inaktive Kunden', mRetention:'Bindungsrate',
+    mCompletedCards:'Volle Karten', mCompletion:'Abschlussrate', mTotalVisits:'Besuche gesamt',
+    mVisitsWeek:'Besuche diese Woche', mRewards:'Eingelöste Prämien', mAvgVisits:'Ø Besuche / Kunde',
+    mBusiness:'Geschäft', mReportDate:'Berichtsdatum', mTotalCust:'Kunden gesamt',
+    pdfSummary:'Übersicht', pdfFooter:'Erstellt von Loyalle — loyalle.pt', pdfPage:'Seite',
+    toastExported:'Bericht exportiert:', toastExcel:'Excel exportiert:', toastPdf:'PDF exportiert:',
+    optExcel:'Excel — formatierte Spalten', optPdf:'PDF — professioneller Bericht',
+    months:['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'], locale:'de-DE',
+    openCard:'Karte öffnen', print:'Drucken'
+  }
+};
+function RT() { var l = (localStorage.getItem('loyalle_lang') || 'pt'); return REPORTS_I18N[l] || REPORTS_I18N.pt; }
+function RTstatus(s) { var L = RT(); return (L.status && L.status[s]) || s || ''; }
+
 function downloadCSV(filename, rows) {
   var csv = rows.map(function(r) { return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
   var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -2185,20 +2291,20 @@ function downloadCSV(filename, rows) {
   link.href = URL.createObjectURL(blob);
   link.download = filename;
   link.click();
-  toast('Relatório exportado: ' + filename);
+  toast(RT().toastExported + ' ' + filename);
 }
 
 function downloadExcel(filename, rows, sheetName) {
   var ws = XLSX.utils.aoa_to_sheet(rows);
   var wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Dados');
+  XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Dados');  // sheetName já vem traduzido
   // Ajustar largura das colunas
   ws['!cols'] = rows[0].map(function(h, i) {
     var max = rows.reduce(function(m, r) { return Math.max(m, String(r[i] || '').length); }, String(h).length);
     return { wch: Math.min(max + 2, 40) };
   });
   XLSX.writeFile(wb, filename);
-  toast('Excel exportado: ' + filename);
+  toast(RT().toastExcel + ' ' + filename);
 }
 
 function downloadPDF(filename, title, rows, summary) {
@@ -2215,14 +2321,14 @@ function downloadPDF(filename, title, rows, summary) {
   doc.text(currentBiz.name, 60, 14);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text(title + ' — ' + new Date().toLocaleDateString('pt-PT'), 60, 20);
+  doc.text(title + ' — ' + new Date().toLocaleDateString(RT().locale), 60, 20);
   // Resumo KPIs se existir
   var startY = 36;
   if (summary && summary.length) {
     doc.setTextColor(12, 10, 6);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('Resumo', 14, startY);
+    doc.text(RT().pdfSummary, 14, startY);
     startY += 6;
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
@@ -2255,11 +2361,11 @@ function downloadPDF(filename, title, rows, summary) {
     doc.setPage(i);
     doc.setFontSize(7);
     doc.setTextColor(138, 130, 111);
-    doc.text('Gerado por Loyalle — loyalle.pt', 14, 290);
-    doc.text('Página ' + i + '/' + pageCount, 196, 290, { align: 'right' });
+    doc.text(RT().pdfFooter, 14, 290);
+    doc.text(RT().pdfPage + ' ' + i + '/' + pageCount, 196, 290, { align: 'right' });
   }
   doc.save(filename);
-  toast('PDF exportado: ' + filename);
+  toast(RT().toastPdf + ' ' + filename);
 }
 
 function showExportModal(type) {
@@ -2267,8 +2373,8 @@ function showExportModal(type) {
     '<div class="modal-h">' + t('an_title_export') + ' ' + (type === 'customers' ? t('exp_w_customers') : type === 'transactions' ? t('exp_w_txns') : t('exp_w_summary')) + '</div>' +
     '<div class="modal-sub">' + t('exp_format') + '</div>' +
     '<div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">' +
-      '<button class="btn-ghost" style="justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="closeModal();export' + type.charAt(0).toUpperCase() + type.slice(1) + '(\'excel\')">' + ICON('sheet',16) + ' Excel — formatado com colunas</button>' +
-      '<button class="btn-ghost" style="justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="closeModal();export' + type.charAt(0).toUpperCase() + type.slice(1) + '(\'pdf\')">' + ICON('file',16) + ' PDF — relatório profissional</button>' +
+      '<button class="btn-ghost" style="justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="closeModal();export' + type.charAt(0).toUpperCase() + type.slice(1) + '(\'excel\')">' + ICON('sheet',16) + ' ' + RT().optExcel + '</button>' +
+      '<button class="btn-ghost" style="justify-content:flex-start;display:flex;align-items:center;gap:8px" onclick="closeModal();export' + type.charAt(0).toUpperCase() + type.slice(1) + '(\'pdf\')">' + ICON('file',16) + ' ' + RT().optPdf + '</button>' +
     '</div>'
   );
 }
@@ -2276,31 +2382,33 @@ function showExportModal(type) {
 async function exportCustomers(fmt) {
   var { data } = await db.from('customers').select('*').eq('business_id', currentBiz.id).order('name');
   if (!data || !data.length) { toast(t('ts_no_export')); return; }
-  var rows = [['Nome', 'Email', 'Telefone', 'Carimbos', 'Objetivo', 'Pontos', 'Visitas', 'Estado']];
+  var L = RT();
+  var rows = [L.colsCustomers.slice()];
   data.forEach(function(c) {
-    rows.push([c.name || '', c.email || '', c.phone || '', c.stamps || 0, c.goal || 10, c.points || 0, c.visits || 0, c.status || '']);
+    rows.push([c.name || '', c.email || '', c.phone || '', c.stamps || 0, c.goal || 10, c.points || 0, c.visits || 0, RTstatus(c.status)]);
   });
   var d = new Date().toISOString().slice(0,10);
-  var fn = currentBiz.slug + '_clientes_' + d;
-  var summary = [['Total de clientes', data.length], ['Ativos', data.filter(function(c){return c.status==='active'||c.status==='vip'}).length], ['Inativos', data.filter(function(c){return c.status==='inactive'}).length]];
-  if (fmt === 'excel') downloadExcel(fn + '.xlsx', rows, 'Clientes');
-  else if (fmt === 'pdf') downloadPDF(fn + '.pdf', 'Lista de Clientes', rows, summary);
+  var fn = currentBiz.slug + '_' + L.fnCustomers + '_' + d;
+  var summary = [[L.sumTotalCust, data.length], [L.sumActive, data.filter(function(c){return c.status==='active'||c.status==='vip'}).length], [L.sumInactive, data.filter(function(c){return c.status==='inactive'}).length]];
+  if (fmt === 'excel') downloadExcel(fn + '.xlsx', rows, L.sheetCustomers);
+  else if (fmt === 'pdf') downloadPDF(fn + '.pdf', L.titleCustomers, rows, summary);
   else downloadCSV(fn + '.csv', rows);
 }
 
 async function exportTransactions(fmt) {
   var { data } = await db.from('transactions').select('type, amount, created_at, customers(name)').eq('business_id', currentBiz.id).order('created_at', { ascending: false });
   if (!data || !data.length) { toast(t('ts_no_export')); return; }
-  var tipos = { stamp: 'Carimbo', redeem: 'Resgate', reward: 'Prémio', points: 'Pontos', signup: 'Registo' };
-  var rows = [['Data', 'Cliente', 'Tipo', 'Quantidade']];
+  var L = RT();
+  var tipos = L.types;
+  var rows = [L.colsTxn.slice()];
   data.forEach(function(t) {
-    rows.push([new Date(t.created_at).toLocaleString('pt-PT'), t.customers ? t.customers.name : '', tipos[t.type] || t.type, t.amount || 1]);
+    rows.push([new Date(t.created_at).toLocaleString(L.locale), t.customers ? t.customers.name : '', tipos[t.type] || t.type, t.amount || 1]);
   });
   var d = new Date().toISOString().slice(0,10);
-  var fn = currentBiz.slug + '_transacoes_' + d;
-  var summary = [['Total de transações', data.length], ['Carimbos', data.filter(function(t){return t.type==='stamp'}).length], ['Resgates', data.filter(function(t){return t.type==='redeem'||t.type==='reward'}).length]];
-  if (fmt === 'excel') downloadExcel(fn + '.xlsx', rows, 'Transações');
-  else if (fmt === 'pdf') downloadPDF(fn + '.pdf', 'Histórico de Transações', rows, summary);
+  var fn = currentBiz.slug + '_' + L.fnTxn + '_' + d;
+  var summary = [[L.sumTotalTxn, data.length], [L.sumStamps, data.filter(function(t){return t.type==='stamp'}).length], [L.sumRedeems, data.filter(function(t){return t.type==='redeem'||t.type==='reward'}).length]];
+  if (fmt === 'excel') downloadExcel(fn + '.xlsx', rows, L.sheetTxn);
+  else if (fmt === 'pdf') downloadPDF(fn + '.pdf', L.titleTxn, rows, summary);
   else downloadCSV(fn + '.csv', rows);
 }
 
@@ -2312,25 +2420,26 @@ async function exportResumo(fmt) {
   var active = all.filter(function(c) { return c.status === 'active' || c.status === 'vip'; }).length;
   var inactive = all.filter(function(c) { return c.status === 'inactive'; }).length;
   var totalVisits = all.reduce(function(s, c) { return s + (c.visits || 0); }, 0);
+  var L = RT();
   var rows = [
-    ['Métrica', 'Valor'],
-    ['Total de clientes', all.length],
-    ['Clientes ativos', active],
-    ['Clientes inativos', inactive],
-    ['Taxa de retenção', s.retention + '%'],
-    ['Cartões completos', completed],
-    ['Taxa de conclusão', all.length ? Math.round((completed / all.length) * 100) + '%' : '0%'],
-    ['Total de visitas', totalVisits],
-    ['Visitas esta semana', s.visitsWeek],
-    ['Prémios resgatados', s.rewardsGiven],
-    ['Visitas médias / cliente', all.length ? (totalVisits / all.length).toFixed(1) : '0'],
-    ['Negócio', currentBiz.name],
-    ['Data do relatório', new Date().toLocaleString('pt-PT')]
+    L.colsSummary.slice(),
+    [L.mTotalCust, all.length],
+    [L.mActive, active],
+    [L.mInactive, inactive],
+    [L.mRetention, s.retention + '%'],
+    [L.mCompletedCards, completed],
+    [L.mCompletion, all.length ? Math.round((completed / all.length) * 100) + '%' : '0%'],
+    [L.mTotalVisits, totalVisits],
+    [L.mVisitsWeek, s.visitsWeek],
+    [L.mRewards, s.rewardsGiven],
+    [L.mAvgVisits, all.length ? (totalVisits / all.length).toFixed(1) : '0'],
+    [L.mBusiness, currentBiz.name],
+    [L.mReportDate, new Date().toLocaleString(L.locale)]
   ];
   var d = new Date().toISOString().slice(0,10);
-  var fn = currentBiz.slug + '_resumo_' + d;
-  if (fmt === 'excel') downloadExcel(fn + '.xlsx', rows, 'Resumo');
-  else if (fmt === 'pdf') downloadPDF(fn + '.pdf', 'Resumo do Programa', rows, null);
+  var fn = currentBiz.slug + '_' + L.fnSummary + '_' + d;
+  if (fmt === 'excel') downloadExcel(fn + '.xlsx', rows, L.sheetSummary);
+  else if (fmt === 'pdf') downloadPDF(fn + '.pdf', L.titleSummary, rows, null);
   else downloadCSV(fn + '.csv', rows);
 }
 
@@ -2398,7 +2507,7 @@ function renderCard() {
           '<div class="card-h"><div class="card-title">' + t('dash_card_link') + '</div></div>' +
           '<div class="card-sub" style="margin-bottom:14px;font-size:14px;color:var(--text2);line-height:1.7">' + t('br_share') + '</div>' +
           '<div style="display:flex;gap:8px;align-items:center"><input id="card-link-input" readonly value="' + cardLink + '" style="flex:1;min-width:0;padding:10px 12px;border:1px solid var(--bg3);border-radius:9px;font-size:13px;color:var(--text2);background:var(--bg2);overflow:hidden;text-overflow:ellipsis"><button class="btn-dark" style="padding:10px 14px;flex-shrink:0" onclick="copyCardLink()">' + t('dash_copy') + '</button></div>' +
-          '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn-ghost" style="flex:1;display:flex;align-items:center;gap:6px;justify-content:center" onclick="window.open(getCardLink(),\'_blank\')">' + ICON('external', 16) + ' Abrir cartão</button></div>' +
+          '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn-ghost" style="flex:1;display:flex;align-items:center;gap:6px;justify-content:center" onclick="window.open(getCardLink(),\'_blank\')">' + ICON('external', 16) + ' ' + RT().openCard + '</button></div>' +
         '</div>' +
       '</div>' +
       // Coluna direita: pré-visualização
@@ -2861,7 +2970,7 @@ function openStoreDisplay() {
     '.hint{margin-top:12px;font-size:12px;color:#666;max-width:' + (sz.w * 3.7795) + 'px;text-align:center}' +
     '@media print{body{background:#fff;padding:0}.no-print,.hint{display:none}}</style></head>' +
     '<body><div style="box-shadow:0 12px 50px rgba(0,0,0,.25)">' + posterDivHTML(cfg, '<div id="qr"></div>') + '</div>' +
-    '<button class="no-print" onclick="window.print()">Imprimir (' + cfg.size + ')</button>' +
+    '<button class="no-print" onclick="window.print()">' + RT().print + ' (' + cfg.size + ')</button>' +
     '<div class="hint">Na janela de impressão escolhe <b>Margens: Nenhumas</b> e ativa <b>Gráficos de fundo</b> para o cartaz ocupar a página toda.</div>' +
     '<scr' + 'ipt>window.onload=function(){new QRCode(document.getElementById("qr"),{text:' + JSON.stringify(link) + ',width:' + qs + ',height:' + qs + ',correctLevel:QRCode.CorrectLevel.M});};</scr' + 'ipt>' +
     '</body></html>';
