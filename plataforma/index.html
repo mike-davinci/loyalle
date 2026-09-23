@@ -1201,6 +1201,8 @@ async function doSignup() {
 async function logout() {
   await db.auth.signOut();
   currentBiz = null;
+  var g = document.getElementById('trial-gate'); if (g) g.classList.remove('show');   // esconder barreira de teste
+  var st = document.getElementById('sb-trial'); if (st) st.style.display = 'none';
   document.getElementById('app').classList.remove('active');
   document.getElementById('auth').style.display = 'grid';
 }
