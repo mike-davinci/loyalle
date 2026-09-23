@@ -566,8 +566,36 @@ async function renderChurn(){
 }
 
 async function renderActivity(){
-  const acts=(DATA.activity||[]).map(a=>{const cls=a.type==='green'?'blue':a.type==='red'?'red':a.type==='blue'?'blue':'warn';const bg=a.type==='gold'?'style="background:var(--accBg)"':a.type==='green'?'style="background:var(--greenBg)"':'';return `<div class="alert-item"><div class="alert-ic ${cls}" ${bg}>${a.icon}</div><div style="flex:1"><div class="alert-t" style="font-weight:500">${a.txt}</div></div><div class="alert-time">${a.time}</div></div>`;}).join('');
-  document.getElementById('page-activity').innerHTML=`<div class="card"><div class="card-h"><div class="card-title">Linha temporal de atividade</div></div>${acts}</div>`;
+  // Construir a linha temporal a partir dos negócios reais (ordenados por data de criação)
+  const bizs = await API.getBusinesses();
+  const events = [];
+  bizs.filter(b=>!b.isDemo).forEach(b=>{
+    // Evento: novo negócio registado
+    events.push({
+      icon:'🏢', type:'green',
+      txt:'<b>'+b.name+'</b> registou-se na plataforma' + (b.plan?(' · plano '+b.plan):''),
+      time:b.joined, _order:b.joined
+    });
+    // Evento adicional conforme o estado atual
+    if(b.status==='trial'){
+      events.push({ icon:'⏳', type:'blue', txt:'<b>'+b.name+'</b> está em período de trial', time:b.joined, _order:b.joined });
+    } else if(b.status==='active'){
+      events.push({ icon:'✓', type:'green', txt:'<b>'+b.name+'</b> ativou a subscrição · '+b.plan, time:b.joined, _order:b.joined });
+    } else if(b.status==='churned'){
+      events.push({ icon:'✕', type:'red', txt:'<b>'+b.name+'</b> cancelou a subscrição', time:b.joined, _order:b.joined });
+    } else if(b.status==='risk'){
+      events.push({ icon:'⚠️', type:'warn', txt:'<b>'+b.name+'</b> em risco de churn · uso '+b.usage+'%', time:b.joined, _order:b.joined });
+    }
+  });
+  // Mostrar os 30 eventos mais recentes
+  const list = events.slice(0, 30);
+  const acts = list.map(a=>{
+    const cls = a.type==='green'?'blue':a.type==='red'?'red':a.type==='blue'?'blue':'warn';
+    const bg = a.type==='gold'?'style="background:var(--accBg)"':a.type==='green'?'style="background:var(--greenBg)"':'';
+    return `<div class="alert-item"><div class="alert-ic ${cls}" ${bg}>${a.icon}</div><div style="flex:1"><div class="alert-t" style="font-weight:500">${a.txt}</div></div><div class="alert-time">${a.time}</div></div>`;
+  }).join('');
+  const empty = '<div style="padding:40px;text-align:center;color:var(--text3)">Sem atividade recente para mostrar.</div>';
+  document.getElementById('page-activity').innerHTML=`<div class="card"><div class="card-h"><div class="card-title">Linha temporal de atividade</div></div>${acts||empty}</div>`;
 }
 </script>
 </body>
