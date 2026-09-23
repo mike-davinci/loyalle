@@ -1414,7 +1414,7 @@ async function renderDashboard() {
     </div>
     <div class="grid-2">
       <div class="card">
-        <div class="card-h"><div><div class="card-title">${t('dash_visits_day')}</div><div class="card-sub" id="visits-sub">${chartSub}</div></div><span class="filter-chip" id="visits-chip">${PL[dashPeriod]}</span></div>
+        <div class="card-h"><div><div class="card-title">${t('dash_visits_day')}</div><div class="card-sub" id="visits-sub">${chartSub}</div></div><button class="filter-chip" id="visits-chip" onclick="toggleVisitsPeriod()" style="cursor:pointer">${PL[dashPeriod]} ▾</button></div>
         <div class="chart-bars" id="visits-chart">${bars}</div>
       </div>
       <div class="card">
