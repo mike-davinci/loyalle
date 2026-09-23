@@ -1520,7 +1520,7 @@ function copyCardLink() {
 let custFilter = 'all', custSearch = '';
 let custSortField = 'name', custSortDir = 'asc';
 let custPage = 0;
-const CUST_PAGE_SIZE = 5;   // TEMPORÁRIO p/ teste — repor 50 depois de confirmar
+const CUST_PAGE_SIZE = 50;   // clientes por página (escala para milhares)
 function setCustFilter(f) { custFilter = f; custPage = 0; renderCustomers(); }
 function custPageGo(delta) { custPage += delta; if (custPage < 0) custPage = 0; renderCustomers(); }
 function toggleSort(field) {
