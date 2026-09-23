@@ -1457,10 +1457,11 @@ async function renderDashboard() {
         </div>
       </div>
     </div>`;
-  renderVisitsChart();
+  // O gráfico já é desenhado acima conforme o período (não chamar renderVisitsChart,
+  // que era a versão antiga só de semana/mês e sobrepunha o ano).
 }
 
-// Seletor Semana / Mês do gráfico de visitas
+// Seletor Semana / Mês / Ano do gráfico de visitas
 let dashPeriod = 'week';
 function setDashPeriod(p) {
   dashPeriod = p;
