@@ -1396,16 +1396,19 @@ async function renderDashboard() {
   // Rótulos do período (Semana/Mês/Ano) nos 5 idiomas
   var _dlang = (function(){ try { var l = localStorage.getItem('loyalle_lang') || 'pt'; return ['pt','en','es','fr','de'].indexOf(l) >= 0 ? l : 'pt'; } catch(e){ return 'pt'; } })();
   var PL = {
-    pt:{week:'Semana',month:'Mês',year:'Ano',subW:'Últimos 7 dias',subM:'Últimos 6 meses',subY:'Últimos 12 meses',vW:'Visitas (semana)',vM:'Visitas (mês)',vY:'Visitas (ano)'},
-    en:{week:'Week',month:'Month',year:'Year',subW:'Last 7 days',subM:'Last 6 months',subY:'Last 12 months',vW:'Visits (week)',vM:'Visits (month)',vY:'Visits (year)'},
-    es:{week:'Semana',month:'Mes',year:'Año',subW:'Últimos 7 días',subM:'Últimos 6 meses',subY:'Últimos 12 meses',vW:'Visitas (semana)',vM:'Visitas (mes)',vY:'Visitas (año)'},
-    fr:{week:'Semaine',month:'Mois',year:'Année',subW:'7 derniers jours',subM:'6 derniers mois',subY:'12 derniers mois',vW:'Visites (semaine)',vM:'Visites (mois)',vY:'Visites (année)'},
-    de:{week:'Woche',month:'Monat',year:'Jahr',subW:'Letzte 7 Tage',subM:'Letzte 6 Monate',subY:'Letzte 12 Monate',vW:'Besuche (Woche)',vM:'Besuche (Monat)',vY:'Besuche (Jahr)'}
+    pt:{week:'Semana',month:'Mês',year:'Ano',subW:'Últimos 7 dias',subM:'Últimos 6 meses',subY:'Últimos 12 meses',vW:'Visitas (semana)',vM:'Visitas (mês)',vY:'Visitas (ano)',tDay:'Visitas por dia',tMonth:'Visitas por mês'},
+    en:{week:'Week',month:'Month',year:'Year',subW:'Last 7 days',subM:'Last 6 months',subY:'Last 12 months',vW:'Visits (week)',vM:'Visits (month)',vY:'Visits (year)',tDay:'Visits per day',tMonth:'Visits per month'},
+    es:{week:'Semana',month:'Mes',year:'Año',subW:'Últimos 7 días',subM:'Últimos 6 meses',subY:'Últimos 12 meses',vW:'Visitas (semana)',vM:'Visitas (mes)',vY:'Visitas (año)',tDay:'Visitas por día',tMonth:'Visitas por mes'},
+    fr:{week:'Semaine',month:'Mois',year:'Année',subW:'7 derniers jours',subM:'6 derniers mois',subY:'12 derniers mois',vW:'Visites (semaine)',vM:'Visites (mois)',vY:'Visites (année)',tDay:'Visites par jour',tMonth:'Visites par mois'},
+    de:{week:'Woche',month:'Monat',year:'Jahr',subW:'Letzte 7 Tage',subM:'Letzte 6 Monate',subY:'Letzte 12 Monate',vW:'Besuche (Woche)',vM:'Besuche (Monat)',vY:'Besuche (Jahr)',tDay:'Besuche pro Tag',tMonth:'Besuche pro Monat'}
   }[_dlang];
   var chartSub = dashPeriod === 'week' ? PL.subW : (dashPeriod === 'month' ? PL.subM : PL.subY);
   var visitsKpiLbl = dashPeriod === 'week' ? PL.vW : (dashPeriod === 'month' ? PL.vM : PL.vY);
-  var segCtl = '<div style="display:flex;gap:6px;margin-bottom:18px">' + ['week','month','year'].map(function(p){ var on = dashPeriod === p; return '<button class="filter-chip" onclick="setDashPeriod(\'' + p + '\')" style="cursor:pointer;' + (on ? 'background:var(--dark);color:#fff;border-color:var(--dark)' : '') + '">' + PL[p] + '</button>'; }).join('') + '</div>';
-  document.getElementById('page-dashboard').innerHTML = usageHTML + segCtl + `
+  var chartTitle = dashPeriod === 'week' ? PL.tDay : PL.tMonth;
+  var periodSelect = '<select id="visits-select" onchange="setDashPeriod(this.value)" class="filter-chip" style="cursor:pointer;-webkit-appearance:none;appearance:none;padding-right:26px;background-image:url(\'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23888%22 stroke-width=%223%22><path d=%22M6 9l6 6 6-6%22/></svg>\');background-repeat:no-repeat;background-position:right 10px center">' +
+    ['week','month','year'].map(function(p){ return '<option value="' + p + '"' + (dashPeriod === p ? ' selected' : '') + '>' + PL[p] + '</option>'; }).join('') +
+  '</select>';
+  document.getElementById('page-dashboard').innerHTML = usageHTML + `
     <div class="kpi-grid">
       <div class="kpi"><div class="kpi-top"><div class="kpi-ic gold">${ICON('users')}</div>${trendBadge(s.trendCustomers)}</div><div class="kpi-v">${s.activeCustomers}</div><div class="kpi-l">${t('dash_active')}</div></div>
       <div class="kpi"><div class="kpi-top"><div class="kpi-ic green">${ICON('refresh')}</div>${trendBadge(s.trendRetention)}</div><div class="kpi-v">${s.retention}%</div><div class="kpi-l">${t('dash_retention')}</div></div>
@@ -1414,7 +1417,7 @@ async function renderDashboard() {
     </div>
     <div class="grid-2">
       <div class="card">
-        <div class="card-h"><div><div class="card-title">${t('dash_visits_day')}</div><div class="card-sub" id="visits-sub">${chartSub}</div></div><button class="filter-chip" id="visits-chip" onclick="toggleVisitsPeriod()" style="cursor:pointer">${PL[dashPeriod]} ▾</button></div>
+        <div class="card-h"><div><div class="card-title" id="visits-title">${chartTitle}</div><div class="card-sub" id="visits-sub">${chartSub}</div></div>${periodSelect}</div>
         <div class="chart-bars" id="visits-chart">${bars}</div>
       </div>
       <div class="card">
