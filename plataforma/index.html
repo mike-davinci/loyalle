@@ -1346,8 +1346,7 @@ async function renderDashboard() {
   const segments = [
     { label: 'VIP', value: segCounts.vip, color: '#C6993B' },
     { label: t('cust_active'), value: segCounts.active, color: '#2A6B3E' },
-    { label: t('cust_risk'), value: segCounts.risk, color: '#D8952B' },
-    { label: t('cust_inactive'), value: segCounts.inactive, color: '#C0392B' }
+    { label: ux('segLosing'), value: segCounts.risk + segCounts.inactive, color: '#C0392B' }
   ].filter(s => s.value > 0);
 
   const total = segments.reduce((a, b) => a + b.value, 0);
@@ -1410,9 +1409,9 @@ async function renderDashboard() {
   '</select>';
   document.getElementById('page-dashboard').innerHTML = usageHTML + `
     <div class="kpi-grid">
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic gold">${ICON('users')}</div>${trendBadge(s.trendCustomers)}</div><div class="kpi-v">${s.activeCustomers}</div><div class="kpi-l">${t('dash_active')}</div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic gold">${ICON('users')}</div>${trendBadge(s.trendCustomers)}</div><div class="kpi-v">${s.activeCustomers.toLocaleString(RT().locale)}</div><div class="kpi-l">${t('dash_active')}</div></div>
       <div class="kpi"><div class="kpi-top"><div class="kpi-ic green">${ICON('refresh')}</div>${trendBadge(s.trendRetention)}</div><div class="kpi-v">${s.retention}%</div><div class="kpi-l">${t('dash_retention')}</div></div>
-      <div class="kpi"><div class="kpi-top"><div class="kpi-ic blue">${ICON('gift')}</div>${trendBadge(s.trendRewards)}</div><div class="kpi-v">${s.rewardsGiven}</div><div class="kpi-l">${t('dash_rewards')}</div></div>
+      <div class="kpi"><div class="kpi-top"><div class="kpi-ic blue">${ICON('gift')}</div>${trendBadge(s.trendRewards)}</div><div class="kpi-v">${s.rewardsGiven.toLocaleString(RT().locale)}</div><div class="kpi-l">${t('dash_rewards')}</div></div>
       <div class="kpi"><div class="kpi-top"><div class="kpi-ic dark">${ICON('trend')}</div>${trendBadge(s.trendVisits)}</div><div class="kpi-v">${s.visitsWeek.toLocaleString(RT().locale)}</div><div class="kpi-l">${visitsKpiLbl}</div></div>
     </div>
     <div class="grid-2">
@@ -1428,7 +1427,7 @@ async function renderDashboard() {
             <circle r="15.915" cx="18" cy="18" fill="transparent" stroke="#f0ede8" stroke-width="5" stroke-dasharray="100 0" transform="rotate(-90 18 18)"/>
             ${donutSegs}
             <circle cx="18" cy="18" r="13" fill="#fff"/>
-            <text x="18" y="17" text-anchor="middle" style="font-family:var(--fh);font-size:7px;font-weight:800;fill:var(--dark)">${total}</text>
+            <text x="18" y="17" text-anchor="middle" style="font-family:var(--fh);font-size:${String(total).length<=2?7:(String(total).length===3?6:(String(total).length===4?5:4))}px;font-weight:800;fill:var(--dark)">${total.toLocaleString(RT().locale)}</text>
             <text x="18" y="23" text-anchor="middle" style="font-size:3px;fill:var(--text3)">${t('dash_clients_count')}</text>
           </svg>
           <div class="legend">${legend}</div>
@@ -1520,6 +1519,10 @@ function copyCardLink() {
 // ---------- CUSTOMERS ----------
 let custFilter = 'all', custSearch = '';
 let custSortField = 'name', custSortDir = 'asc';
+let custPage = 0;
+const CUST_PAGE_SIZE = 50;   // clientes por página (escala para milhares)
+function setCustFilter(f) { custFilter = f; custPage = 0; renderCustomers(); }
+function custPageGo(delta) { custPage += delta; if (custPage < 0) custPage = 0; renderCustomers(); }
 function toggleSort(field) {
   if (custSortField === field) {
     custSortDir = custSortDir === 'asc' ? 'desc' : 'asc';
@@ -1527,6 +1530,7 @@ function toggleSort(field) {
     custSortField = field;
     custSortDir = field === 'name' ? 'asc' : 'desc'; // nomes asc por defeito, números desc
   }
+  custPage = 0;
   renderCustomers();
 }
 function sortCustomers(list) {
@@ -1556,7 +1560,14 @@ async function renderCustomers() {
   if (custSearch) list = list.filter(c => c.name.toLowerCase().includes(custSearch) || (c.email||'').toLowerCase().includes(custSearch));
   list = sortCustomers(list);
 
-  const rows = list.map(c => {
+  // Paginação: desenha só CUST_PAGE_SIZE de cada vez (escala para milhares)
+  const totalN = list.length;
+  const pages = Math.max(1, Math.ceil(totalN / CUST_PAGE_SIZE));
+  if (custPage >= pages) custPage = pages - 1;
+  const startIdx = custPage * CUST_PAGE_SIZE;
+  const pageList = list.slice(startIdx, startIdx + CUST_PAGE_SIZE);
+
+  const rows = pageList.map(c => {
     const pct = Math.round((c.stamps / c.goal) * 100);
     const initials = c.name.split(' ').map(n => n[0]).slice(0, 2).join('');
     const statusTag = c.status === 'vip' ? '<span class="tag vip">★ VIP</span>'
@@ -1577,12 +1588,12 @@ async function renderCustomers() {
   document.getElementById('page-customers').innerHTML = `
     <div class="table-wrap">
       <div class="table-toolbar">
-        <div class="search-box"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input type="text" placeholder="${t('cust_search')}" oninput="custSearch=this.value.toLowerCase();renderCustomers()" value="${custSearch}"></div>
-        <button class="filter-chip ${custFilter==='all'?'active':''}" onclick="custFilter='all';renderCustomers()">${t('cust_all')}</button>
-        <button class="filter-chip ${custFilter==='vip'?'active':''}" onclick="custFilter='vip';renderCustomers()">VIP</button>
-        <button class="filter-chip ${custFilter==='active'?'active':''}" onclick="custFilter='active';renderCustomers()">${t('cust_active')}</button>
-        <button class="filter-chip ${custFilter==='risk'?'active':''}" onclick="custFilter='risk';renderCustomers()">${t('cust_risk')}</button>
-        <button class="filter-chip ${custFilter==='inactive'?'active':''}" onclick="custFilter='inactive';renderCustomers()">${t('cust_inactive')}</button>
+        <div class="search-box"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input type="text" placeholder="${t('cust_search')}" oninput="custSearch=this.value.toLowerCase();custPage=0;renderCustomers()" value="${custSearch}"></div>
+        <button class="filter-chip ${custFilter==='all'?'active':''}" onclick="setCustFilter('all')">${t('cust_all')}</button>
+        <button class="filter-chip ${custFilter==='vip'?'active':''}" onclick="setCustFilter('vip')">VIP</button>
+        <button class="filter-chip ${custFilter==='active'?'active':''}" onclick="setCustFilter('active')">${t('cust_active')}</button>
+        <button class="filter-chip ${custFilter==='risk'?'active':''}" onclick="setCustFilter('risk')">${t('cust_risk')}</button>
+        <button class="filter-chip ${custFilter==='inactive'?'active':''}" onclick="setCustFilter('inactive')">${t('cust_inactive')}</button>
         <button class="filter-chip" onclick="showExportModal('customers')" title="${t('exp_cust_csv')}">\u2193 ${t('exp_cust_csv')}</button>
         <button class="filter-chip" onclick="showExportModal('transactions')" title="${t('exp_txn_csv')}">\u2193 ${t('exp_txn_csv')}</button>
         <button class="btn-acc" onclick="openAddCustomer()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>${t('cust_add_short')}</button>
@@ -1591,6 +1602,14 @@ async function renderCustomers() {
         <thead><tr><th class="sortable" onclick="toggleSort('name')">${t('cust_name')} <span class="sort-arrow">${custSortField==='name'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('stamps')">${t('cust_progress')} <span class="sort-arrow">${custSortField==='stamps'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('points')">${t('cust_points')} <span class="sort-arrow">${custSortField==='points'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('visits')">${t('cust_visits')} <span class="sort-arrow">${custSortField==='visits'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('lastVisit')">${t('cust_last')} <span class="sort-arrow">${custSortField==='lastVisit'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('status')">${t('cust_status')} <span class="sort-arrow">${custSortField==='status'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th></th></tr></thead>
         <tbody>${rows || ('<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:40px">' + t('cust_none') + '</td></tr>')}</tbody>
       </table>
+      ${totalN > CUST_PAGE_SIZE ? `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--text2)">
+        <span>${startIdx + 1}–${Math.min(startIdx + CUST_PAGE_SIZE, totalN)} / ${totalN}</span>
+        <div style="display:flex;gap:8px">
+          <button class="filter-chip" onclick="custPageGo(-1)" style="${custPage <= 0 ? 'opacity:.4;pointer-events:none' : 'cursor:pointer'}">←</button>
+          <button class="filter-chip" onclick="custPageGo(1)" style="${custPage >= pages - 1 ? 'opacity:.4;pointer-events:none' : 'cursor:pointer'}">→</button>
+        </div>
+      </div>` : ''}
     </div>`;
 }
 async function quickStamp(id) {
@@ -2350,11 +2369,11 @@ function RTstatus(s) { var L = RT(); return (L.status && L.status[s]) || s || ''
 
 // ---- Strings de UI que faltavam traduzir (scan, recompensas, definições) ----
 var UX_I18N = {
-  pt: { points:'Pontos', reward:'Prémio', counterDisplay:'Display para o balcão', vipMake:'Tornar VIP', vipRemove:'Remover VIP', vipOn:'Cliente agora é VIP', vipOff:'VIP removido', scanReady:'Pronto para ler', today:'Hoje', visitsToday:'visitas registadas hoje', rewardsToday:'prémios dados', newToday:'novos clientes', stampsWord:'carimbos', btnStamp:'+ Carimbo', onCompleting:'Ao completar', pointsSoon:'Vais poder criar prémios por pontos (ex.: um prémio aos 200 pontos, um desconto aos 500) e definir os teus próprios valores. <b>Em breve.</b>', emailNotice:'O email de acesso não pode ser alterado aqui. Fala connosco para o mudar.' },
-  en: { points:'Points', reward:'Reward', counterDisplay:'Counter display', vipMake:'Make VIP', vipRemove:'Remove VIP', vipOn:'Customer is now VIP', vipOff:'VIP removed', scanReady:'Ready to scan', today:'Today', visitsToday:'visits today', rewardsToday:'rewards given', newToday:'new customers', stampsWord:'stamps', btnStamp:'+ Stamp', onCompleting:'On completing', pointsSoon:"You'll be able to create points-based rewards (e.g. a reward at 200 points, a discount at 500) and set your own values. <b>Coming soon.</b>", emailNotice:"Your login email can't be changed here. Contact us to change it." },
-  es: { points:'Puntos', reward:'Premio', counterDisplay:'Display para el mostrador', vipMake:'Hacer VIP', vipRemove:'Quitar VIP', vipOn:'El cliente ahora es VIP', vipOff:'VIP quitado', scanReady:'Listo para leer', today:'Hoy', visitsToday:'visitas hoy', rewardsToday:'premios dados', newToday:'nuevos clientes', stampsWord:'sellos', btnStamp:'+ Sello', onCompleting:'Al completar', pointsSoon:'Podrás crear premios por puntos (p. ej. un premio a los 200 puntos, un descuento a los 500) y definir tus propios valores. <b>Muy pronto.</b>', emailNotice:'El email de acceso no se puede cambiar aquí. Contáctanos para cambiarlo.' },
-  fr: { points:'Points', reward:'Récompense', counterDisplay:'Affichage comptoir', vipMake:'Marquer VIP', vipRemove:'Retirer VIP', vipOn:'Client maintenant VIP', vipOff:'VIP retiré', scanReady:'Prêt à scanner', today:"Aujourd'hui", visitsToday:"visites aujourd'hui", rewardsToday:'récompenses données', newToday:'nouveaux clients', stampsWord:'tampons', btnStamp:'+ Tampon', onCompleting:'En complétant', pointsSoon:'Tu pourras créer des récompenses par points (ex. une récompense à 200 points, une remise à 500) et définir tes propres valeurs. <b>Bientôt.</b>', emailNotice:"L'email de connexion ne peut pas être modifié ici. Contacte-nous pour le changer." },
-  de: { points:'Punkte', reward:'Prämie', counterDisplay:'Theken-Display', vipMake:'Als VIP markieren', vipRemove:'VIP entfernen', vipOn:'Kunde ist jetzt VIP', vipOff:'VIP entfernt', scanReady:'Bereit zum Scannen', today:'Heute', visitsToday:'Besuche heute', rewardsToday:'vergebene Prämien', newToday:'neue Kunden', stampsWord:'Stempel', btnStamp:'+ Stempel', onCompleting:'Beim Abschluss von', pointsSoon:'Du kannst punktebasierte Prämien erstellen (z. B. eine Prämie bei 200 Punkten, ein Rabatt bei 500) und eigene Werte festlegen. <b>Demnächst.</b>', emailNotice:'Die Login-E-Mail kann hier nicht geändert werden. Kontaktiere uns dafür.' }
+  pt: { points:'Pontos', reward:'Prémio', counterDisplay:'Display para o balcão', vipMake:'Tornar VIP', vipRemove:'Remover VIP', vipOn:'Cliente agora é VIP', vipOff:'VIP removido', segLosing:'A perder', scanReady:'Pronto para ler', today:'Hoje', visitsToday:'visitas registadas hoje', rewardsToday:'prémios dados', newToday:'novos clientes', stampsWord:'carimbos', btnStamp:'+ Carimbo', onCompleting:'Ao completar', pointsSoon:'Vais poder criar prémios por pontos (ex.: um prémio aos 200 pontos, um desconto aos 500) e definir os teus próprios valores. <b>Em breve.</b>', emailNotice:'O email de acesso não pode ser alterado aqui. Fala connosco para o mudar.' },
+  en: { points:'Points', reward:'Reward', counterDisplay:'Counter display', vipMake:'Make VIP', vipRemove:'Remove VIP', vipOn:'Customer is now VIP', vipOff:'VIP removed', segLosing:'Losing them', scanReady:'Ready to scan', today:'Today', visitsToday:'visits today', rewardsToday:'rewards given', newToday:'new customers', stampsWord:'stamps', btnStamp:'+ Stamp', onCompleting:'On completing', pointsSoon:"You'll be able to create points-based rewards (e.g. a reward at 200 points, a discount at 500) and set your own values. <b>Coming soon.</b>", emailNotice:"Your login email can't be changed here. Contact us to change it." },
+  es: { points:'Puntos', reward:'Premio', counterDisplay:'Display para el mostrador', vipMake:'Hacer VIP', vipRemove:'Quitar VIP', vipOn:'El cliente ahora es VIP', vipOff:'VIP quitado', segLosing:'Perdiendo', scanReady:'Listo para leer', today:'Hoy', visitsToday:'visitas hoy', rewardsToday:'premios dados', newToday:'nuevos clientes', stampsWord:'sellos', btnStamp:'+ Sello', onCompleting:'Al completar', pointsSoon:'Podrás crear premios por puntos (p. ej. un premio a los 200 puntos, un descuento a los 500) y definir tus propios valores. <b>Muy pronto.</b>', emailNotice:'El email de acceso no se puede cambiar aquí. Contáctanos para cambiarlo.' },
+  fr: { points:'Points', reward:'Récompense', counterDisplay:'Affichage comptoir', vipMake:'Marquer VIP', vipRemove:'Retirer VIP', vipOn:'Client maintenant VIP', vipOff:'VIP retiré', segLosing:'À perdre', scanReady:'Prêt à scanner', today:"Aujourd'hui", visitsToday:"visites aujourd'hui", rewardsToday:'récompenses données', newToday:'nouveaux clients', stampsWord:'tampons', btnStamp:'+ Tampon', onCompleting:'En complétant', pointsSoon:'Tu pourras créer des récompenses par points (ex. une récompense à 200 points, une remise à 500) et définir tes propres valeurs. <b>Bientôt.</b>', emailNotice:"L'email de connexion ne peut pas être modifié ici. Contacte-nous pour le changer." },
+  de: { points:'Punkte', reward:'Prämie', counterDisplay:'Theken-Display', vipMake:'Als VIP markieren', vipRemove:'VIP entfernen', vipOn:'Kunde ist jetzt VIP', vipOff:'VIP entfernt', segLosing:'Abwandernd', scanReady:'Bereit zum Scannen', today:'Heute', visitsToday:'Besuche heute', rewardsToday:'vergebene Prämien', newToday:'neue Kunden', stampsWord:'Stempel', btnStamp:'+ Stempel', onCompleting:'Beim Abschluss von', pointsSoon:'Du kannst punktebasierte Prämien erstellen (z. B. eine Prämie bei 200 Punkten, ein Rabatt bei 500) und eigene Werte festlegen. <b>Demnächst.</b>', emailNotice:'Die Login-E-Mail kann hier nicht geändert werden. Kontaktiere uns dafür.' }
 };
 function ux(k) { var l = (localStorage.getItem('loyalle_lang') || 'pt'); return (UX_I18N[l] || UX_I18N.pt)[k]; }
 
