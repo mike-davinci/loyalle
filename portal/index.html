@@ -287,7 +287,7 @@ async function loadAllBusinesses(){
       customers: count||0, limit: (PLAN_LIMIT_MAP[b.plan]||500), isDemo: !!b.is_demo,
       usage: Math.round(((count||0)/(PLAN_LIMIT_MAP[b.plan]||500))*100),
       isFounder: !!b.is_founder,
-      joined: portalTimeAgo(b.created_at), color:b.brand_color||'#C6993B'
+      joined: portalTimeAgo(b.created_at), createdAt: b.created_at, color:b.brand_color||'#C6993B'
     });
   }
   return out;
@@ -565,37 +565,79 @@ async function renderChurn(){
     <div class="card"><div class="card-h"><div><div class="card-title">Alertas que precisam de atenção</div><div class="card-sub">Trials a expirar, risco de churn e cancelamentos</div></div></div>${alerts}</div>`;
 }
 
-async function renderActivity(){
-  // Construir a linha temporal a partir dos negócios reais (ordenados por data de criação)
+// ===== ATIVIDADE (linha temporal com filtro por período) =====
+let ACT_CACHE = null;          // eventos carregados (evita recarregar ao mudar filtro)
+let ACT_PERIOD = 'all';        // all | week | month | quarter | year
+const ACT_PERIODS = [
+  {k:'week',    l:'Última semana',   days:7},
+  {k:'month',   l:'Último mês',      days:30},
+  {k:'quarter', l:'Últimos 3 meses', days:90},
+  {k:'year',    l:'Último ano',      days:365},
+  {k:'all',     l:'Tudo',            days:null}
+];
+const ACT_MONTHS = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+async function buildActivityEvents(){
   const bizs = await API.getBusinesses();
   const events = [];
   bizs.filter(b=>!b.isDemo).forEach(b=>{
-    // Evento: novo negócio registado
-    events.push({
-      icon:'🏢', type:'green',
-      txt:'<b>'+b.name+'</b> registou-se na plataforma' + (b.plan?(' · plano '+b.plan):''),
-      time:b.joined, _order:b.joined
-    });
-    // Evento adicional conforme o estado atual
-    if(b.status==='trial'){
-      events.push({ icon:'⏳', type:'blue', txt:'<b>'+b.name+'</b> está em período de trial', time:b.joined, _order:b.joined });
-    } else if(b.status==='active'){
-      events.push({ icon:'✓', type:'green', txt:'<b>'+b.name+'</b> ativou a subscrição · '+b.plan, time:b.joined, _order:b.joined });
-    } else if(b.status==='churned'){
-      events.push({ icon:'✕', type:'red', txt:'<b>'+b.name+'</b> cancelou a subscrição', time:b.joined, _order:b.joined });
-    } else if(b.status==='risk'){
-      events.push({ icon:'⚠️', type:'warn', txt:'<b>'+b.name+'</b> em risco de churn · uso '+b.usage+'%', time:b.joined, _order:b.joined });
-    }
+    const ts = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    events.push({ icon:'🏢', type:'green', ts, time:b.joined,
+      txt:'<b>'+b.name+'</b> registou-se na plataforma' + (b.plan?(' · plano '+b.plan):'') });
+    if(b.status==='trial')        events.push({ icon:'⏳', type:'blue', ts, time:b.joined, txt:'<b>'+b.name+'</b> está em período de trial' });
+    else if(b.status==='active')  events.push({ icon:'✓',  type:'green', ts, time:b.joined, txt:'<b>'+b.name+'</b> ativou a subscrição · '+b.plan });
+    else if(b.status==='churned') events.push({ icon:'✕',  type:'red',   ts, time:b.joined, txt:'<b>'+b.name+'</b> cancelou a subscrição' });
+    else if(b.status==='risk')    events.push({ icon:'⚠️', type:'warn',  ts, time:b.joined, txt:'<b>'+b.name+'</b> em risco de churn · uso '+b.usage+'%' });
   });
-  // Mostrar os 30 eventos mais recentes
-  const list = events.slice(0, 30);
-  const acts = list.map(a=>{
+  // mais recente primeiro
+  events.sort((a,b)=>b.ts-a.ts);
+  return events;
+}
+
+function setActivityPeriod(k){
+  ACT_PERIOD = k;
+  drawActivity();
+}
+
+function drawActivity(){
+  const events = ACT_CACHE || [];
+  const p = ACT_PERIODS.find(x=>x.k===ACT_PERIOD) || ACT_PERIODS[4];
+  const cutoff = p.days ? (Date.now() - p.days*86400000) : 0;
+  const list = events.filter(e => !p.days || e.ts >= cutoff);
+
+  const chips = ACT_PERIODS.map(x =>
+    `<button class="filter-chip${x.k===ACT_PERIOD?' active':''}" onclick="setActivityPeriod('${x.k}')">${x.l}</button>`
+  ).join('');
+
+  // agrupar por mês (cabeçalho por cada mês)
+  let html = '', lastKey = '';
+  list.forEach(a=>{
+    const d = a.ts ? new Date(a.ts) : null;
+    const key = d ? (d.getFullYear()+'-'+d.getMonth()) : 'sem-data';
+    if(key !== lastKey){
+      const label = d ? (ACT_MONTHS[d.getMonth()]+' '+d.getFullYear()) : 'Sem data';
+      html += `<div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);padding:18px 0 6px">${label}</div>`;
+      lastKey = key;
+    }
     const cls = a.type==='green'?'blue':a.type==='red'?'red':a.type==='blue'?'blue':'warn';
-    const bg = a.type==='gold'?'style="background:var(--accBg)"':a.type==='green'?'style="background:var(--greenBg)"':'';
-    return `<div class="alert-item"><div class="alert-ic ${cls}" ${bg}>${a.icon}</div><div style="flex:1"><div class="alert-t" style="font-weight:500">${a.txt}</div></div><div class="alert-time">${a.time}</div></div>`;
-  }).join('');
-  const empty = '<div style="padding:40px;text-align:center;color:var(--text3)">Sem atividade recente para mostrar.</div>';
-  document.getElementById('page-activity').innerHTML=`<div class="card"><div class="card-h"><div class="card-title">Linha temporal de atividade</div></div>${acts||empty}</div>`;
+    const bg = a.type==='green'?'style="background:var(--greenBg)"':'';
+    html += `<div class="alert-item"><div class="alert-ic ${cls}" ${bg}>${a.icon}</div><div style="flex:1"><div class="alert-t" style="font-weight:500">${a.txt}</div></div><div class="alert-time">${a.time}</div></div>`;
+  });
+
+  const empty = `<div style="padding:40px;text-align:center;color:var(--text3)">Sem atividade neste período.</div>`;
+  const count = `<div style="font-size:13px;color:var(--text3)">${list.length} evento${list.length===1?'':'s'}</div>`;
+
+  document.getElementById('page-activity').innerHTML =
+    `<div class="card">
+       <div class="card-h" style="flex-wrap:wrap;gap:12px"><div class="card-title">Linha temporal de atividade</div>${count}</div>
+       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">${chips}</div>
+       ${html || empty}
+     </div>`;
+}
+
+async function renderActivity(){
+  ACT_CACHE = await buildActivityEvents();
+  drawActivity();
 }
 </script>
 </body>
