@@ -1614,8 +1614,11 @@ async function renderCustomers() {
 }
 async function quickStamp(id) {
   const c = await API.addStamp(id);
-  await renderCustomers();
-  await renderDashboard();
+  await renderCustomers();   // recarrega custCache com o novo total
+  try { renderDashboard(); } catch(e) {}
+  // Atualizar a página de Scan (lista + cartão "Hoje"), se estiver aberta
+  try { if (document.getElementById('scan-results')) renderScanResults(((document.getElementById('scan-search')||{}).value)||''); } catch(e) {}
+  try { loadScanToday(); } catch(e) {}
   if (c) toast(t('cm_stamp_done') + ' ' + c.name.split(' ')[0] + ' (' + c.stamps + '/' + c.goal + ')');
 }
 
