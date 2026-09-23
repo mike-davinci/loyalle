@@ -1596,6 +1596,7 @@ async function renderCustomers() {
         <button class="filter-chip ${custFilter==='inactive'?'active':''}" onclick="setCustFilter('inactive')">${t('cust_inactive')}</button>
         <button class="filter-chip" onclick="showExportModal('customers')" title="${t('exp_cust_csv')}">\u2193 ${t('exp_cust_csv')}</button>
         <button class="filter-chip" onclick="showExportModal('transactions')" title="${t('exp_txn_csv')}">\u2193 ${t('exp_txn_csv')}</button>
+        <button class="filter-chip" onclick="openRemindModal()" style="display:flex;align-items:center;gap:6px">${ICON('gift',15)} ${ux('remindTitle')}</button>
         <button class="btn-acc" onclick="openAddCustomer()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>${t('cust_add_short')}</button>
       </div>
       <table>
@@ -1620,6 +1621,49 @@ async function quickStamp(id) {
   try { if (document.getElementById('scan-results')) renderScanResults(((document.getElementById('scan-search')||{}).value)||''); } catch(e) {}
   try { loadScanToday(); } catch(e) {}
   if (c) toast(t('cm_stamp_done') + ' ' + c.name.split(' ')[0] + ' (' + c.stamps + '/' + c.goal + ')');
+}
+
+// ---------- LEMBRETE (Wallet push) ----------
+var remindSeg = { risk: true, inactive: true };
+function remEsc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function remindTargets() {
+  return (custCache || []).filter(function(c){ return (remindSeg.risk && c.status === 'risk') || (remindSeg.inactive && c.status === 'inactive'); });
+}
+function openRemindModal() {
+  var segChip = function(seg, label) { return '<button class="filter-chip ' + (remindSeg[seg] ? 'active' : '') + '" onclick="toggleRemindSeg(\'' + seg + '\')">' + label + '</button>'; };
+  var targets = remindTargets();
+  var listHtml = targets.length ? targets.map(function(c){
+    var lbl = c.status === 'risk' ? t('cust_risk') : t('cust_inactive');
+    return '<label style="display:flex;align-items:center;gap:8px;padding:7px 8px;cursor:pointer;border-bottom:1px solid var(--bg2)"><input type="checkbox" class="rem-cb" value="' + c.id + '" checked onchange="updateRemCount()"><span style="flex:1;font-size:14px">' + remEsc(c.name) + '</span><span class="tag ' + c.status + '" style="font-size:10px">' + lbl + '</span></label>';
+  }).join('') : '<div style="text-align:center;color:var(--text3);padding:24px;font-size:13px">' + t('cust_none') + '</div>';
+  openModal(
+    '<div class="modal-h">' + ux('remindTitle') + '</div>' +
+    '<div class="modal-sub">' + ux('remindSub') + '</div>' +
+    '<div style="display:flex;gap:6px;margin:14px 0 8px">' + segChip('risk', t('cust_risk')) + segChip('inactive', t('cust_inactive')) + '</div>' +
+    '<div id="rem-list" style="max-height:220px;overflow:auto;border:1px solid var(--bg3);border-radius:10px;margin-bottom:12px">' + listHtml + '</div>' +
+    '<textarea id="rem-msg" rows="3" placeholder="' + remEsc(ux('remindPh')) + '" style="width:100%;padding:11px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px;resize:vertical;font-family:inherit"></textarea>' +
+    '<div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">' + ux('remindNote') + '</div>' +
+    '<div class="modal-btns"><button class="btn-ghost" onclick="closeModal()">' + t('btn_close') + '</button><button class="btn-primary" onclick="sendReminder()">' + ux('remindSend') + ' (<span id="rem-count">' + targets.length + '</span>)</button></div>'
+  );
+}
+function toggleRemindSeg(seg) { remindSeg[seg] = !remindSeg[seg]; openRemindModal(); }
+function updateRemCount() { var el = document.getElementById('rem-count'); if (el) el.textContent = document.querySelectorAll('.rem-cb:checked').length; }
+async function sendReminder() {
+  var ids = Array.prototype.slice.call(document.querySelectorAll('.rem-cb:checked')).map(function(cb){ return cb.value; });
+  var msg = ((document.getElementById('rem-msg') || {}).value || '').trim();
+  if (!ids.length) { toast(ux('remindNobody')); return; }
+  if (!msg) { toast(ux('remindEmpty')); return; }
+  closeModal();
+  try {
+    var r = await fetch(WALLET_BACKEND_URL + '/' + currentBiz.slug + '/remind', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customerIds: ids, message: msg })
+    });
+    var d = await r.json();
+    var msgOut = ux('remindSentTo') + ' ' + (d.sent || 0);
+    if (d.skipped) msgOut += ' · ' + d.skipped + ' ' + ux('remindSkip');
+    toast(msgOut);
+  } catch (e) { toast('Erro ao enviar'); }
 }
 
 // ---------- DETALHE DO CLIENTE + WALLETS ----------
@@ -2372,11 +2416,11 @@ function RTstatus(s) { var L = RT(); return (L.status && L.status[s]) || s || ''
 
 // ---- Strings de UI que faltavam traduzir (scan, recompensas, definições) ----
 var UX_I18N = {
-  pt: { points:'Pontos', reward:'Prémio', counterDisplay:'Display para o balcão', vipMake:'Tornar VIP', vipRemove:'Remover VIP', vipOn:'Cliente agora é VIP', vipOff:'VIP removido', segLosing:'A perder', scanReady:'Pronto para ler', today:'Hoje', visitsToday:'visitas registadas hoje', rewardsToday:'prémios dados', newToday:'novos clientes', stampsWord:'carimbos', btnStamp:'+ Carimbo', onCompleting:'Ao completar', pointsSoon:'Vais poder criar prémios por pontos (ex.: um prémio aos 200 pontos, um desconto aos 500) e definir os teus próprios valores. <b>Em breve.</b>', emailNotice:'O email de acesso não pode ser alterado aqui. Fala connosco para o mudar.' },
-  en: { points:'Points', reward:'Reward', counterDisplay:'Counter display', vipMake:'Make VIP', vipRemove:'Remove VIP', vipOn:'Customer is now VIP', vipOff:'VIP removed', segLosing:'Losing them', scanReady:'Ready to scan', today:'Today', visitsToday:'visits today', rewardsToday:'rewards given', newToday:'new customers', stampsWord:'stamps', btnStamp:'+ Stamp', onCompleting:'On completing', pointsSoon:"You'll be able to create points-based rewards (e.g. a reward at 200 points, a discount at 500) and set your own values. <b>Coming soon.</b>", emailNotice:"Your login email can't be changed here. Contact us to change it." },
-  es: { points:'Puntos', reward:'Premio', counterDisplay:'Display para el mostrador', vipMake:'Hacer VIP', vipRemove:'Quitar VIP', vipOn:'El cliente ahora es VIP', vipOff:'VIP quitado', segLosing:'Perdiendo', scanReady:'Listo para leer', today:'Hoy', visitsToday:'visitas hoy', rewardsToday:'premios dados', newToday:'nuevos clientes', stampsWord:'sellos', btnStamp:'+ Sello', onCompleting:'Al completar', pointsSoon:'Podrás crear premios por puntos (p. ej. un premio a los 200 puntos, un descuento a los 500) y definir tus propios valores. <b>Muy pronto.</b>', emailNotice:'El email de acceso no se puede cambiar aquí. Contáctanos para cambiarlo.' },
-  fr: { points:'Points', reward:'Récompense', counterDisplay:'Affichage comptoir', vipMake:'Marquer VIP', vipRemove:'Retirer VIP', vipOn:'Client maintenant VIP', vipOff:'VIP retiré', segLosing:'À perdre', scanReady:'Prêt à scanner', today:"Aujourd'hui", visitsToday:"visites aujourd'hui", rewardsToday:'récompenses données', newToday:'nouveaux clients', stampsWord:'tampons', btnStamp:'+ Tampon', onCompleting:'En complétant', pointsSoon:'Tu pourras créer des récompenses par points (ex. une récompense à 200 points, une remise à 500) et définir tes propres valeurs. <b>Bientôt.</b>', emailNotice:"L'email de connexion ne peut pas être modifié ici. Contacte-nous pour le changer." },
-  de: { points:'Punkte', reward:'Prämie', counterDisplay:'Theken-Display', vipMake:'Als VIP markieren', vipRemove:'VIP entfernen', vipOn:'Kunde ist jetzt VIP', vipOff:'VIP entfernt', segLosing:'Abwandernd', scanReady:'Bereit zum Scannen', today:'Heute', visitsToday:'Besuche heute', rewardsToday:'vergebene Prämien', newToday:'neue Kunden', stampsWord:'Stempel', btnStamp:'+ Stempel', onCompleting:'Beim Abschluss von', pointsSoon:'Du kannst punktebasierte Prämien erstellen (z. B. eine Prämie bei 200 Punkten, ein Rabatt bei 500) und eigene Werte festlegen. <b>Demnächst.</b>', emailNotice:'Die Login-E-Mail kann hier nicht geändert werden. Kontaktiere uns dafür.' }
+  pt: { points:'Pontos', reward:'Prémio', counterDisplay:'Display para o balcão', vipMake:'Tornar VIP', vipRemove:'Remover VIP', vipOn:'Cliente agora é VIP', vipOff:'VIP removido', segLosing:'A perder', remindTitle:'Enviar lembrete', remindSub:'Notificação na Wallet aos clientes a perder', remindPh:'Ex.: Sentimos a tua falta! Volta esta semana e ganha um carimbo extra 🎁', remindNote:'Só chega a quem tem o cartão na Wallet. Máximo 1 lembrete por cliente por mês.', remindSend:'Enviar', remindNobody:'Escolhe pelo menos um cliente.', remindEmpty:'Escreve a mensagem.', remindSentTo:'Lembrete enviado a', remindSkip:'já receberam este mês', scanReady:'Pronto para ler', today:'Hoje', visitsToday:'visitas registadas hoje', rewardsToday:'prémios dados', newToday:'novos clientes', stampsWord:'carimbos', btnStamp:'+ Carimbo', onCompleting:'Ao completar', pointsSoon:'Vais poder criar prémios por pontos (ex.: um prémio aos 200 pontos, um desconto aos 500) e definir os teus próprios valores. <b>Em breve.</b>', emailNotice:'O email de acesso não pode ser alterado aqui. Fala connosco para o mudar.' },
+  en: { points:'Points', reward:'Reward', counterDisplay:'Counter display', vipMake:'Make VIP', vipRemove:'Remove VIP', vipOn:'Customer is now VIP', vipOff:'VIP removed', segLosing:'Losing them', remindTitle:'Send reminder', remindSub:'Wallet notification to customers you are losing', remindPh:'e.g. We miss you! Come back this week and get an extra stamp 🎁', remindNote:'Only reaches customers who have the card in their wallet. Max 1 reminder per customer per month.', remindSend:'Send', remindNobody:'Pick at least one customer.', remindEmpty:'Write the message.', remindSentTo:'Reminder sent to', remindSkip:'already reminded this month', scanReady:'Ready to scan', today:'Today', visitsToday:'visits today', rewardsToday:'rewards given', newToday:'new customers', stampsWord:'stamps', btnStamp:'+ Stamp', onCompleting:'On completing', pointsSoon:"You'll be able to create points-based rewards (e.g. a reward at 200 points, a discount at 500) and set your own values. <b>Coming soon.</b>", emailNotice:"Your login email can't be changed here. Contact us to change it." },
+  es: { points:'Puntos', reward:'Premio', counterDisplay:'Display para el mostrador', vipMake:'Hacer VIP', vipRemove:'Quitar VIP', vipOn:'El cliente ahora es VIP', vipOff:'VIP quitado', segLosing:'Perdiendo', remindTitle:'Enviar recordatorio', remindSub:'Notificación en la Wallet a los clientes que estás perdiendo', remindPh:'Ej.: ¡Te echamos de menos! Vuelve esta semana y gana un sello extra 🎁', remindNote:'Solo llega a quien tiene la tarjeta en la wallet. Máx. 1 recordatorio por cliente al mes.', remindSend:'Enviar', remindNobody:'Elige al menos un cliente.', remindEmpty:'Escribe el mensaje.', remindSentTo:'Recordatorio enviado a', remindSkip:'ya recibieron este mes', scanReady:'Listo para leer', today:'Hoy', visitsToday:'visitas hoy', rewardsToday:'premios dados', newToday:'nuevos clientes', stampsWord:'sellos', btnStamp:'+ Sello', onCompleting:'Al completar', pointsSoon:'Podrás crear premios por puntos (p. ej. un premio a los 200 puntos, un descuento a los 500) y definir tus propios valores. <b>Muy pronto.</b>', emailNotice:'El email de acceso no se puede cambiar aquí. Contáctanos para cambiarlo.' },
+  fr: { points:'Points', reward:'Récompense', counterDisplay:'Affichage comptoir', vipMake:'Marquer VIP', vipRemove:'Retirer VIP', vipOn:'Client maintenant VIP', vipOff:'VIP retiré', segLosing:'À perdre', remindTitle:'Envoyer un rappel', remindSub:'Notification Wallet aux clients que tu perds', remindPh:'Ex. : Tu nous manques ! Reviens cette semaine et gagne un tampon en plus 🎁', remindNote:'N\'atteint que les clients qui ont la carte dans leur wallet. Max 1 rappel par client par mois.', remindSend:'Envoyer', remindNobody:'Choisis au moins un client.', remindEmpty:'Écris le message.', remindSentTo:'Rappel envoyé à', remindSkip:'déjà relancés ce mois-ci', scanReady:'Prêt à scanner', today:"Aujourd'hui", visitsToday:"visites aujourd'hui", rewardsToday:'récompenses données', newToday:'nouveaux clients', stampsWord:'tampons', btnStamp:'+ Tampon', onCompleting:'En complétant', pointsSoon:'Tu pourras créer des récompenses par points (ex. une récompense à 200 points, une remise à 500) et définir tes propres valeurs. <b>Bientôt.</b>', emailNotice:"L'email de connexion ne peut pas être modifié ici. Contacte-nous pour le changer." },
+  de: { points:'Punkte', reward:'Prämie', counterDisplay:'Theken-Display', vipMake:'Als VIP markieren', vipRemove:'VIP entfernen', vipOn:'Kunde ist jetzt VIP', vipOff:'VIP entfernt', segLosing:'Abwandernd', remindTitle:'Erinnerung senden', remindSub:'Wallet-Benachrichtigung an abwandernde Kunden', remindPh:'z. B. Wir vermissen dich! Komm diese Woche vorbei und erhalte einen Extra-Stempel 🎁', remindNote:'Erreicht nur Kunden mit der Karte im Wallet. Max. 1 Erinnerung pro Kunde pro Monat.', remindSend:'Senden', remindNobody:'Wähle mindestens einen Kunden.', remindEmpty:'Schreibe die Nachricht.', remindSentTo:'Erinnerung gesendet an', remindSkip:'diesen Monat bereits erinnert', scanReady:'Bereit zum Scannen', today:'Heute', visitsToday:'Besuche heute', rewardsToday:'vergebene Prämien', newToday:'neue Kunden', stampsWord:'Stempel', btnStamp:'+ Stempel', onCompleting:'Beim Abschluss von', pointsSoon:'Du kannst punktebasierte Prämien erstellen (z. B. eine Prämie bei 200 Punkten, ein Rabatt bei 500) und eigene Werte festlegen. <b>Demnächst.</b>', emailNotice:'Die Login-E-Mail kann hier nicht geändert werden. Kontaktiere uns dafür.' }
 };
 function ux(k) { var l = (localStorage.getItem('loyalle_lang') || 'pt'); return (UX_I18N[l] || UX_I18N.pt)[k]; }
 
