@@ -531,6 +531,7 @@ tbody tr:hover{background:var(--bg)}
       <div class="sb-biz-logo" id="sb-biz-logo">—</div>
       <div><div class="sb-biz-name" id="sb-biz-name">—</div><div class="sb-biz-plan" id="sb-plan">—</div></div>
     </div>
+    <div id="sb-trial" style="display:none;padding:0 16px 6px"></div>
     <nav class="sb-nav">
       <a class="sb-item active" onclick="nav('dashboard',this)">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -600,8 +601,6 @@ tbody tr:hover{background:var(--bg)}
         </button>
       </div>
     </div>
-
-    <div id="trial-banner" style="display:none"></div>
 
     <div class="content">
       <!-- pages injected here -->
@@ -1266,7 +1265,7 @@ function trialInfo() {
   return { end: end, msLeft: msLeft, daysLeft: Math.ceil(msLeft / 86400000), expired: msLeft <= 0 };
 }
 function renderTrialBanner() {
-  var el = document.getElementById('trial-banner');
+  var el = document.getElementById('sb-trial');
   var gate = document.getElementById('trial-gate');
   var info = trialInfo();
   if (!info) { if (el) el.style.display = 'none'; if (gate) gate.classList.remove('show'); return; }
@@ -1274,11 +1273,11 @@ function renderTrialBanner() {
   if (gate) gate.classList.remove('show');
   var txt = info.daysLeft <= 1 ? ux('trialLastDay') : (ux('trialEnds') + ' ' + info.daysLeft + ' ' + ux('trialDays'));
   var urgent = info.daysLeft <= 3;
+  var col = urgent ? '#E0637A' : 'var(--acc)';
   el.style.display = 'block';
-  el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;padding:9px 16px;background:' + (urgent ? '#5a3a12' : 'var(--dark)') + ';color:#fff;font-size:13px">' +
-    '<span style="display:flex;align-items:center;gap:8px">' + ICON('clock', 15) + ' <strong>' + txt + '</strong></span>' +
-    '<button onclick="openUpgrade()" style="background:var(--acc);color:var(--dark);border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">' + ux('trialChoose') + '</button>' +
-  '</div>';
+  // Pílula discreta na barra lateral (clicável → planos)
+  el.innerHTML = '<button onclick="openUpgrade()" title="' + ux('trialChoose') + '" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(198,153,59,' + (urgent ? '0' : '.12') + ');' + (urgent ? 'background:rgba(224,99,122,.15);' : '') + 'color:' + col + ';border:1px solid ' + (urgent ? 'rgba(224,99,122,.35)' : 'rgba(198,153,59,.28)') + ';border-radius:8px;padding:7px 8px;font-size:11px;font-weight:600;cursor:pointer;line-height:1.3">' +
+    ICON('clock', 13) + '<span>' + txt + '</span></button>';
 }
 function showTrialGate() {
   var gate = document.getElementById('trial-gate');
