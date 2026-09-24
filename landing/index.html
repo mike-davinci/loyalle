@@ -82,11 +82,12 @@ html{scroll-behavior:smooth;overflow-x:hidden}body{font-family:var(--fb);color:v
 .wr-slide.active{display:block}
 @keyframes wrIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .wr-banner{height:88px;background-size:cover;background-position:center;position:relative;border-radius:16px 16px 0 0}
-.wr-banner-ov{position:absolute;inset:0;background:linear-gradient(170deg,rgba(20,16,11,.35),rgba(20,16,11,.88) 82%);border-radius:16px 16px 0 0}
+.wr-banner-ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,16,11,.12) 0%,rgba(20,16,11,.48) 45%,rgba(20,16,11,.94) 100%);border-radius:16px 16px 0 0}
 .wr-topbar{position:absolute;top:11px;left:13px;right:13px;display:flex;align-items:flex-start;gap:8px;z-index:2}
 .wr-head{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
 .wr-nm,.wr-by{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wr-logo{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.wr-logo{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.6);box-shadow:0 3px 10px rgba(0,0,0,.45)}
+.wr-logo svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .wr-nm{font-size:13px;font-weight:700;color:#fff;font-family:var(--fh);line-height:1.1;text-shadow:0 1px 3px rgba(0,0,0,.5)}
 .wr-by{font-size:7.5px;color:rgba(255,255,255,.62);text-transform:uppercase;letter-spacing:.07em;font-weight:600;margin-top:2px}
 .wr-by b{color:#E0B24E;font-family:var(--fh);font-weight:800;letter-spacing:-.02em}
@@ -561,7 +562,7 @@ html{scroll-behavior:smooth;overflow-x:hidden}body{font-family:var(--fb);color:v
                     <div class="wr-banner" style="background-image:url('https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=700&q=80')">
                       <div class="wr-banner-ov"></div>
                       <div class="wr-topbar"><div class="wr-head">
-                        <div class="wr-logo" style="background:linear-gradient(135deg,#E0B24E,#C6993B);color:#1a1610">C</div>
+                        <div class="wr-logo"><svg viewBox="0 0 24 24"><path d="M18 8h1a3 3 0 0 1 0 6h-1"/><path d="M4 8h14v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8z"/><path d="M8 2v2M12 2v2M16 2v2"/></svg></div>
                         <div><div class="wr-nm">Cafe Aroma</div><div class="wr-by">powered by <b>loyalle.</b></div></div>
                       </div><div class="wr-counter"><div class="wr-counter-l" data-i18n="wr_stamps">Carimbos</div><div class="wr-counter-v">7<span>/10</span></div></div></div>
                     </div>
@@ -587,7 +588,7 @@ html{scroll-behavior:smooth;overflow-x:hidden}body{font-family:var(--fb);color:v
                     <div class="wr-banner" style="background-image:url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=700&q=80')">
                       <div class="wr-banner-ov"></div>
                       <div class="wr-topbar"><div class="wr-head">
-                        <div class="wr-logo" style="background:linear-gradient(135deg,#E74C3C,#C0392B);color:#fff">M</div>
+                        <div class="wr-logo"><svg viewBox="0 0 24 24"><path d="M6.5 12c0-3 2.5-5 5.5-5s5.5 2 5.5 5-2.5 5-5.5 5c-2 0-3.7-.9-4.7-2.3"/><path d="M6.5 12H3M18.5 10.5l2-1.5M18.5 13.5l2 1.5"/><circle cx="15" cy="11" r=".8" fill="#fff" stroke="none"/></svg></div>
                         <div><div class="wr-nm">Mar Azul</div><div class="wr-by">powered by <b>loyalle.</b></div></div>
                       </div><div class="wr-counter"><div class="wr-counter-l" data-i18n="wr_lunches">Almoços</div><div class="wr-counter-v">5<span>/8</span></div></div></div>
                     </div>
@@ -613,7 +614,7 @@ html{scroll-behavior:smooth;overflow-x:hidden}body{font-family:var(--fb);color:v
                     <div class="wr-banner" style="background-image:url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=700&q=80')">
                       <div class="wr-banner-ov"></div>
                       <div class="wr-topbar"><div class="wr-head">
-                        <div class="wr-logo" style="background:linear-gradient(135deg,#3ECf8E,#2A6B3E);color:#fff">Y</div>
+                        <div class="wr-logo"><svg viewBox="0 0 24 24"><path d="M12 21c4-2 7-5 7-9a4 4 0 0 0-7-2.5A4 4 0 0 0 5 12c0 4 3 7 7 9z"/><path d="M12 9.5V21"/></svg></div>
                         <div><div class="wr-nm">Yoga Flow</div><div class="wr-by">powered by <b>loyalle.</b></div></div>
                       </div><div class="wr-counter"><div class="wr-counter-l" data-i18n="wr_checkins">Check-ins</div><div class="wr-counter-v">12<span>/15</span></div></div></div>
                     </div>
@@ -639,7 +640,7 @@ html{scroll-behavior:smooth;overflow-x:hidden}body{font-family:var(--fb);color:v
                     <div class="wr-banner" style="background-image:url('https://images.unsplash.com/photo-1560066984-138dadb4c035?w=700&q=80')">
                       <div class="wr-banner-ov"></div>
                       <div class="wr-topbar"><div class="wr-head">
-                        <div class="wr-logo" style="background:linear-gradient(135deg,#9B59B6,#6C3483);color:#fff">S</div>
+                        <div class="wr-logo"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.12 8.12 20 20M14 8l6-4M8.12 15.88 12 12"/></svg></div>
                         <div><div class="wr-nm">Studio Hair</div><div class="wr-by">powered by <b>loyalle.</b></div></div>
                       </div><div class="wr-counter"><div class="wr-counter-l" data-i18n="wr_points">Pontos</div><div class="wr-counter-v">540<span>pts</span></div></div></div>
                     </div>
