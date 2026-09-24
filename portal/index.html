@@ -274,6 +274,30 @@ function portalTimeAgo(iso){
   return 'há '+Math.floor(days/365)+' ano(s)';
 }
 // Carrega todos os negócios + nº de clientes de cada (agregado real)
+// ===== TRIALS: fim e dias restantes =====
+const TRIAL_DAYS = 14; // usado quando trial_ends_at está vazio
+function trialInfo(b){
+  let end = b.trial_ends_at ? new Date(b.trial_ends_at) : null;
+  if(!end && b.created_at){ end = new Date(new Date(b.created_at).getTime() + TRIAL_DAYS*86400000); }
+  if(!end) return { trialEnd:null, daysLeft:null };
+  const startOf = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const daysLeft = Math.round((startOf(end) - startOf(new Date())) / 86400000);
+  return { trialEnd:end, daysLeft };
+}
+function trialLabel(d){
+  if(d===null) return 'sem data';
+  if(d < 0)  return 'terminou há ' + Math.abs(d) + (Math.abs(d)===1?' dia':' dias');
+  if(d === 0) return 'termina hoje';
+  if(d === 1) return 'termina amanhã';
+  return 'termina em ' + d + ' dias';
+}
+function trialColor(d){
+  if(d===null) return 'var(--text3)';
+  if(d <= 3) return '#D81F26';
+  if(d <= 7) return '#F7941D';
+  return 'var(--text3)';
+}
+
 async function loadAllBusinesses(){
   const { data: bizs, error } = await db.from('businesses').select('*').order('created_at',{ascending:false});
   if(error){ console.error(error); return []; }
@@ -287,7 +311,8 @@ async function loadAllBusinesses(){
       customers: count||0, limit: (PLAN_LIMIT_MAP[b.plan]||500), isDemo: !!b.is_demo,
       usage: Math.round(((count||0)/(PLAN_LIMIT_MAP[b.plan]||500))*100),
       isFounder: !!b.is_founder,
-      joined: portalTimeAgo(b.created_at), createdAt: b.created_at, color:b.brand_color||'#C6993B'
+      joined: portalTimeAgo(b.created_at), createdAt: b.created_at, color:b.brand_color||'#C6993B',
+      email: b.email||'', ...trialInfo(b)
     });
   }
   return out;
@@ -414,7 +439,8 @@ async function renderAll(){
   const bizs = await API.getBusinesses();
   const alerts = await API.getAlerts();
   const bc = document.getElementById('biz-count'); if(bc) bc.textContent = bizs.length;
-  const ac = document.getElementById('alert-count'); if(ac) ac.textContent = alerts.length;
+  const urgentTrials = bizs.filter(b=>!b.isDemo && b.status==='trial' && b.daysLeft!==null && b.daysLeft<=7).length;
+  const ac = document.getElementById('alert-count'); if(ac){ ac.textContent = urgentTrials; ac.title = urgentTrials+' trial(s) terminam nos próximos 7 dias'; ac.style.display = urgentTrials ? '' : 'none'; }
 }
 
 async function renderOverview(){
@@ -468,7 +494,42 @@ async function renderOverview(){
       ${limitRows}
     </div>`;
 
-  document.getElementById('page-overview').innerHTML = limitPanel + `
+
+  // ---- Trials a terminar (próximos 7 dias ou já terminados) ----
+  const trialsAll = bizs.filter(b => !b.isDemo && b.status === 'trial' && b.daysLeft !== null)
+    .sort((a,b) => a.daysLeft - b.daysLeft);
+  const trialsUrgent = trialsAll.filter(b => b.daysLeft <= 7);
+  const trialsLater = trialsAll.length - trialsUrgent.length;
+  const trialRows = trialsUrgent.length
+    ? trialsUrgent.map(b => {
+        const ini = b.name.split(' ').map(w=>w[0]).slice(0,2).join('');
+        const endTxt = b.trialEnd ? b.trialEnd.toLocaleDateString('pt-PT',{day:'numeric',month:'short'}) : '';
+        const mail = b.email ? `mailto:${b.email}?subject=${encodeURIComponent('O teu período de teste Loyalle')}` : '';
+        const btn = mail
+          ? `<a class="limit-act" href="${mail}" style="text-decoration:none">Contactar</a>`
+          : `<button class="limit-act" onclick="toast('Sem email registado para ${b.name.replace(/'/g,'')}')">Contactar</button>`;
+        return `<div class="limit-row">
+          <div class="limit-logo" style="background:${b.color}">${ini}</div>
+          <div class="limit-info">
+            <div class="limit-nm">${b.name}</div>
+            <div class="limit-sub">${b.owner} · ${b.customers.toLocaleString('pt-PT')} clientes · fim a ${endTxt}</div>
+          </div>
+          <div class="limit-pct" style="color:${trialColor(b.daysLeft)};font-size:13px;white-space:nowrap">${trialLabel(b.daysLeft)}</div>
+          ${btn}
+        </div>`;
+      }).join('')
+    : '<div class="limit-empty">Nenhum trial termina nos próximos 7 dias.</div>';
+  const trialPanel = `<div class="limit-panel">
+      <div class="limit-h">
+        <span style="font-size:17px">⏳</span>
+        <span class="limit-h-t">Trials a terminar</span>
+        ${trialsUrgent.length ? `<span class="limit-count">${trialsUrgent.length} nos próximos 7 dias</span>` : ''}
+        ${trialsLater ? `<span style="margin-left:auto;font-size:11.5px;color:var(--text3)">${trialsLater} outro(s) trial(s) com mais tempo</span>` : ''}
+      </div>
+      ${trialRows}
+    </div>`;
+
+  document.getElementById('page-overview').innerHTML = limitPanel + trialPanel + `
     <div class="kpi-grid">
       <div class="kpi"><div class="kpi-top"><div class="kpi-ic gold">💰</div><div class="kpi-trend up">↑ ${m.mrrTrend}%</div></div><div class="kpi-v">${eur(m.mrr)}</div><div class="kpi-l">MRR (receita mensal)</div></div>
       <div class="kpi"><div class="kpi-top"><div class="kpi-ic green">🏪</div><div class="kpi-trend up">↑ ${m.bizTrend}%</div></div><div class="kpi-v">${m.activeBiz}</div><div class="kpi-l">Negócios ativos</div></div>
@@ -555,6 +616,11 @@ async function renderChurn(){
   const alerts=alertsData.map(a=>`<div class="alert-item"><div class="alert-ic ${a.type}">${a.icon}</div><div style="flex:1"><div class="alert-t">${a.t}</div><div class="alert-d">${a.d}</div></div><span class="tag ${a.time&&a.time.includes('dias')?'churned':(a.time||'').toLowerCase()}">${a.time}</span></div>`).join('') || '<div style="color:var(--text3);font-size:13px;padding:12px">Sem alertas de risco. 🎉</div>';
   const trials=bizs.filter(b=>b.status==='trial');
   const risk=bizs.filter(b=>b.status==='risk');
+  const trialList = bizs.filter(b=>!b.isDemo && b.status==='trial' && b.daysLeft!==null).sort((a,b)=>a.daysLeft-b.daysLeft);
+  const trialRowsChurn = trialList.map(b=>{
+    const endTxt = b.trialEnd ? b.trialEnd.toLocaleDateString('pt-PT',{day:'numeric',month:'long',year:'numeric'}) : '—';
+    return `<div class="alert-item"><div class="alert-ic blue">⏳</div><div style="flex:1"><div class="alert-t">${b.name}</div><div class="alert-d">${b.owner} · ${b.customers} clientes · fim a ${endTxt}</div></div><span style="font-size:13px;font-weight:600;white-space:nowrap;color:${trialColor(b.daysLeft)}">${trialLabel(b.daysLeft)}</span></div>`;
+  }).join('') || '<div style="color:var(--text3);font-size:13px;padding:12px">Sem trials em curso.</div>';
   document.getElementById('page-churn').innerHTML=`
     <div class="kpi-grid">
       <div class="kpi"><div class="kpi-top"><div class="kpi-ic blue">⏳</div></div><div class="kpi-v">${trials.length}</div><div class="kpi-l">Trials ativos</div></div>
@@ -562,6 +628,7 @@ async function renderChurn(){
       <div class="kpi"><div class="kpi-top"><div class="kpi-ic red">📉</div></div><div class="kpi-v">2.3%</div><div class="kpi-l">Churn mensal</div></div>
       <div class="kpi"><div class="kpi-top"><div class="kpi-ic green">🔄</div></div><div class="kpi-v">64%</div><div class="kpi-l">Conversão trial→pago</div></div>
     </div>
+    <div class="card" style="margin-bottom:18px"><div class="card-h"><div><div class="card-title">Trials por data de fim</div><div class="card-sub">Do mais urgente para o que tem mais tempo · laranja até 7 dias, vermelho até 3</div></div></div>${trialRowsChurn}</div>
     <div class="card"><div class="card-h"><div><div class="card-title">Alertas que precisam de atenção</div><div class="card-sub">Trials a expirar, risco de churn e cancelamentos</div></div></div>${alerts}</div>`;
 }
 
