@@ -2835,6 +2835,7 @@ function pickStampIcon(n, el) {
     b.style.background = on ? 'var(--accBg)' : 'var(--bg2)';
     b.style.color = on ? 'var(--acc)' : 'var(--text2)';
   });
+  try { updateCardPreview(); } catch (e) {}
 }
 function renderCard() {
   var el = document.getElementById('page-card');
@@ -3190,6 +3191,35 @@ function isWhiteLabel() {
   return p.indexOf('business') >= 0 || p.indexOf('cadeia') >= 0;
 }
 
+// Cor dos carimbos cheios: se a cor de destaque for clara demais, usa dourado (igual ao backend)
+function pvStampAccent(hex) {
+  try { var h = hex.replace('#',''); var r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16); var L=(0.299*r+0.587*g+0.114*b)/255; return L>0.72?'#E0B24E':hex; } catch(e){ return hex||'#E0B24E'; }
+}
+// Faixa de carimbos na pré-visualização (espelha a wallet real: foto + círculos com o ícone)
+function previewStripHTML(bannerU, done, goal, bBg, accent, icon) {
+  var glyph = (typeof STAMP_GLYPHS_UI !== 'undefined' && STAMP_GLYPHS_UI[icon]) || '';
+  function circle(filled) {
+    var stroke = filled ? '#241a10' : 'rgba(255,255,255,.6)';
+    var inner = icon === 'dot'
+      ? '<span style="width:9px;height:9px;border-radius:50%;background:' + (filled?'#241a10':'rgba(255,255,255,.6)') + ';display:block"></span>'
+      : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + glyph + '</svg>';
+    var box = filled ? 'background:' + accent + ';border:1.5px solid rgba(255,255,255,.22)'
+                     : 'background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.6)';
+    return '<div style="width:26px;height:26px;border-radius:50%;' + box + ';display:flex;align-items:center;justify-content:center;flex-shrink:0">' + inner + '</div>';
+  }
+  var body = '';
+  if (goal > 16) {
+    var pct = Math.round(Math.min(1, done / goal) * 100);
+    body = '<div style="width:82%;height:9px;border-radius:20px;background:rgba(255,255,255,.2);overflow:hidden"><div style="width:' + pct + '%;height:100%;background:' + accent + '"></div></div>';
+  } else {
+    for (var i = 0; i < goal; i++) body += circle(i < done);
+  }
+  var bgStyle = bannerU ? 'background:#000 url(' + bannerU + ') center/cover' : 'background:' + bBg;
+  return '<div style="position:relative;' + bgStyle + ';padding:15px 12px;min-height:82px;display:flex;align-items:center;justify-content:center">' +
+    '<div style="position:absolute;inset:0;background:rgba(12,10,8,' + (bannerU ? '0.5' : '0') + ')"></div>' +
+    '<div style="position:relative;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:100%">' + body + '</div>' +
+  '</div>';
+}
 // HTML do cartão de pré-visualização (usa os valores atuais do formulário se existirem)
 function cardPreviewHTML() {
   var g = function(id){ var e=document.getElementById(id); return e ? e.value : null; };
@@ -3201,25 +3231,21 @@ function cardPreviewHTML() {
   var reward = g('brand-reward') || (currentBiz && currentBiz.reward_text) || 'Prémio de fidelidade';
   var goal = parseInt(g('brand-goal'), 10) || (currentBiz && currentBiz.stamp_goal) || 10;
   var initial = name.charAt(0).toUpperCase();
-  var stamps = '';
-  for (var i = 0; i < goal; i++) {
-    var on = i < 3;
-    stamps += '<div style="width:16px;height:16px;border-radius:50%;border:1.5px solid ' + (on ? bColor : 'rgba(255,255,255,.25)') + ';background:' + (on ? bColor : 'transparent') + '"></div>';
-  }
+  var icon = (typeof selStampIcon !== 'undefined' ? selStampIcon : null) || (currentBiz && currentBiz.stamp_icon) || 'dot';
+  var accent = pvStampAccent(bColor);
   var logoInner = logoU ? '<img src="' + logoU + '" style="width:100%;height:100%;object-fit:contain">' : '<span style="font-family:var(--fh);font-weight:800;color:' + bBg + '">' + initial + '</span>';
-  var bannerBlock = bannerU ? '<div style="height:64px;background:#000;overflow:hidden"><img src="' + bannerU + '" style="width:100%;height:100%;object-fit:cover"></div>' : '';
+  var stripHTML = previewStripHTML(bannerU, 3, goal, bBg, accent, icon);
   return '' +
     '<div id="card-preview" style="width:300px;border-radius:18px;overflow:hidden;background:' + bBg + ';box-shadow:0 12px 34px rgba(0,0,0,.25);font-family:var(--fb)">' +
-      bannerBlock +
-      '<div style="padding:16px">' +
-        '<div style="display:flex;align-items:center;gap:10px">' +
-          '<div style="width:40px;height:40px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">' + logoInner + '</div>' +
-          '<div style="flex:1;min-width:0"><div style="color:' + bColor + ';font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + name + '</div><div style="color:rgba(255,255,255,.5);font-size:10px;text-transform:uppercase;letter-spacing:.06em">' + ux('stampsWord') + '</div></div>' +
-          '<div style="text-align:right"><div style="color:#fff;font-family:var(--fh);font-weight:800;font-size:16px">3/' + goal + '</div></div>' +
-        '</div>' +
-        '<div style="margin-top:14px"><div style="color:#fff;font-family:var(--fh);font-weight:800;font-size:17px">' + reward + '</div><div style="color:' + bColor + ';font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-top:2px">' + ux('reward') + '</div></div>' +
-        '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px">' + stamps + '</div>' +
-        '<div style="margin-top:14px;background:#fff;border-radius:8px;height:54px;display:flex;align-items:center;justify-content:center;color:#999;font-size:10px">QR do cliente</div>' +
+      '<div style="padding:14px 16px 10px;display:flex;align-items:center;gap:10px">' +
+        '<div style="width:40px;height:40px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">' + logoInner + '</div>' +
+        '<div style="flex:1;min-width:0"><div style="color:' + bColor + ';font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + name + '</div><div style="color:rgba(255,255,255,.5);font-size:10px;text-transform:uppercase;letter-spacing:.06em">' + ux('stampsWord') + '</div></div>' +
+        '<div style="text-align:right"><div style="color:#fff;font-family:var(--fh);font-weight:800;font-size:16px">3/' + goal + '</div></div>' +
+      '</div>' +
+      stripHTML +
+      '<div style="padding:12px 16px 16px">' +
+        '<div><div style="color:#fff;font-family:var(--fh);font-weight:800;font-size:16px">' + reward + '</div><div style="color:' + bColor + ';font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-top:2px">' + ux('reward') + '</div></div>' +
+        '<div style="margin-top:12px;background:#fff;border-radius:8px;height:54px;display:flex;align-items:center;justify-content:center;color:#999;font-size:10px">QR do cliente</div>' +
       '</div>' +
     '</div>';
 }
