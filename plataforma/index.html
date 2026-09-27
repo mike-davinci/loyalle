@@ -2403,7 +2403,7 @@ async function sendPasswordReset() {
 // ---- Traduções dos relatórios (Excel/PDF/CSV) nos 5 idiomas ----
 var REPORTS_I18N = {
   pt: {
-    colsCustomers:['Nome','Email','Telefone','Carimbos','Objetivo','Pontos','Visitas','Estado','Data de adesão','Última visita'],
+    colsCustomers:['Nome','Email','Telefone','Carimbos','Objetivo','Visitas','Estado','Data de adesão','Última visita'],
     colsTxn:['Data','Cliente','Tipo','Quantidade'], colsSummary:['Métrica','Valor'],
     types:{ stamp:'Carimbo', redeem:'Resgate', reward:'Prémio', points:'Pontos', signup:'Registo' },
     status:{ active:'Ativo', vip:'VIP', risk:'Em risco', inactive:'Inativo' },
@@ -2424,7 +2424,7 @@ var REPORTS_I18N = {
     expPeriod:'Período', expAll:'Tudo', expWeek:'Esta semana', expMonth:'Este mês', expYear:'Este ano', expCustom:'Personalizado', expFrom:'De', expTo:'Até'
   },
   en: {
-    colsCustomers:['Name','Email','Phone','Stamps','Goal','Points','Visits','Status','Joined','Last visit'],
+    colsCustomers:['Name','Email','Phone','Stamps','Goal','Visits','Status','Joined','Last visit'],
     colsTxn:['Date','Customer','Type','Amount'], colsSummary:['Metric','Value'],
     types:{ stamp:'Stamp', redeem:'Redemption', reward:'Reward', points:'Points', signup:'Signup' },
     status:{ active:'Active', vip:'VIP', risk:'At risk', inactive:'Inactive' },
@@ -2445,7 +2445,7 @@ var REPORTS_I18N = {
     expPeriod:'Period', expAll:'All', expWeek:'This week', expMonth:'This month', expYear:'This year', expCustom:'Custom', expFrom:'From', expTo:'To'
   },
   es: {
-    colsCustomers:['Nombre','Email','Teléfono','Sellos','Objetivo','Puntos','Visitas','Estado','Fecha de alta','Última visita'],
+    colsCustomers:['Nombre','Email','Teléfono','Sellos','Objetivo','Visitas','Estado','Fecha de alta','Última visita'],
     colsTxn:['Fecha','Cliente','Tipo','Cantidad'], colsSummary:['Métrica','Valor'],
     types:{ stamp:'Sello', redeem:'Canje', reward:'Premio', points:'Puntos', signup:'Registro' },
     status:{ active:'Activo', vip:'VIP', risk:'En riesgo', inactive:'Inactivo' },
@@ -2466,7 +2466,7 @@ var REPORTS_I18N = {
     expPeriod:'Período', expAll:'Todo', expWeek:'Esta semana', expMonth:'Este mes', expYear:'Este año', expCustom:'Personalizado', expFrom:'Desde', expTo:'Hasta'
   },
   fr: {
-    colsCustomers:['Nom','Email','Téléphone','Tampons','Objectif','Points','Visites','Statut','Inscription','Dernière visite'],
+    colsCustomers:['Nom','Email','Téléphone','Tampons','Objectif','Visites','Statut','Inscription','Dernière visite'],
     colsTxn:['Date','Client','Type','Quantité'], colsSummary:['Indicateur','Valeur'],
     types:{ stamp:'Tampon', redeem:'Échange', reward:'Récompense', points:'Points', signup:'Inscription' },
     status:{ active:'Actif', vip:'VIP', risk:'À risque', inactive:'Inactif' },
@@ -2487,7 +2487,7 @@ var REPORTS_I18N = {
     expPeriod:'Période', expAll:'Tout', expWeek:'Cette semaine', expMonth:'Ce mois', expYear:'Cette année', expCustom:'Personnalisé', expFrom:'Du', expTo:'Au'
   },
   de: {
-    colsCustomers:['Name','E-Mail','Telefon','Stempel','Ziel','Punkte','Besuche','Status','Beitritt','Letzter Besuch'],
+    colsCustomers:['Name','E-Mail','Telefon','Stempel','Ziel','Besuche','Status','Beitritt','Letzter Besuch'],
     colsTxn:['Datum','Kunde','Typ','Menge'], colsSummary:['Kennzahl','Wert'],
     types:{ stamp:'Stempel', redeem:'Einlösung', reward:'Prämie', points:'Punkte', signup:'Anmeldung' },
     status:{ active:'Aktiv', vip:'VIP', risk:'Gefährdet', inactive:'Inaktiv' },
@@ -2691,7 +2691,7 @@ async function exportCustomers(fmt) {
   data.forEach(function(c) {
     var st = computeCustStatus(c.last_visit, c.created_at, c.status);
     var lv = (c.last_visit && c.last_visit !== '1970-01-01') ? c.last_visit : null;
-    rows.push([c.name || '', c.email || '', c.phone || '', c.stamps || 0, c.goal || 10, c.points || 0, c.visits || 0, RTstatus(st), fmtDate(c.created_at), fmtDate(lv)]);
+    rows.push([c.name || '', c.email || '', c.phone || '', c.stamps || 0, c.goal || 10, c.visits || 0, RTstatus(st), fmtDate(c.created_at), fmtDate(lv)]);
   });
   var d = new Date().toISOString().slice(0,10);
   var fn = currentBiz.slug + '_' + L.fnCustomers + '_' + d;
@@ -2743,7 +2743,9 @@ async function exportResumo(fmt) {
   // Estado atual (snapshot) — base total de clientes
   var { data: custs } = await db.from('customers').select('stamps, goal, visits, status, last_visit, created_at').eq('business_id', bid);
   var all = custs || [];
-  var completed = all.filter(function(c) { return c.stamps >= (c.goal || 10); }).length;
+  // Cartões completos = cartões cheios agora + prémios já resgatados (cartões que reiniciaram)
+  var currentlyFull = all.filter(function(c) { return c.stamps >= (c.goal || 10); }).length;
+  var completed = currentlyFull + rewardsCnt;
   var active = all.filter(function(c) { var st = computeCustStatus(c.last_visit, c.created_at, c.status); return st === 'active' || st === 'vip'; }).length;
   var inactive = all.filter(function(c) { return computeCustStatus(c.last_visit, c.created_at, c.status) === 'inactive'; }).length;
   var totalVisits = all.reduce(function(s, c) { return s + (c.visits || 0); }, 0);
