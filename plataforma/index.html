@@ -1925,7 +1925,7 @@ function renderScanResults(q) {
   const list = custCache.filter(c => !q || c.name.toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q)).slice(0, 5);
   document.getElementById('scan-results').innerHTML = list.map(c => {
     const initials = c.name.split(' ').map(n => n[0]).slice(0, 2).join('');
-    return `<div class="act-item"><div class="cust-avatar" style="background:${c.color}">${initials}</div><div class="act-txt"><b>${c.name}</b><div style="color:var(--text3);font-size:12px">${c.stamps}/${c.goal} ${ux('stampsWord')} · ${c.points} pts</div></div><button class="row-action" onclick="quickStamp('${c.id}');renderScanResults(document.getElementById('scan-search').value)">${ux('btnStamp')}</button></div>`;
+    return `<div class="act-item"><div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer" onclick="openCustomerDetail('${c.id}')"><div class="cust-avatar" style="background:${c.color}">${initials}</div><div class="act-txt" style="min-width:0"><b>${c.name}</b><div style="color:var(--text3);font-size:12px">${c.stamps}/${c.goal} ${ux('stampsWord')} · ${c.points} pts</div></div></div><button class="row-action" onclick="quickStamp('${c.id}');renderScanResults(document.getElementById('scan-search').value)">${ux('btnStamp')}</button></div>`;
   }).join('') || ('<div style="color:var(--text3);font-size:13px;padding:8px 0">' + t('cust_none') + '</div>');
 }
 function initScanner() { /* lazy — only on activate */ }
