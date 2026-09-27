@@ -2287,6 +2287,7 @@ async function saveBranding() {
     if (rw && rw.value.trim()) update.reward_text = rw.value.trim();
     var gl = document.getElementById('brand-goal');
     if (gl) { var glv = parseInt(gl.value, 10); if (glv >= 1) update.stamp_goal = glv; }
+    var goalChanged = ('stamp_goal' in update) && update.stamp_goal !== currentBiz.stamp_goal;
     update.stamp_icon = selStampIcon || 'dot';
     // Usa a imagem recortada (blob) se existir; senão o ficheiro original
     var logoFile = window.__logoBlob || document.getElementById('brand-logo-file').files[0];
@@ -2298,6 +2299,8 @@ async function saveBranding() {
     Object.assign(currentBiz, update);
     window.__prevLogo = null; window.__prevBanner = null;
     window.__logoBlob = null; window.__bannerBlob = null;
+    // Mudou o nº de carimbos → refresca os passes já instalados (atualizam na hora, não só ao próximo carimbo)
+    if (goalChanged) { try { fetch(WALLET_BACKEND_URL + '/' + currentBiz.slug + '/refresh-passes', { method: 'POST' }); } catch (e) {} }
     toast(t('ts_branding_updated'));
     renderCard();
   } catch (e) {
