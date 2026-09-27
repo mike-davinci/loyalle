@@ -1390,12 +1390,18 @@ async function buildNotifications() {
   } catch(e) { console.warn('Notificações:', e); }
   return out;
 }
+// Assinatura das notificações atuais + memória do que já foi visto (marca como lido)
+function notifSig(items) { return items.map(function(n){ return (n.cls||'') + ':' + (n.id||'') + ':' + n.t; }).join('|'); }
+function getNotifSeen() { try { return localStorage.getItem('loyalle_notif_seen') || ''; } catch(e) { return ''; } }
+function setNotifSeen(sig) { try { localStorage.setItem('loyalle_notif_seen', sig); } catch(e) {} }
 async function renderNotifs() {
   var panel = document.getElementById('notif-panel');
   var dot = document.getElementById('notif-dot');
   if (!panel) return;
   var items = await buildNotifications();
-  if (dot) dot.style.display = items.length ? 'block' : 'none';
+  window.__notifSig = notifSig(items);
+  // O ponto só aparece se houver alertas NOVOS (diferentes do que já foi visto)
+  if (dot) dot.style.display = (items.length && window.__notifSig !== getNotifSeen()) ? 'block' : 'none';
   if (!items.length) {
     panel.innerHTML = '<div class="notif-h">Notificações</div><div class="notif-empty">Tudo em dia.<br>Sem alertas por agora.</div>';
     return;
@@ -1411,7 +1417,12 @@ function toggleNotifs(ev) {
   if (!panel) return;
   var willOpen = !panel.classList.contains('open');
   panel.classList.toggle('open', willOpen);
-  if (willOpen) renderNotifs();
+  if (willOpen) renderNotifs().then(function() {
+    // Ao abrir, marca tudo como lido → o ponto apaga-se (reaparece só com alertas novos)
+    setNotifSeen(window.__notifSig || '');
+    var dot = document.getElementById('notif-dot');
+    if (dot) dot.style.display = 'none';
+  });
 }
 function openNotif(id) {
   var panel = document.getElementById('notif-panel');
@@ -1745,31 +1756,48 @@ async function quickStamp(id) {
 
 // ---------- LEMBRETE (Wallet push) ----------
 var remindSeg = { risk: true, inactive: true };
+var remSelected = new Set();   // ids selecionados (mantidos ao pesquisar/filtrar)
 function remEsc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function remindTargets() {
   return (custCache || []).filter(function(c){ return (remindSeg.risk && c.status === 'risk') || (remindSeg.inactive && c.status === 'inactive'); });
 }
+// Fonte da lista: se houver pesquisa, procura em TODOS os clientes; senão, o segmento escolhido
+function remindSource() {
+  var s = document.getElementById('rem-search');
+  var q = s ? (s.value || '').toLowerCase().trim() : '';
+  if (q) return (custCache || []).filter(function(c){ return (c.name || '').toLowerCase().indexOf(q) >= 0 || (c.email || '').toLowerCase().indexOf(q) >= 0; });
+  return remindTargets();
+}
+function remindListHTML() {
+  var src = remindSource();
+  if (!src.length) return '<div style="text-align:center;color:var(--text3);padding:24px;font-size:13px">' + t('cust_none') + '</div>';
+  return src.map(function(c){
+    var lbl = c.status === 'risk' ? t('cust_risk') : c.status === 'inactive' ? t('cust_inactive') : (c.status === 'vip' ? 'VIP' : t('cust_active'));
+    var checked = remSelected.has(c.id) ? 'checked' : '';
+    return '<label style="display:flex;align-items:center;gap:8px;padding:7px 8px;cursor:pointer;border-bottom:1px solid var(--bg2)"><input type="checkbox" class="rem-cb" value="' + c.id + '" ' + checked + ' onchange="toggleRemSelect(this)"><span style="flex:1;font-size:14px">' + remEsc(c.name) + '</span><span class="tag ' + c.status + '" style="font-size:10px">' + lbl + '</span></label>';
+  }).join('');
+}
+function renderRemindList() { var el = document.getElementById('rem-list'); if (el) el.innerHTML = remindListHTML(); }
+function toggleRemSelect(cb) { if (cb.checked) remSelected.add(cb.value); else remSelected.delete(cb.value); updateRemCount(); }
 function openRemindModal() {
   var segChip = function(seg, label) { return '<button class="filter-chip ' + (remindSeg[seg] ? 'active' : '') + '" onclick="toggleRemindSeg(\'' + seg + '\')">' + label + '</button>'; };
   var targets = remindTargets();
-  var listHtml = targets.length ? targets.map(function(c){
-    var lbl = c.status === 'risk' ? t('cust_risk') : t('cust_inactive');
-    return '<label style="display:flex;align-items:center;gap:8px;padding:7px 8px;cursor:pointer;border-bottom:1px solid var(--bg2)"><input type="checkbox" class="rem-cb" value="' + c.id + '" checked onchange="updateRemCount()"><span style="flex:1;font-size:14px">' + remEsc(c.name) + '</span><span class="tag ' + c.status + '" style="font-size:10px">' + lbl + '</span></label>';
-  }).join('') : '<div style="text-align:center;color:var(--text3);padding:24px;font-size:13px">' + t('cust_none') + '</div>';
+  remSelected = new Set(targets.map(function(c){ return c.id; }));   // pré-selecionar o segmento
   openModal(
     '<div class="modal-h">' + ux('remindTitle') + '</div>' +
     '<div class="modal-sub">' + ux('remindSub') + '</div>' +
     '<div style="display:flex;gap:6px;margin:14px 0 8px">' + segChip('risk', t('cust_risk')) + segChip('inactive', t('cust_inactive')) + '</div>' +
-    '<div id="rem-list" style="max-height:220px;overflow:auto;border:1px solid var(--bg3);border-radius:10px;margin-bottom:12px">' + listHtml + '</div>' +
+    '<div style="position:relative;margin-bottom:8px"><input id="rem-search" type="text" placeholder="' + t('cust_search') + '" oninput="renderRemindList()" style="width:100%;padding:9px 12px;border:1px solid var(--bg3);border-radius:9px;font-size:13px"></div>' +
+    '<div id="rem-list" style="max-height:220px;overflow:auto;border:1px solid var(--bg3);border-radius:10px;margin-bottom:12px">' + remindListHTML() + '</div>' +
     '<textarea id="rem-msg" rows="3" placeholder="' + remEsc(ux('remindPh')) + '" style="width:100%;padding:11px 12px;border:1px solid var(--bg3);border-radius:8px;font-size:14px;resize:vertical;font-family:inherit"></textarea>' +
     '<div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">' + ux('remindNote') + '</div>' +
-    '<div class="modal-btns"><button class="btn-ghost" onclick="closeModal()">' + t('btn_close') + '</button><button class="btn-primary" onclick="sendReminder()">' + ux('remindSend') + ' (<span id="rem-count">' + targets.length + '</span>)</button></div>'
+    '<div class="modal-btns"><button class="btn-ghost" onclick="closeModal()">' + t('btn_close') + '</button><button class="btn-primary" onclick="sendReminder()">' + ux('remindSend') + ' (<span id="rem-count">' + remSelected.size + '</span>)</button></div>'
   );
 }
 function toggleRemindSeg(seg) { remindSeg[seg] = !remindSeg[seg]; openRemindModal(); }
-function updateRemCount() { var el = document.getElementById('rem-count'); if (el) el.textContent = document.querySelectorAll('.rem-cb:checked').length; }
+function updateRemCount() { var el = document.getElementById('rem-count'); if (el) el.textContent = remSelected.size; }
 async function sendReminder() {
-  var ids = Array.prototype.slice.call(document.querySelectorAll('.rem-cb:checked')).map(function(cb){ return cb.value; });
+  var ids = Array.from(remSelected);
   var msg = ((document.getElementById('rem-msg') || {}).value || '').trim();
   if (!ids.length) { toast(ux('remindNobody')); return; }
   if (!msg) { toast(ux('remindEmpty')); return; }
