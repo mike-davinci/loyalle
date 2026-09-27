@@ -1677,7 +1677,6 @@ async function renderCustomers() {
     return `<tr>
       <td><div class="cust-cell"><div class="cust-avatar" style="background:${c.color}">${initials}</div><div><div class="cust-name">${c.name}</div><div class="cust-email">${c.email}</div></div></div></td>
       <td><div class="progress-mini"><div class="progress-mini-fill" style="width:${pct}%"></div></div><span style="font-size:13px;font-weight:600">${c.stamps}/${c.goal}</span></td>
-      <td style="font-family:var(--fh);font-weight:700">${c.points}</td>
       <td>${c.visits}</td>
       <td style="color:var(--text3);font-size:13px">${c.lastVisit}</td>
       <td>${statusTag}</td>
@@ -1700,8 +1699,8 @@ async function renderCustomers() {
         <button class="btn-acc" onclick="openAddCustomer()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>${t('cust_add_short')}</button>
       </div>
       <table>
-        <thead><tr><th class="sortable" onclick="toggleSort('name')">${t('cust_name')} <span class="sort-arrow">${custSortField==='name'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('stamps')">${t('cust_progress')} <span class="sort-arrow">${custSortField==='stamps'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('points')">${t('cust_points')} <span class="sort-arrow">${custSortField==='points'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('visits')">${t('cust_visits')} <span class="sort-arrow">${custSortField==='visits'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('lastVisit')">${t('cust_last')} <span class="sort-arrow">${custSortField==='lastVisit'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('status')">${t('cust_status')} <span class="sort-arrow">${custSortField==='status'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th></th></tr></thead>
-        <tbody>${rows || ('<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:40px">' + t('cust_none') + '</td></tr>')}</tbody>
+        <thead><tr><th class="sortable" onclick="toggleSort('name')">${t('cust_name')} <span class="sort-arrow">${custSortField==='name'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('stamps')">${t('cust_progress')} <span class="sort-arrow">${custSortField==='stamps'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('visits')">${t('cust_visits')} <span class="sort-arrow">${custSortField==='visits'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('lastVisit')">${t('cust_last')} <span class="sort-arrow">${custSortField==='lastVisit'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th class="sortable" onclick="toggleSort('status')">${t('cust_status')} <span class="sort-arrow">${custSortField==='status'?(custSortDir==='asc'?'↑':'↓'):''}</span></th><th></th></tr></thead>
+        <tbody>${rows || ('<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:40px">' + t('cust_none') + '</td></tr>')}</tbody>
       </table>
       ${totalN > CUST_PAGE_SIZE ? `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--text2)">
@@ -1803,10 +1802,6 @@ async function openCustomerDetail(id) {
       <div style="flex:1;text-align:center;background:var(--bg2);border-radius:12px;padding:14px">
         <div style="font-family:var(--fh);font-size:22px;font-weight:700">${c.stamps}/${c.goal}</div>
         <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${t('cd_stamps')}</div>
-      </div>
-      <div style="flex:1;text-align:center;background:var(--bg2);border-radius:12px;padding:14px">
-        <div style="font-family:var(--fh);font-size:22px;font-weight:700">${c.points}</div>
-        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${ux('points')}</div>
       </div>
       <div style="flex:1;text-align:center;background:var(--bg2);border-radius:12px;padding:14px">
         <div style="font-family:var(--fh);font-size:22px;font-weight:700">${c.visits}</div>
@@ -1925,7 +1920,7 @@ function renderScanResults(q) {
   const list = custCache.filter(c => !q || c.name.toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q)).slice(0, 5);
   document.getElementById('scan-results').innerHTML = list.map(c => {
     const initials = c.name.split(' ').map(n => n[0]).slice(0, 2).join('');
-    return `<div class="act-item"><div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer" onclick="openCustomerDetail('${c.id}')"><div class="cust-avatar" style="background:${c.color}">${initials}</div><div class="act-txt" style="min-width:0"><b>${c.name}</b><div style="color:var(--text3);font-size:12px">${c.stamps}/${c.goal} ${ux('stampsWord')} · ${c.points} pts</div></div></div><button class="row-action" onclick="quickStamp('${c.id}');renderScanResults(document.getElementById('scan-search').value)">${ux('btnStamp')}</button></div>`;
+    return `<div class="act-item"><div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer" onclick="openCustomerDetail('${c.id}')"><div class="cust-avatar" style="background:${c.color}">${initials}</div><div class="act-txt" style="min-width:0"><b>${c.name}</b><div style="color:var(--text3);font-size:12px">${c.stamps}/${c.goal} ${ux('stampsWord')}</div></div></div><button class="row-action" onclick="quickStamp('${c.id}');renderScanResults(document.getElementById('scan-search').value)">${ux('btnStamp')}</button></div>`;
   }).join('') || ('<div style="color:var(--text3);font-size:13px;padding:8px 0">' + t('cust_none') + '</div>');
 }
 function initScanner() { /* lazy — only on activate */ }
