@@ -1360,13 +1360,33 @@ async function buildNotifications() {
   try {
     var custs = await API.getCustomers();
     if (!custs) return out;
-    var ready = custs.filter(function(c){ return c.goal > 0 && c.stamps >= c.goal; });
-    var inactive = custs.filter(function(c){ return c.status === 'inactive'; });
+    var goalOf = function(c){ return c.goal || 10; };
+    // 1) Cartão completo — pronto a resgatar (o mais importante)
+    var ready = custs.filter(function(c){ return goalOf(c) > 0 && c.stamps >= goalOf(c); });
+    // 2) Quase a completar — a 1-2 carimbos (empurrão que converte)
+    var almost = custs.filter(function(c){ var g = goalOf(c); return c.stamps > 0 && c.stamps >= g - 2 && c.stamps < g; })
+                      .sort(function(a,b){ return (goalOf(a)-a.stamps) - (goalOf(b)-b.stamps); });
+    // 3) Em risco — prestes a perder (reativar antes de desaparecer)
+    var risk = custs.filter(function(c){ return c.status === 'risk'; });
+    // 4) Novos registos de hoje (agrupados)
     var today = new Date(); today.setHours(0,0,0,0);
     var newToday = custs.filter(function(c){ return c.createdRaw && new Date(c.createdRaw) >= today; });
-    ready.slice(0,6).forEach(function(c){ out.push({ cls:'ok', icon:ICON('check',16), id:c.id, t:c.name + ' — cartão completo', d:'Pronto a resgatar (' + c.stamps + '/' + c.goal + ')' }); });
-    inactive.slice(0,5).forEach(function(c){ out.push({ cls:'warn', icon:ICON('clock',16), id:c.id, t:c.name + ' — inativo', d:'Sem visitar · ' + c.lastVisit }); });
-    newToday.slice(0,5).forEach(function(c){ out.push({ cls:'info', icon:ICON('userplus',16), id:c.id, t:c.name + ' — novo registo', d:'Aderiu hoje' }); });
+
+    ready.slice(0,6).forEach(function(c){
+      out.push({ cls:'ok', icon:ICON('gift',16), id:c.id, t:c.name + ' — cartão completo', d:'Pronto a resgatar (' + c.stamps + '/' + goalOf(c) + ')' });
+    });
+    almost.slice(0,6).forEach(function(c){
+      var rem = goalOf(c) - c.stamps;
+      out.push({ cls:'info', icon:ICON('target',16), id:c.id, t:c.name + ' — quase lá', d:(rem === 1 ? 'Falta 1 carimbo' : 'Faltam ' + rem + ' carimbos') + ' para o prémio' });
+    });
+    risk.slice(0,5).forEach(function(c){
+      out.push({ cls:'warn', icon:ICON('clock',16), id:c.id, t:c.name + ' — em risco', d:'Anda sem aparecer · ' + c.lastVisit });
+    });
+    if (newToday.length) {
+      out.push({ cls:'info', icon:ICON('userplus',16), id:'',
+        t: newToday.length === 1 ? '1 novo cliente hoje' : newToday.length + ' novos clientes hoje',
+        d: newToday.length === 1 ? (newToday[0].name + ' aderiu hoje') : 'Aderiram hoje' });
+    }
   } catch(e) { console.warn('Notificações:', e); }
   return out;
 }
@@ -1398,7 +1418,8 @@ function openNotif(id) {
   if (panel) panel.classList.remove('open');
   var custBtn = document.querySelectorAll('.sb-item')[1];
   nav('customers', custBtn);
-  if (typeof openCustomerDetail === 'function') openCustomerDetail(id);
+  // Item agrupado (novos registos) não tem cliente específico → só abre a página Clientes
+  if (id && typeof openCustomerDetail === 'function') openCustomerDetail(id);
 }
 // Fechar o painel ao clicar fora
 document.addEventListener('click', function(e){
