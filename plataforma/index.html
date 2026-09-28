@@ -117,6 +117,8 @@ a{text-decoration:none;color:inherit}
 .sb-logo span{color:var(--acc)}
 .sb-biz{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;margin-bottom:24px;display:flex;align-items:center;gap:10px}
 .sb-biz-logo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--acc2),var(--acc));display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;font-size:16px;color:var(--dark);flex-shrink:0}
+.sb-biz-logo.has-img{background:transparent;overflow:hidden}
+.sb-biz-logo img{width:100%;height:100%;object-fit:cover;display:block}
 .sb-biz-name{font-size:13px;font-weight:700;color:#fff;line-height:1.2}
 .sb-biz-plan{font-size:11px;color:var(--acc);margin-top:1px}
 .sb-nav{display:flex;flex-direction:column;gap:2px;flex:1}
@@ -986,7 +988,22 @@ function setPlatformUser(biz) {
   const bn = document.getElementById('sb-biz-name');
   const bl = document.getElementById('sb-biz-logo');
   if (bn) bn.textContent = biz.name || '—';
-  if (bl) bl.textContent = (biz.logo_initial || biz.name || '?')[0].toUpperCase();
+  if (bl) {
+    // Usa o logo do Cartão & Branding como imagem do negócio; sem logo, mostra a inicial do nome atual
+    var initial = (biz.name || biz.logo_initial || '?')[0].toUpperCase();
+    var logo = biz.logo_url || biz.wallet_logo_url;
+    bl.textContent = '';
+    bl.classList.remove('has-img');
+    if (logo) {
+      var img = document.createElement('img');
+      img.src = logo; img.alt = biz.name || '';
+      img.onerror = function(){ bl.classList.remove('has-img'); bl.textContent = initial; };
+      bl.appendChild(img);
+      bl.classList.add('has-img');
+    } else {
+      bl.textContent = initial;
+    }
+  }
   try { renderTrialBanner(); } catch(e) {}   // countdown do teste / barreira de fim
 }
 async function doLogin() {
@@ -2237,10 +2254,11 @@ async function saveAccount() {
   var biz = (document.getElementById('set-biz').value || '').trim();
   if (!currentBiz || !currentBiz.id) { toast(t('ts_no_session')); return; }
   if (!biz) { toast(t('ts_biz_empty')); return; }
-  var { error } = await db.from('businesses').update({ owner_name: name, name: biz }).eq('id', currentBiz.id);
+  var { error } = await db.from('businesses').update({ owner_name: name, name: biz, logo_initial: biz[0].toUpperCase() }).eq('id', currentBiz.id);
   if (error) { toast('Erro ao guardar: ' + error.message); return; }
   currentBiz.owner_name = name;
   currentBiz.name = biz;
+  currentBiz.logo_initial = biz[0].toUpperCase();
   try { setPlatformUser(currentBiz); } catch(e) {}
   toast(t('ts_saved'));
 }
@@ -2297,6 +2315,7 @@ async function saveBranding() {
     var { error } = await db.from('businesses').update(update).eq('id', currentBiz.id);
     if (error) { toast('Erro ao guardar: ' + error.message); return; }
     Object.assign(currentBiz, update);
+    try { setPlatformUser(currentBiz); } catch(e) {}
     window.__prevLogo = null; window.__prevBanner = null;
     window.__logoBlob = null; window.__bannerBlob = null;
     // Mudou o nº de carimbos → refresca os passes já instalados (atualizam na hora, não só ao próximo carimbo)
