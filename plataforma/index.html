@@ -1385,18 +1385,18 @@ function showTrialGate(reason) {
   var c = document.getElementById('trial-gate-content');
   if (!gate || !c) return;
   var isStart = reason === 'start';
-  upCycle = 'monthly';
+  upCycle = 'annual';
   c.innerHTML =
     '<div style="text-align:center;margin-bottom:6px;color:var(--acc)">' + ICON(isStart ? 'gift' : 'clock', 34) + '</div>' +
     '<div class="modal-h" style="text-align:center">' + ux(isStart ? 'startTitle' : 'trialEndedTitle') + '</div>' +
     '<div class="modal-sub" style="text-align:center;margin-bottom:16px">' + ux(isStart ? 'startSub' : 'trialEndedSub') + '</div>' +
     '<div style="display:flex;gap:8px;margin-bottom:12px;justify-content:center">' +
-      '<button id="gate-m" class="filter-chip active" onclick="setGateCycle(\'monthly\')">' + t('up_monthly') + '</button>' +
-      '<button id="gate-a" class="filter-chip" onclick="setGateCycle(\'annual\')">' + t('up_annual') + '</button>' +
+      '<button id="gate-m" class="filter-chip" onclick="setGateCycle(\'monthly\')">' + t('up_monthly') + '</button>' +
+      '<button id="gate-a" class="filter-chip active" onclick="setGateCycle(\'annual\')">' + t('up_annual') + '</button>' +
     '</div>' +
     '<div style="display:flex;flex-direction:column;gap:10px">' +
-      '<button class="btn-ghost" style="justify-content:space-between;display:flex;align-items:center" onclick="startCheckout(\'Starter\')"><span>Starter</span><span id="gate-p-starter" style="font-weight:700">€' + UP_PRICES.Starter.monthly + t('per_month') + '</span></button>' +
-      '<button class="btn-primary" style="justify-content:space-between;display:flex;align-items:center" onclick="startCheckout(\'Pro\')"><span>Pro</span><span id="gate-p-pro" style="font-weight:700">€' + UP_PRICES.Pro.monthly + t('per_month') + '</span></button>' +
+      '<button class="btn-ghost" style="justify-content:space-between;display:flex;align-items:center" onclick="startCheckout(\'Starter\')"><span>Starter</span><span id="gate-p-starter" style="font-weight:700">€' + UP_PRICES.Starter.annual + t('per_month_annual') + '</span></button>' +
+      '<button class="btn-primary" style="justify-content:space-between;display:flex;align-items:center" onclick="startCheckout(\'Pro\')"><span>Pro</span><span id="gate-p-pro" style="font-weight:700">€' + UP_PRICES.Pro.annual + t('per_month_annual') + '</span></button>' +
     '</div>' +
     '<div style="text-align:center;margin-top:16px"><a href="#" onclick="logout();return false" style="font-size:13px;color:var(--text3);text-decoration:none">' + ux('trialLogout') + '</a></div>';
   gate.classList.add('show');
@@ -3702,17 +3702,17 @@ async function resetPassword() {
 var upCycle = 'monthly';
 var UP_PRICES = { Starter: { monthly: '35', annual: '28' }, Pro: { monthly: '69', annual: '55' } };
 function openUpgrade() {
-  upCycle = 'monthly';
+  upCycle = 'annual';
   openModal(
     '<div class="modal-h">' + t('up_title') + '</div>' +
     '<div class="modal-sub">' + t('up_sub') + '</div>' +
     '<div style="display:flex;gap:8px;margin:16px 0 14px">' +
-      '<button id="up-m" class="filter-chip active" onclick="setUpCycle(\'monthly\')">' + t('up_monthly') + '</button>' +
-      '<button id="up-a" class="filter-chip" onclick="setUpCycle(\'annual\')">' + t('up_annual') + '</button>' +
+      '<button id="up-m" class="filter-chip" onclick="setUpCycle(\'monthly\')">' + t('up_monthly') + '</button>' +
+      '<button id="up-a" class="filter-chip active" onclick="setUpCycle(\'annual\')">' + t('up_annual') + '</button>' +
     '</div>' +
     '<div style="display:flex;flex-direction:column;gap:10px">' +
-      '<button class="btn-ghost" style="justify-content:space-between;display:flex;align-items:center" onclick="startCheckout(\'Starter\')"><span>Starter</span><span id="up-p-starter" style="font-weight:700">€' + UP_PRICES.Starter.monthly + t('per_month') + '</span></button>' +
-      '<button class="btn-primary" style="justify-content:space-between;display:flex;align-items:center" onclick="startCheckout(\'Pro\')"><span>Pro</span><span id="up-p-pro" style="font-weight:700">€' + UP_PRICES.Pro.monthly + t('per_month') + '</span></button>' +
+      '<button class="btn-ghost" style="justify-content:space-between;display:flex;align-items:center" onclick="startCheckout(\'Starter\')"><span>Starter</span><span id="up-p-starter" style="font-weight:700">€' + UP_PRICES.Starter.annual + t('per_month_annual') + '</span></button>' +
+      '<button class="btn-primary" style="justify-content:space-between;display:flex;align-items:center" onclick="startCheckout(\'Pro\')"><span>Pro</span><span id="up-p-pro" style="font-weight:700">€' + UP_PRICES.Pro.annual + t('per_month_annual') + '</span></button>' +
     '</div>' +
     '<div style="text-align:center;margin-top:14px"><a href="mailto:team@loyalle.pt?subject=Plano%20Business" style="font-size:13px;color:var(--text3);text-decoration:none">' + t('up_business') + '</a></div>'
   );
