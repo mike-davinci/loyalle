@@ -430,6 +430,7 @@ tbody tr:hover{background:var(--bg)}
     if(_hasBiz){
       try{var _sp=document.getElementById('sb-plan'); if(_sp) _sp.textContent=t('sb_plan').replace('{plan}', currentBiz.plan);}catch(e){}
       try{renderNotifs()}catch(e){}
+      try{startNotifAutoRefresh()}catch(e){}
       try{renderTrialBanner()}catch(e){}
     }
     if(!_hasBiz){ try{updateSignupTrial()}catch(e){} return; }
@@ -1480,6 +1481,20 @@ async function renderNotifs() {
     items.map(function(n){
       return '<div class="notif-item" onclick="openNotif(\'' + n.id + '\')"><div class="notif-ic ' + n.cls + '">' + n.icon + '</div><div><div class="notif-t">' + n.t + '</div><div class="notif-d">' + n.d + '</div></div></div>';
     }).join('');
+}
+// Atualização automática das notificações (ponto + lista) sem recarregar a página.
+// Corre a cada 45s (só com a tab visível) e imediatamente quando voltas à tab.
+var __notifTimer = null;
+function startNotifAutoRefresh() {
+  if (__notifTimer) return;   // já ligado
+  __notifTimer = setInterval(function () {
+    if (document.hidden) return;                 // não gasta recursos com a tab escondida
+    if (!currentBiz || !currentBiz.id) return;   // só com sessão iniciada
+    renderNotifs().catch(function () {});
+  }, 45000);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && currentBiz && currentBiz.id) renderNotifs().catch(function () {});
+  });
 }
 function toggleNotifs(ev) {
   if (ev) ev.stopPropagation();
