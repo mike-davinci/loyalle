@@ -3255,7 +3255,7 @@ function getDisplayConfig() {
     bgImageFit: c.bgImageFit || 'cover',
     bgOverlay: (c.bgOverlay != null) ? c.bgOverlay : 50,
     accent: c.accent || (currentBiz && currentBiz.brand_color) || '#C6993B',
-    logoStyle: c.logoStyle || 'box',
+    logoStyle: c.logoStyle || 'plain',   // por defeito sem caixa branca (marca de água)
     headline: (c.headline != null) ? c.headline : 'Junta carimbos e ganha',
     subtitle: (c.subtitle != null) ? c.subtitle : 'O teu cartão no telemóvel — sem instalar nenhuma app.'
   };
