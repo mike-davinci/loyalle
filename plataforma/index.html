@@ -2237,11 +2237,14 @@ async function saveAccount() {
   var biz = (document.getElementById('set-biz').value || '').trim();
   if (!currentBiz || !currentBiz.id) { toast(t('ts_no_session')); return; }
   if (!biz) { toast(t('ts_biz_empty')); return; }
+  var nameChanged = biz !== currentBiz.name;
   var { error } = await db.from('businesses').update({ owner_name: name, name: biz }).eq('id', currentBiz.id);
   if (error) { toast('Erro ao guardar: ' + error.message); return; }
   currentBiz.owner_name = name;
   currentBiz.name = biz;
   try { setPlatformUser(currentBiz); } catch(e) {}
+  // Nome do negócio mudou → refresca os passes (Apple + Google class)
+  if (nameChanged) { try { fetch(WALLET_BACKEND_URL + '/' + currentBiz.slug + '/refresh-passes', { method: 'POST' }); } catch (e) {} }
   toast(t('ts_saved'));
 }
 
@@ -2299,8 +2302,8 @@ async function saveBranding() {
     Object.assign(currentBiz, update);
     window.__prevLogo = null; window.__prevBanner = null;
     window.__logoBlob = null; window.__bannerBlob = null;
-    // Mudou o nº de carimbos → refresca os passes já instalados (atualizam na hora, não só ao próximo carimbo)
-    if (goalChanged) { try { fetch(WALLET_BACKEND_URL + '/' + currentBiz.slug + '/refresh-passes', { method: 'POST' }); } catch (e) {} }
+    // Branding mudou (logo, cores, prémio, objetivo…) → refresca os passes já instalados
+    try { fetch(WALLET_BACKEND_URL + '/' + currentBiz.slug + '/refresh-passes', { method: 'POST' }); } catch (e) {}
     toast(t('ts_branding_updated'));
     renderCard();
   } catch (e) {
