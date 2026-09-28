@@ -2446,17 +2446,8 @@ async function confirmRedeem(id) {
 const _origAddStamp = API.addStamp.bind(API);
 API.addStamp = async function(id) {
   const result = await _origAddStamp(id);
-  // Remendo frontend: garantir que visits e last_visit são incrementados
-  // (enquanto o trigger do backend não o faz). Idempotente e seguro.
-  try {
-    if (result) {
-      await db.from('customers').update({
-        visits: (result.visits || 0) + 1,
-        last_visit: new Date().toISOString()
-      }).eq('id', id);
-      result.visits = (result.visits || 0) + 1;
-    }
-  } catch(e) { console.warn('visits bump:', e); }
+  // As visitas são recontadas pelo trigger da BD (loyalle_recount_visits):
+  // visits = nº real de carimbos. NÃO somar aqui — senão duplica com o trigger.
   // Fire-and-forget: não bloqueia a UI enquanto atualiza a wallet
   fetch(WALLET_BACKEND_URL + '/' + currentBiz.slug + '/update-pass/' + id, { method: 'POST' }).catch(() => {});
   return result;
