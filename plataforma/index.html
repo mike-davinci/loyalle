@@ -984,7 +984,7 @@ function updateSignupTrial() {
 }
 
 // Ciclo de faturação Mensal/Anual (preços iguais aos da landing: -20% no anual)
-let annualBilling = false;
+let annualBilling = true;   // abre já em Anual (poupança -20% em destaque)
 const planPrices = { monthly: [35, 69], annual: [28, 55] };
 function setBilling(annual) {
   annualBilling = annual;
