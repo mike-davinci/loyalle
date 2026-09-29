@@ -406,8 +406,7 @@ function applyBranding(biz) {
   document.getElementById('reward-title').textContent = biz.reward_text || 'Recompensa';
 
   document.getElementById('hero-sub').innerHTML =
-    'Junta carimbos a cada visita e ganha o <b>' + escapeHtml(biz.reward_text || 'teu prémio') + '</b>.<br>Tudo no teu telemóvel, sem app.'
-    + (biz.stamp_rule ? '<br><span style="display:inline-block;margin-top:8px;color:var(--text)"><b>Como ganhar:</b> ' + escapeHtml(biz.stamp_rule) + '</span>' : '');
+    'Junta carimbos a cada visita e ganha o <b>' + escapeHtml(biz.reward_text || 'teu prémio') + '</b>.<br>Tudo no teu telemóvel, sem app.';
 
   document.title = 'Cartão ' + biz.name + ' · Loyalle';
 }
