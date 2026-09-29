@@ -1176,9 +1176,14 @@ async function enterApp(biz, opts) {
 // Boas-vindas no primeiro login: aponta para o guia "Como funciona" (mostrado só uma vez)
 function maybeShowWelcome() {
   if (!currentBiz || !currentBiz.id) return;
+  // Marca guardada na CONTA (vale para qualquer dispositivo/browser) — não reaparece
+  if (currentBiz.welcomed === true) return;
   var key = 'loyalle_welcomed_' + currentBiz.id;
   try { if (localStorage.getItem(key)) return; } catch (e) {}
   try { localStorage.setItem(key, '1'); } catch (e) {}
+  // Grava também na conta para não voltar a aparecer noutro dispositivo/browser
+  currentBiz.welcomed = true;
+  try { db.from('businesses').update({ welcomed: true }).eq('id', currentBiz.id); } catch (e) {}
   var first = ((currentBiz.owner_name || '').trim().split(' ')[0]) || '';
   var steps = [
     [t('hw_s1_t'), t('hw_s1_d')],
