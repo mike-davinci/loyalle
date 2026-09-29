@@ -2528,8 +2528,6 @@ async function saveBranding() {
     };
     var rw = document.getElementById('brand-reward');
     if (rw && rw.value.trim()) update.reward_text = rw.value.trim();
-    var sr = document.getElementById('brand-stamprule');
-    if (sr) update.stamp_rule = sr.value.trim();
     var gl = document.getElementById('brand-goal');
     if (gl) { var glv = parseInt(gl.value, 10); if (glv >= 1) update.stamp_goal = glv; }
     var goalChanged = ('stamp_goal' in update) && update.stamp_goal !== currentBiz.stamp_goal;
@@ -3154,7 +3152,6 @@ function renderCard() {
   var bannerU = (currentBiz && currentBiz.banner_url) || '';
   var name = (currentBiz && currentBiz.name) || 'O teu negócio';
   var reward = (currentBiz && currentBiz.reward_text) || 'Prémio de fidelidade';
-  var stampRule = (currentBiz && currentBiz.stamp_rule) || '';
   var goal = (currentBiz && currentBiz.stamp_goal) || 10;
   var cardLink = getCardLink();
   var q = function(v) { return String(v).replace(/"/g, '&quot;'); };
@@ -3183,7 +3180,6 @@ function renderCard() {
           // Prémio e carimbos
           '<div class="bf-sec"><div class="bf-sec-t">' + t('bf_sec_reward') + '</div>' +
             '<div class="field"><label>' + t('f_reward') + '</label><input type="text" id="brand-reward" value="' + q(reward) + '" oninput="updateCardPreview()" placeholder="' + t('ph_reward_ex') + '"></div>' +
-            '<div class="field"><label>' + t('f_stamp_rule') + '</label><input type="text" id="brand-stamprule" value="' + q(stampRule) + '" oninput="updateCardPreview()" placeholder="' + t('ph_stamp_rule') + '"><div class="bf-help">' + t('f_stamp_rule_hint') + '</div></div>' +
             '<div class="field"><label>' + t('f_goal') + '</label><input type="number" id="brand-goal" min="1" max="50" value="' + goal + '" oninput="updateCardPreview()" style="width:120px"></div>' +
             '<div class="field"><label>' + t('f_stamp_icon') + '</label><div id="stamp-icon-row" style="display:flex;flex-wrap:wrap;gap:8px">' + stampIconPickerHTML(currentBiz && currentBiz.stamp_icon) + '</div><div class="bf-help">' + t('f_stamp_icon_hint') + '</div></div>' +
           '</div>' +
@@ -3371,6 +3367,7 @@ function displayEditorHTML() {
     '<div class="bf-sec"><div class="bf-sec-t">' + t('bf_sec_text') + '</div>' +
       '<div class="field"><label>' + t('disp_headline_lbl') + '</label><input type="text" id="disp-headline" value="' + q(cfg.headline) + '" oninput="updateDisplayPreview()"></div>' +
       '<div class="field"><label>' + t('disp_subtitle_lbl') + '</label><input type="text" id="disp-subtitle" value="' + q(cfg.subtitle) + '" oninput="updateDisplayPreview()"></div>' +
+      '<div class="field"><label>' + t('f_stamp_rule') + '</label><input type="text" id="disp-stamprule" value="' + q(cfg.stampRule || '') + '" oninput="updateDisplayPreview()" placeholder="' + t('ph_stamp_rule') + '"><div class="bf-help">' + t('f_stamp_rule_hint') + '</div></div>' +
     '</div>' +
     '<div class="bf-actions"><button class="btn-primary" id="disp-save-btn" onclick="saveDisplay()">' + t('br_save_display') + '</button><button class="btn-dark" style="display:flex;align-items:center;gap:6px;justify-content:center;padding:13px" onclick="openStoreDisplay()">' + ICON('external', 16) + ' ' + t('disp_open_print') + '</button></div>' +
   '</div>';
@@ -3429,6 +3426,7 @@ function getDisplayConfig() {
     accent: c.accent || (currentBiz && currentBiz.brand_color) || '#C6993B',
     stepColor: c.stepColor || c.accent || (currentBiz && currentBiz.brand_color) || '#C6993B',
     logoStyle: c.logoStyle || 'plain',   // por defeito sem caixa branca (marca de água)
+    stampRule: (c.stampRule != null) ? c.stampRule : ((currentBiz && currentBiz.stamp_rule) || ''),   // "Como se ganha" — no cartaz
     headline: (c.headline != null) ? c.headline : t('disp_headline_def'),
     subtitle: (c.subtitle != null) ? c.subtitle : t('disp_subtitle_def')
   };
@@ -3449,6 +3447,7 @@ function currentDisplayCfg() {
     accent: g('disp-accent') || saved.accent,
     stepColor: g('disp-stepcolor') || saved.stepColor,
     logoStyle: g('disp-logostyle') || saved.logoStyle,
+    stampRule: (g('disp-stamprule') != null) ? g('disp-stamprule') : saved.stampRule,
     headline: (g('disp-headline') != null) ? g('disp-headline') : saved.headline,
     subtitle: (g('disp-subtitle') != null) ? g('disp-subtitle') : saved.subtitle
   };
@@ -3496,7 +3495,7 @@ function posterDivHTML(cfg, qrInner) {
   var px = function(v){ return Math.round(v * k) + 'px'; };
   var name = (currentBiz && currentBiz.name) || 'A tua loja';
   var reward = (currentBiz && currentBiz.reward_text) || 'um prémio';
-  var stampRule = (currentBiz && currentBiz.stamp_rule) || '';
+  var stampRule = cfg.stampRule || '';
   var logo = (currentBiz && (currentBiz.wallet_logo_url || currentBiz.logo_url)) || '';
   var accent = cfg.accent;
   var stepC = cfg.stepColor || accent;                              // cor das bolas dos números (independente do destaque)
