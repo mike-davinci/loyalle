@@ -406,7 +406,8 @@ function applyBranding(biz) {
   document.getElementById('reward-title').textContent = biz.reward_text || 'Recompensa';
 
   document.getElementById('hero-sub').innerHTML =
-    'Junta carimbos a cada visita e ganha o <b>' + escapeHtml(biz.reward_text || 'teu prémio') + '</b>.<br>Tudo no teu telemóvel, sem app.';
+    'Junta carimbos a cada visita e ganha o <b>' + escapeHtml(biz.reward_text || 'teu prémio') + '</b>.<br>Tudo no teu telemóvel, sem app.'
+    + (biz.stamp_rule ? '<br><span style="display:inline-block;margin-top:8px;color:var(--text)"><b>Como ganhar:</b> ' + escapeHtml(biz.stamp_rule) + '</span>' : '');
 
   document.title = 'Cartão ' + biz.name + ' · Loyalle';
 }
@@ -524,7 +525,7 @@ async function addWallet(type) {
 
   try {
     var res = await db.from('businesses')
-      .select('id,name,slug,tagline,mechanic,stamp_goal,reward_text,brand_color,bg_color,color_text,logo_url,wallet_logo_url,logo_initial,status,plan')
+      .select('id,name,slug,tagline,mechanic,stamp_goal,reward_text,stamp_rule,brand_color,bg_color,color_text,logo_url,wallet_logo_url,logo_initial,status,plan')
       .eq('slug', BUSINESS_SLUG)
       .single();
 
