@@ -916,15 +916,25 @@ const API = {
   },
   // GET dados de visitas dos últimos 7 dias (para o gráfico)
   async getWeekData() {
-    const labels = [t('day_sun'),t('day_mon'),t('day_tue'),t('day_wed'),t('day_thu'),t('day_fri'),t('day_sat')];
-    const counts = [0,0,0,0,0,0,0];
-    const weekAgo = new Date(Date.now() - 7*864e5).toISOString();
+    // Janela móvel: os últimos 7 dias de calendário, a acabar HOJE (hoje é a última barra).
+    // Cada barra conta só as visitas DESSE dia (não todas as quartas, etc.).
+    const dayLabels = [t('day_sun'),t('day_mon'),t('day_tue'),t('day_wed'),t('day_thu'),t('day_fri'),t('day_sat')];
+    const now = new Date();
+    const buckets = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      buckets.push({ key: d.toDateString(), d: dayLabels[d.getDay()], v: 0 });
+    }
+    const weekAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6).toISOString();
     const { data } = await db.from('transactions')
       .select('created_at').eq('business_id', currentBiz.id)
       .eq('type','stamp').gte('created_at', weekAgo);
-    (data || []).forEach(t => { counts[new Date(t.created_at).getDay()]++; });
-    const order = [1,2,3,4,5,6,0];
-    return order.map(i => ({ d: labels[i], v: counts[i] }));
+    (data || []).forEach(t => {
+      const key = new Date(t.created_at).toDateString();
+      const b = buckets.find(x => x.key === key);
+      if (b) b.v++;
+    });
+    return buckets.map(b => ({ d: b.d, v: b.v }));
   },
   // GET visitas dos últimos 6 meses (agrupadas por mês) para o gráfico
   async getMonthData() {
