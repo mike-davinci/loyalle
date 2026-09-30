@@ -524,7 +524,7 @@ async function addWallet(type) {
 
   try {
     var res = await db.from('businesses')
-      .select('id,name,slug,tagline,mechanic,stamp_goal,reward_text,stamp_rule,brand_color,bg_color,color_text,logo_url,wallet_logo_url,logo_initial,status,plan')
+      .select('id,name,slug,tagline,mechanic,stamp_goal,reward_text,brand_color,bg_color,color_text,logo_url,wallet_logo_url,logo_initial,status,plan')
       .eq('slug', BUSINESS_SLUG)
       .single();
 
