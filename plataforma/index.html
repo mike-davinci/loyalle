@@ -2142,6 +2142,8 @@ async function toggleVip(id) {
   var res = await db.from('customers').update({ status: newStatus }).eq('id', id);
   if (res.error) { toast('Erro: ' + res.error.message); return; }
   c.status = computeCustStatus(c.lastVisitRaw, c.createdRaw, newStatus);
+  // Atualiza o cartão na Wallet para o estatuto VIP aparecer/desaparecer
+  try { fetch(WALLET_BACKEND_URL + '/' + currentBiz.slug + '/update-pass/' + id, { method: 'POST' }); } catch (e) {}
   closeModal();
   toast(makeVip ? ux('vipOn') : ux('vipOff'));
   try { renderCustomers(); renderDashboard(); } catch(e) {}
