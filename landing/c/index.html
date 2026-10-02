@@ -290,8 +290,8 @@ body{padding:32px 16px 56px}
       <input type="text" id="client-name" placeholder="Ex: Maria Silva" required>
     </div>
     <div class="form-field">
-      <label for="client-email">Email <span class="optional">(opcional)</span></label>
-      <input type="email" id="client-email" placeholder="Ex: maria@email.com">
+      <label for="client-email">Email</label>
+      <input type="email" id="client-email" placeholder="Ex: maria@email.com" required>
     </div>
     <label class="terms-consent" for="client-terms">
       <input type="checkbox" id="client-terms">
@@ -500,6 +500,8 @@ async function addWallet(type) {
     var name  = document.getElementById('client-name').value.trim();
     var email = document.getElementById('client-email').value.trim();
     if (!name) { toast('Escreve o teu nome para continuar'); document.getElementById('client-name').focus(); return; }
+    if (!email) { toast('Escreve o teu email para continuar'); document.getElementById('client-email').focus(); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Escreve um email válido'); document.getElementById('client-email').focus(); return; }
     var termsBox = document.getElementById('client-terms');
     if (termsBox && !termsBox.checked) { toast('Para continuares, aceita os Termos e a Política de Privacidade'); return; }
 
