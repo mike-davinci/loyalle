@@ -271,6 +271,18 @@ body{padding:32px 16px 56px}
 
   <div class="progress-line" id="progress-line"></div>
 
+  <!-- Auto-carimbo (modo "Por visita") -->
+  <div id="selfstamp-block" style="display:none;margin:4px 0 2px">
+    <button id="selfstamp-btn" onclick="doSelfStamp()"
+      style="width:100%;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;gap:10px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 5.9 6.6.9-4.8 4.6 1.1 6.5-5.8-3-5.8 3 1.1-6.5L2.5 9.3l6.6-.9L12 2.5z"/></svg>
+      <span id="selfstamp-btn-txt">Carimbar a minha visita</span>
+    </button>
+    <div id="selfstamp-hint" style="text-align:center;font-size:12.5px;color:rgba(255,255,255,.65);margin-top:9px;line-height:1.5">
+      Estás no balcão? Carrega para juntares o teu carimbo de hoje.
+    </div>
+  </div>
+
   <!-- Formulário -->
   <div class="wallet-form" id="wallet-form">
     <div class="form-field">
@@ -331,6 +343,13 @@ var BUSINESS_SLUG = null;
 var existingCustomerId = null;
 var FILLED = 0;
 var GOAL = 10;
+var STAMP_MODE = 'purchase';   // 'purchase' = staff carimba | 'visit' = o cliente faz scan
+var SELF_BUSY = false;
+
+// Guarda/recupera o cartão do cliente neste dispositivo (para o modo "Por visita")
+function lsKey() { return 'loyalle_c_' + (BUSINESS_SLUG || ''); }
+function rememberCustomer(id) { try { if (id) localStorage.setItem(lsKey(), id); } catch (e) {} }
+function recallCustomer() { try { return localStorage.getItem(lsKey()); } catch (e) { return null; } }
 
 // ---------- Ler o slug do URL ----------
 function getSlug() {
@@ -467,6 +486,8 @@ async function loadCustomer(customerId) {
     document.getElementById('wallet-form').style.display = 'none';
     renderStamps();
     renderQR(c.id);
+    rememberCustomer(c.id);
+    refreshSelfStampUI();
     return true;
   } catch(e) { return false; }
 }
@@ -494,6 +515,7 @@ async function addWallet(type) {
 
       customerId = result.customer.id;
       existingCustomerId = customerId;
+      rememberCustomer(customerId);
       history.replaceState(null, '', window.location.pathname + '?c=' + customerId);
 
       document.getElementById('wallet-form').style.display = 'none';
@@ -502,6 +524,7 @@ async function addWallet(type) {
       FILLED = result.customer.stamps || 0;
       renderStamps();
       renderQR(customerId);
+      refreshSelfStampUI();
     } catch (e) {
       toast('Erro de ligação. Verifica a internet.');
       return;
@@ -514,6 +537,74 @@ async function addWallet(type) {
   } else {
     toast('A abrir o Google Wallet...');
     window.location.href = WALLET_BACKEND + '/' + BUSINESS_SLUG + '/google/' + customerId;
+  }
+}
+
+// ---------- Auto-carimbo (modo "Por visita") ----------
+function refreshSelfStampUI() {
+  var block = document.getElementById('selfstamp-block');
+  if (!block) return;
+  var show = (STAMP_MODE === 'visit') && !!existingCustomerId && FILLED < GOAL;
+  block.style.display = show ? 'block' : 'none';
+}
+
+// Pede a localização do telemóvel (para o geofence). Nunca bloqueia: se não der, segue sem coords.
+function getPosition() {
+  return new Promise(function (resolve) {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      function (p) { resolve({ lat: p.coords.latitude, lng: p.coords.longitude }); },
+      function () { resolve(null); },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  });
+}
+
+function setSelfBtn(txt, disabled) {
+  var b = document.getElementById('selfstamp-btn');
+  var s = document.getElementById('selfstamp-btn-txt');
+  if (s) s.textContent = txt;
+  if (b) { b.disabled = !!disabled; b.style.opacity = disabled ? '.6' : '1'; b.style.cursor = disabled ? 'default' : 'pointer'; }
+}
+
+async function doSelfStamp() {
+  if (SELF_BUSY || !existingCustomerId) return;
+  SELF_BUSY = true;
+  setSelfBtn('A carimbar…', true);
+  try {
+    var pos = await getPosition();
+    var body = pos ? { lat: pos.lat, lng: pos.lng } : {};
+    var resp = await fetch(WALLET_BACKEND + '/' + BUSINESS_SLUG + '/selfstamp/' + existingCustomerId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    var r = await resp.json().catch(function () { return {}; });
+
+    if (r && r.ok) {
+      FILLED = (r.customer && typeof r.customer.stamps === 'number') ? r.customer.stamps : (FILLED + 1);
+      if (r.goal) GOAL = r.goal;
+      renderStamps();
+      var st = document.getElementById('status-txt'); if (st) st.textContent = 'Atualizado agora';
+      toast(FILLED >= GOAL ? 'Cartão completo! 🎉' : 'Carimbo adicionado! ✓');
+      setSelfBtn('Carimbo adicionado ✓', true);
+      refreshSelfStampUI();
+      return;
+    }
+
+    var err = r && r.error;
+    if (err === 'already_today')   toast('Já carimbaste hoje. Volta amanhã! 😊');
+    else if (err === 'too_far')    toast('Precisas de estar na loja para carimbar.');
+    else if (err === 'need_location') toast('Ativa a localização para carimbar na loja.');
+    else if (err === 'mode_off')   toast('O carimbo é dado no balcão por aqui.');
+    else if (err === 'no_customer') toast('Adiciona primeiro o teu cartão.');
+    else                            toast('Não foi possível carimbar. Tenta de novo.');
+    setSelfBtn('Carimbar a minha visita', false);
+  } catch (e) {
+    toast('Erro de ligação. Verifica a internet.');
+    setSelfBtn('Carimbar a minha visita', false);
+  } finally {
+    SELF_BUSY = false;
   }
 }
 
@@ -552,9 +643,15 @@ async function addWallet(type) {
       if (fb) fb.style.display = 'none';
     }
 
-    // Cliente já existente no URL?
+    // Modo de carimbo (leitura tolerante — se a coluna ainda não existir, fica 'purchase')
+    try {
+      var mres = await db.from('businesses').select('stamp_mode').eq('slug', BUSINESS_SLUG).single();
+      if (!mres.error && mres.data && mres.data.stamp_mode) STAMP_MODE = mres.data.stamp_mode;
+    } catch (e) {}
+
+    // Cliente já existente? Primeiro pelo URL (?c=), depois pelo que ficou guardado neste dispositivo.
     var params = new URLSearchParams(window.location.search);
-    var cid = params.get('c');
+    var cid = params.get('c') || recallCustomer();
     if (cid) {
       var ok = await loadCustomer(cid);
       if (ok) existingCustomerId = cid;
@@ -563,6 +660,7 @@ async function addWallet(type) {
       renderStamps();
       renderQR(null);
     }
+    refreshSelfStampUI();
 
     document.getElementById('loading').style.display = 'none';
     document.getElementById('content').style.display = 'flex';
