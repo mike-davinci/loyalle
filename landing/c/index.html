@@ -598,6 +598,7 @@ async function doSelfStamp() {
     if (err === 'already_today')   toast('Já carimbaste hoje. Volta amanhã! 😊');
     else if (err === 'too_far')    toast('Precisas de estar na loja para carimbar.');
     else if (err === 'need_location') toast('Ativa a localização para carimbar na loja.');
+    else if (err === 'geo_required') { toast('Carimbo automático indisponível de momento.'); var b=document.getElementById('selfstamp-block'); if(b) b.style.display='none'; return; }
     else if (err === 'mode_off')   toast('O carimbo é dado no balcão por aqui.');
     else if (err === 'no_customer') toast('Adiciona primeiro o teu cartão.');
     else                            toast('Não foi possível carimbar. Tenta de novo.');
