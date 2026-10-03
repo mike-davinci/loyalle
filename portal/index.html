@@ -266,8 +266,8 @@ tbody tr{transition:background .15s}tbody tr:hover{background:var(--bg)}
 
 <script>
 // ===== API LAYER (mock — substituir por fetch reais) =====
-const PLAN_PRICE_MAP = { Starter:35, Pro:69, Business:149 };
-const PLAN_LIMIT_MAP = { Starter:500, Pro:5000, Business:1000000 };
+const PLAN_PRICE_MAP = { Starter:9.99, Pro:14.99, Business:149 };
+const PLAN_LIMIT_MAP = { Starter:1500, Pro:1000000, Business:1000000 };
 function portalTimeAgo(iso){
   if(!iso) return '—';
   const d=new Date(iso),now=new Date(),days=Math.floor((now-d)/864e5);
@@ -312,8 +312,8 @@ async function loadAllBusinesses(){
     out.push({
       id:b.id, name:b.name, owner:b.owner_name||'—', city:b.city||'—',
       plan:b.plan, status:b.status, mrr: b.status==='active'?(PLAN_PRICE_MAP[b.plan]||0):0,
-      customers: count||0, limit: (PLAN_LIMIT_MAP[b.plan]||500), isDemo: !!b.is_demo,
-      usage: Math.round(((count||0)/(PLAN_LIMIT_MAP[b.plan]||500))*100),
+      customers: count||0, limit: (PLAN_LIMIT_MAP[b.plan]||1500), isDemo: !!b.is_demo,
+      usage: Math.round(((count||0)/(PLAN_LIMIT_MAP[b.plan]||1500))*100),
       isFounder: !!b.is_founder,
       joined: portalTimeAgo(b.created_at), createdAt: b.created_at, color:b.brand_color||'#C6993B',
       email: b.email||'', ...trialInfo(b)
@@ -429,7 +429,7 @@ function nav(p,el){
 function toast(m){ const t=document.getElementById('toast'); document.getElementById('toast-msg').textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400); }
 
 // ===== HELPERS =====
-function eur(n){ return '€'+n.toLocaleString('pt-PT'); }
+function eur(n){ return '€'+Number(n).toLocaleString('pt-PT',{maximumFractionDigits:2}); }
 function donut(segs){
   const total=segs.reduce((a,b)=>a+b.value,0); let off=0;
   const circles=segs.map(s=>{const pct=(s.value/total)*100;const c=`<circle r="15.915" cx="18" cy="18" fill="transparent" stroke="${s.color}" stroke-width="5" stroke-dasharray="${pct} ${100-pct}" stroke-dashoffset="${-off}" transform="rotate(-90 18 18)"/>`;off+=pct;return c;}).join('');
@@ -469,7 +469,7 @@ async function renderOverview(){
 
   // ---- Negócios perto ou acima do limite ----
   const nearLimit = bizs
-    .filter(b => !b.isDemo && b.plan !== 'Business' && b.usage >= 80)
+    .filter(b => !b.isDemo && b.limit < 1000000 && b.usage >= 80)   // Pro e Business: ilimitados
     .sort((a,b) => b.usage - a.usage);
   const overCount = nearLimit.filter(b => b.usage >= 100).length;
   const limitRows = nearLimit.length
