@@ -550,14 +550,29 @@ function refreshSelfStampUI() {
   block.style.display = show ? 'block' : 'none';
 }
 
-// Pede a localização do telemóvel (para o geofence). Nunca bloqueia: se não der, segue sem coords.
+// Pede a localização do telemóvel (para o geofence). Faz duas tentativas:
+// 1) alta precisão (GPS), 2) se falhar por tempo/indisponível, baixa precisão (rede).
+// Devolve { lat, lng } ou { error: 'denied' | 'unavailable' | 'unsupported' }.
 function getPosition() {
   return new Promise(function (resolve) {
-    if (!navigator.geolocation) return resolve(null);
+    if (!navigator.geolocation) return resolve({ error: 'unsupported' });
+    var done = false;
+    function ok(p) { if (done) return; done = true; resolve({ lat: p.coords.latitude, lng: p.coords.longitude }); }
+    function lowAccuracy() {
+      navigator.geolocation.getCurrentPosition(
+        ok,
+        function (e) { if (done) return; done = true; resolve({ error: (e && e.code === 1) ? 'denied' : 'unavailable' }); },
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 120000 }
+      );
+    }
     navigator.geolocation.getCurrentPosition(
-      function (p) { resolve({ lat: p.coords.latitude, lng: p.coords.longitude }); },
-      function () { resolve(null); },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+      ok,
+      function (e) {
+        if (done) return;
+        if (e && e.code === 1) { done = true; resolve({ error: 'denied' }); }  // sem permissão
+        else lowAccuracy();                                                     // tempo/indisponível → 2ª tentativa
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
     );
   });
 }
@@ -572,10 +587,20 @@ function setSelfBtn(txt, disabled) {
 async function doSelfStamp() {
   if (SELF_BUSY || !existingCustomerId) return;
   SELF_BUSY = true;
-  setSelfBtn('A carimbar…', true);
+  setSelfBtn('A obter localização…', true);
   try {
     var pos = await getPosition();
-    var body = pos ? { lat: pos.lat, lng: pos.lng } : {};
+    // Sem localização não dá para confirmar que estás na loja → não carimba.
+    if (!pos || pos.error) {
+      if (pos && pos.error === 'denied') toast('Precisas de permitir a localização para carimbar na loja.');
+      else if (pos && pos.error === 'unsupported') toast('O teu telemóvel não permite localização neste browser.');
+      else toast('Não consegui obter a tua localização. Verifica que o GPS está ligado e tenta outra vez.');
+      setSelfBtn('Carimbar a minha visita', false);
+      SELF_BUSY = false;
+      return;
+    }
+    setSelfBtn('A carimbar…', true);
+    var body = { lat: pos.lat, lng: pos.lng };
     var resp = await fetch(WALLET_BACKEND + '/' + BUSINESS_SLUG + '/selfstamp/' + existingCustomerId, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
