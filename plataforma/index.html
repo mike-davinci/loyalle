@@ -1336,7 +1336,9 @@ async function renderHowto() {
   var custs = [];
   try { custs = (await API.getCustomers()) || []; } catch (e) {}
   var hasLogo = !!(currentBiz && (currentBiz.wallet_logo_url || currentBiz.logo_url));
-  var hasReward = !!(currentBiz && currentBiz.reward_text && String(currentBiz.reward_text).trim());
+  // Só conta como feito quando o prémio foi mesmo personalizado (não o predefinido do registo)
+  var rw = currentBiz && currentBiz.reward_text ? String(currentBiz.reward_text).trim() : '';
+  var hasReward = !!rw && rw !== 'Prémio de fidelidade';
   var hasCustomers = custs.length > 0;
   var hasStamps = custs.some(function(c){ return (c.stamps || 0) > 0 || (c.visits || 0) > 0; });
   var checks = [
