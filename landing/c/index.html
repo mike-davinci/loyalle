@@ -314,6 +314,10 @@ body{padding:32px 16px 56px}
     Não precisas de instalar nenhuma app. A Wallet já vem no teu iPhone ou Android — o cartão entra com um toque e atualiza-se sozinho a cada visita.
   </div>
 
+  <div id="card-exit" style="display:none;text-align:center;margin-top:6px;margin-bottom:2px">
+    <a href="#" onclick="forgetCustomer();return false" style="font-size:13px;color:var(--navy,#1B1F3B);opacity:.55;text-decoration:underline">Não és tu? Sair deste cartão</a>
+  </div>
+
   <div class="foot-brand" id="foot-brand">Cartão criado com <b>loyalle.</b></div>
 </div>
 </div>
@@ -350,6 +354,14 @@ var SELF_BUSY = false;
 function lsKey() { return 'loyalle_c_' + (BUSINESS_SLUG || ''); }
 function rememberCustomer(id) { try { if (id) localStorage.setItem(lsKey(), id); } catch (e) {} }
 function recallCustomer() { try { return localStorage.getItem(lsKey()); } catch (e) { return null; } }
+function showCardExit(on) { var el = document.getElementById('card-exit'); if (el) el.style.display = on ? 'block' : 'none'; }
+// Esquece o cartão guardado neste dispositivo e volta ao formulário de inscrição
+function forgetCustomer() {
+  try { localStorage.removeItem(lsKey()); } catch (e) {}
+  existingCustomerId = null;
+  try { var u = new URL(window.location.href); u.searchParams.delete('c'); window.location.href = u.toString(); }
+  catch (e) { window.location.href = window.location.pathname; }
+}
 
 // ---------- Ler o slug do URL ----------
 function getSlug() {
@@ -488,6 +500,7 @@ async function loadCustomer(customerId) {
     renderQR(c.id);
     rememberCustomer(c.id);
     refreshSelfStampUI();
+    showCardExit(true);
     return true;
   } catch(e) { return false; }
 }
@@ -527,6 +540,7 @@ async function addWallet(type) {
       renderStamps();
       renderQR(customerId);
       refreshSelfStampUI();
+      showCardExit(true);
     } catch (e) {
       toast('Erro de ligação. Verifica a internet.');
       return;
