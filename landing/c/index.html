@@ -525,6 +525,10 @@ async function addWallet(type) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name, email: email || null })
       });
+      if (resp.status === 403) {
+        var ej = await resp.json().catch(function(){ return {}; });
+        if (ej && ej.error === 'plan_limit') { toast('Este cartão não está a aceitar novos membros de momento.'); return; }
+      }
       var result = await resp.json();
       if (!result.ok || !result.customer) { toast('Erro ao criar o cartão. Tenta de novo.'); return; }
 
