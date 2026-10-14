@@ -142,6 +142,7 @@ html{scroll-behavior:smooth;overflow-x:hidden}body{font-family:var(--fb);color:v
 .wr-counter-v{transform-origin:right center}
 .wr-counter-v.bump{animation:wrBump .65s ease}
 .wr-prize-bar{transition:width .8s ease}
+#wallet-rotator .wr-prize-s{display:none}
 @media (prefers-reduced-motion:reduce){.hs-phone .hs-pf{animation:none}.hs-notif{transition:none}.wr-counter-v.bump{animation:none}}
 .wr-banner{height:88px;background-size:cover;background-position:center;position:relative;border-radius:16px 16px 0 0}
 .wr-banner-ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,16,11,.72) 0%,rgba(20,16,11,.55) 50%,rgba(20,16,11,.92) 100%);border-radius:16px 16px 0 0}
@@ -1504,14 +1505,15 @@ var cmo=document.getElementById('cookie-modal-overlay'); if(cmo) cmo.addEventLis
   function setNum(cv,v){var tn=cv.firstChild;if(tn&&tn.nodeType===3)tn.nodeValue=String(v);}
   function setLeft(ps,v){if(ps)ps.textContent=ps.textContent.replace(/\d+/,String(v));}
   function setBar(s,f){var b=s.querySelector('.wr-prize-bar');if(!b)return;b.style.right='auto';b.style.width=Math.max(4,Math.min(100,f*100))+'%';}
+  var base=[];slides.forEach(function(x){var c=x.querySelector('.wr-counter-v');base.push(c?parse(c):null);});
   var i=0;
   function show(k){slides.forEach(function(x,j){x.classList.toggle('active',j===k);});dots.forEach(function(x,j){x.classList.toggle('active',j===k);});}
   if(reduce){setInterval(function(){i=(i+1)%slides.length;show(i);},3200);return;}
   function play(){
     var s=slides[i];show(i);
     var cv=s.querySelector('.wr-counter-v'),ps=s.querySelector('.wr-prize-s'),nm=s.querySelector('.wr-nm');
-    var d=cv?parse(cv):null;
-    if(d)setBar(s,d.n/d.g);
+    var d=base[i];
+    if(d){setNum(cv,d.n);cv.classList.remove('bump');setBar(s,d.n/d.g);}
     setTimeout(function(){
       if(!d||!N)return;
       var nv=d.n+d.d,tx=L();
@@ -1520,12 +1522,11 @@ var cmo=document.getElementById('cookie-modal-overlay'); if(cmo) cmo.addEventLis
       NM.textContent=tx.now;N.classList.add('show');
       setTimeout(function(){
         setNum(cv,nv);cv.classList.remove('bump');void cv.offsetWidth;cv.classList.add('bump');
-        setLeft(ps,Math.max(0,d.g-nv));setBar(s,nv/d.g);
+        setBar(s,nv/d.g);
       },450);
     },1100);
     setTimeout(function(){if(N)N.classList.remove('show');},3700);
     setTimeout(function(){
-      if(d){setNum(cv,d.n);setLeft(ps,d.g-d.n);cv.classList.remove('bump');}
       i=(i+1)%slides.length;play();
     },5400);
   }
