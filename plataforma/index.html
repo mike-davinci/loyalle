@@ -1221,6 +1221,38 @@ async function ensureBusiness(user) {
   return ins.data;
 }
 
+// Aviso interno: email para team@loyalle.pt quando um negócio novo se regista (via Web3Forms, igual aos contactos da landing)
+var WEB3FORMS_KEY = 'b86646d4-2e54-4a98-a770-cfba99e97bee';
+function notifyNewBusiness(biz) {
+  if (!biz || !biz.id) return;
+  var key = 'loyalle_notified_' + biz.id;
+  try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch (e) {}
+  var when = new Date().toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' });
+  var msg =
+    'Novo negócio registado na Loyalle\n\n' +
+    'Negócio: ' + (biz.name || '—') + '\n' +
+    'Responsável: ' + (biz.owner_name || '—') + '\n' +
+    'Email: ' + (biz.email || '—') + '\n' +
+    'Plano: ' + (biz.plan || '—') + (biz.status === 'trial' ? ' (trial de 14 dias)' : '') + '\n' +
+    'Idioma: ' + (biz.lang || currentLang || '—') + '\n' +
+    'Cartão: ' + (biz.slug ? 'https://loyalle.pt/c/' + biz.slug + '/' : '—') + '\n' +
+    'Data: ' + when;
+  try {
+    fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        access_key: WEB3FORMS_KEY,
+        subject: 'Novo negócio registado: ' + (biz.name || '—') + ' (' + (biz.plan || '—') + ') — Loyalle',
+        from_name: 'Plataforma Loyalle',
+        name: biz.owner_name || biz.name || 'Novo negócio',
+        email: biz.email || '',
+        message: msg
+      })
+    }).catch(function(){});
+  } catch (e) {}
+}
+
 // Entra na aplicação com um negócio já carregado
 async function enterApp(biz, opts) {
   currentBiz = biz;
@@ -1234,6 +1266,8 @@ async function enterApp(biz, opts) {
     if (withSlug) { currentBiz = withSlug; biz = withSlug; }
   }
   syncAccountLang(biz);
+  // Negócio acabado de criar → avisar a equipa Loyalle (team@loyalle.pt) uma única vez
+  if (opts && opts.welcome) { try { notifyNewBusiness(currentBiz); } catch (e) {} }
   var sp = document.getElementById('sb-plan');
   if (sp) sp.textContent = t('sb_plan').replace('{plan}', biz.plan);
   document.getElementById('auth').style.display = 'none';
