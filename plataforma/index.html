@@ -1515,12 +1515,22 @@ document.getElementById('modal').addEventListener('click', e => { if (e.target.i
 
 // ---------- TRIAL: countdown + barreira de fim ----------
 function trialInfo() {
-  if (!currentBiz || currentBiz.status !== 'trial' || !currentBiz.created_at) return null;
-  var start = new Date(currentBiz.created_at).getTime();
-  if (isNaN(start)) return null;
-  var end = start + 14 * 86400000;           // 14 dias reais a partir do registo
+  if (!currentBiz) return null;
+  // Prazo definido à mão no Supabase (businesses.trial_ends_at) → tem prioridade sobre os 14 dias.
+  // Serve para prolongar trials (ex.: pilotos). Para "sem prazo", usar uma data distante (ex.: 2099-12-31).
+  var custom = currentBiz.trial_ends_at ? new Date(currentBiz.trial_ends_at).getTime() : NaN;
+  var end;
+  if (!isNaN(custom)) {
+    end = custom;
+  } else {
+    if (currentBiz.status !== 'trial' || !currentBiz.created_at) return null;
+    var start = new Date(currentBiz.created_at).getTime();
+    if (isNaN(start)) return null;
+    end = start + 14 * 86400000;             // 14 dias reais a partir do registo
+  }
   var msLeft = end - Date.now();
-  return { end: end, msLeft: msLeft, daysLeft: Math.ceil(msLeft / 86400000), expired: msLeft <= 0 };
+  return { end: end, msLeft: msLeft, daysLeft: Math.ceil(msLeft / 86400000), expired: msLeft <= 0,
+           custom: !isNaN(custom), unlimited: msLeft > 365 * 86400000 };
 }
 function renderTrialBanner() {
   var el = document.getElementById('sb-trial');
@@ -1528,10 +1538,16 @@ function renderTrialBanner() {
   if (!currentBiz) { if (el) el.style.display = 'none'; if (gate) gate.classList.remove('show'); return; }
   // Já tem subscrição paga no Stripe → sem barreira nem pílula
   if (currentBiz.stripe_subscription_id) { if (el) el.style.display = 'none'; if (gate) gate.classList.remove('show'); return; }
+  // Trial prolongado à mão (trial_ends_at no futuro) → acesso livre em qualquer plano, sem barreira
+  var ext = trialInfo();
+  if (ext && ext.custom && !ext.expired) {
+    if (gate) gate.classList.remove('show');
+    if (ext.unlimited) { if (el) el.style.display = 'none'; return; }   // sem prazo: nem pílula
+  } else
   // Starter → cobra logo: barreira de pagamento imediata (sem período de teste)
   if (currentBiz.plan === 'Starter') { if (el) el.style.display = 'none'; showTrialGate('start'); return; }
   // Business (ou outro) → gerido manualmente, sem barreira automática
-  if (currentBiz.plan !== 'Pro') { if (el) el.style.display = 'none'; if (gate) gate.classList.remove('show'); return; }
+  if (!(ext && ext.custom && !ext.expired) && currentBiz.plan !== 'Pro') { if (el) el.style.display = 'none'; if (gate) gate.classList.remove('show'); return; }
   // Pro → período de teste de 14 dias
   var info = trialInfo();
   if (!info) { if (el) el.style.display = 'none'; showTrialGate('trial'); return; }
@@ -2663,7 +2679,7 @@ function renderSettings() {
   var q = function(v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); };
   var ti = trialInfo();
   var trialTag = '';
-  if (ti) {
+  if (ti && !ti.unlimited) {
     var lbl = ti.expired ? ux('trialEndedTitle') : (ti.daysLeft <= 1 ? ux('trialLastDay') : ux('trialEnds') + ' ' + ti.daysLeft + ' ' + ux('trialDays'));
     trialTag = '<span class="tag vip">' + lbl + '</span>';
   }
